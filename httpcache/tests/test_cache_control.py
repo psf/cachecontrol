@@ -3,6 +3,7 @@ Unit tests that verify our caching methods work correctly.
 """
 import mock
 import datetime
+import time
 
 from httpcache import CacheControl
 from httpcache.cache import DictCache
@@ -72,10 +73,45 @@ class TestCacheControlRequest(object):
     def test_cache_request_fresh_max_age(self):
         url = 'http://foo.com'
         now = datetime.datetime.utcnow().strftime(TIME_FMT)
-        print(now)
         resp = mock.Mock(headers={'cache-control': 'max-age=3600',
                                   'date': now})
         cache = DictCache({'http://foo.com/': resp})
         c = CacheControl(mock.Mock, cache)
         r = c.cached_request(url)
         assert r == resp
+
+    def test_cache_request_unfresh_max_age(self):
+        url = 'http://foo.com'
+        earlier = time.time() - 3700
+        now = datetime.datetime.fromtimestamp(earlier).strftime(TIME_FMT)
+
+        resp = mock.Mock(headers={'cache-control': 'max-age=3600',
+                                  'date': now})
+        cache = DictCache({'http://foo.com/': resp})
+        c = CacheControl(mock.Mock, cache)
+        r = c.cached_request(url)
+        assert not r
+
+    def test_cache_request_fresh_expires(self):
+        url = 'http://foo.com'
+        later = datetime.timedelta(days=1)
+        expires = (datetime.datetime.utcnow() + later).strftime(TIME_FMT)
+        now = datetime.datetime.utcnow().strftime(TIME_FMT)
+        resp = mock.Mock(headers={'expires': expires,
+                                  'date': now})
+        cache = DictCache({'http://foo.com/': resp})
+        c = CacheControl(mock.Mock, cache)
+        r = c.cached_request(url)
+        assert r == resp
+
+    def test_cache_request_unfresh_expires(self):
+        url = 'http://foo.com'
+        later = datetime.timedelta(days=-1)
+        expires = (datetime.datetime.utcnow() + later).strftime(TIME_FMT)
+        now = datetime.datetime.utcnow().strftime(TIME_FMT)
+        resp = mock.Mock(headers={'expires': expires,
+                                  'date': now})
+        cache = DictCache({'http://foo.com/': resp})
+        c = CacheControl(mock.Mock, cache)
+        r = c.cached_request(url)
+        assert not r
