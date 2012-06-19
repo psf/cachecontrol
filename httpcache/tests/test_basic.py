@@ -13,59 +13,33 @@ class TestCachingConditions(object):
 
         assert r
         assert r.content == 'foo'
-        assert url not in c.cache
+        assert not c.cache.get(url)
 
     def test_cache_max_age(self):
         url = 'http://localhost:8080/max_age/'
         s = requests.Session()
         c = CacheControl(s, {})
         r = c.get(url)
-        assert url in c.cache
-        assert c.cache[url]['response'] == r
-        assert c.cache[url]['max-age']
+        assert c.cache.get(url)
+        assert c.cache.get(url) == r
 
     def test_cache_no_cache(self):
         url = 'http://localhost:8080/no_cache/'
         s = requests.Session()
         c = CacheControl(s, {})
         c.get(url)
-        assert url not in c.cache
+        assert not c.cache.get(url)
 
     def test_cache_must_revalidate(self):
         url = 'http://localhost:8080/must_revalidate/'
         s = requests.Session()
         c = CacheControl(s, {})
         c.get(url)
-        assert url not in c.cache
+        assert not c.cache.get(url)
 
-
-class TestMaxAge(object):
-
-    def test_client_max_age_0(self):
-        url = 'http://localhost:8080/max_age/'
+    def test_cache_no_store(self):
+        url = 'http://localhost:8080/no_store/'
         s = requests.Session()
         c = CacheControl(s, {})
-        r = c.get(url)
-        assert url in c.cache
-        assert c.cache[url]['response'] == r
-        assert c.cache[url]['max-age']
-
-        r = c.get(url, headers={'Cache-Control': 'max-age=0'})
-
-        # don't remove from the cache
-        assert url in c.cache
-        assert not r.from_cache == False
-
-    def test_client_max_age_3600(self):
-        # prep our cache
-        url = 'http://localhost:8080/max_age/'
-        s = requests.Session()
-        c = CacheControl(s, {})
-        r = c.get(url)
-        assert url in c.cache
-        assert c.cache[url]['response'] == r
-        assert c.cache[url]['max-age']
-
-        r = c.get(url, headers={'Cache-Control': 'max-age=3600'})
-
-        assert r.from_cache == True
+        c.get(url)
+        assert not c.cache.get(url)
