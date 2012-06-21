@@ -13,35 +13,45 @@ TIME_FMT = "%a, %d %b %Y %H:%M:%S"
 
 
 class TestCacheControlResponse(object):
+    url = 'http://url.com/'
+
+    def req(self, headers=None):
+        headers = headers or {}
+        return mock.Mock(full_url=self.url, headers=headers)
+
+    def resp(self, headers=None):
+        headers = headers or {}
+        return mock.Mock(status_code=200,
+                         headers=headers,
+                         request=self.req())
+
+    def cache(self):
+        return CacheControl(mock.Mock(), mock.MagicMock())
 
     def test_cache_response_no_cache_control(self):
-        c = CacheControl(mock.Mock(), mock.MagicMock())
-
-        resp = mock.Mock(headers={})
+        c = self.cache()
+        resp = self.resp()
         c.cache_response(resp)
 
         assert not c.cache.set.called
 
     def test_cache_response_cache_max_age(self):
-        c = CacheControl(mock.Mock(), mock.MagicMock())
+        c = self.cache()
 
         now = datetime.datetime.utcnow().strftime(TIME_FMT)
-        resp = mock.Mock(headers={'cache-control': 'max-age=3600',
-                                  'date': now},
-                         request=mock.Mock(full_url='http://url.com'))
+        resp = self.resp({'cache-control': 'max-age=3600',
+                          'date': now})
         c.cache_response(resp)
-        c.cache.set.assert_called_with('http://url.com/', resp)
+        c.cache.set.assert_called_with(self.url, resp)
 
     def test_cache_repsonse_no_store(self):
-        url = 'http://foo.com/'
         resp = mock.Mock()
-        cache = DictCache({url: resp})
+        cache = DictCache({self.url: resp})
         c = CacheControl(resp, cache)
 
-        cache_url = c.cache_url(url)
+        cache_url = c.cache_url(self.url)
 
-        resp = mock.Mock(headers={'cache-control': 'no-store'},
-                         request=mock.Mock(full_url=url))
+        resp = self.resp({'cache-control': 'no-store'})
 
         assert c.cache.get(cache_url)
 
@@ -52,66 +62,68 @@ class TestCacheControlResponse(object):
 
 class TestCacheControlRequest(object):
 
+    url = 'http://foo.com'
+
     def test_cache_request_no_cache(self):
-        url = 'http://foo.com'
-        c = CacheControl(mock.Mock)
-        resp = c.cached_request(url, headers={'cache-control': 'no-cache'})
+        c = CacheControl(mock.Mock())
+        hdrs = {'cache-control': 'no-cache'}
+        resp = c.cached_request(self.url, headers=hdrs)
         assert not resp
 
     def test_cache_request_max_age_0(self):
-        url = 'http://foo.com'
-        c = CacheControl(mock.Mock)
-        resp = c.cached_request(url, headers={'cache-control': 'max-age=0'})
+        c = CacheControl(mock.Mock())
+        hdrs = {'cache-control': 'max-age=0'}
+        resp = c.cached_request(self.url, headers=hdrs)
         assert not resp
 
     def test_cache_request_not_in_cache(self):
-        url = 'http://foo.com'
-        c = CacheControl(mock.Mock)
-        resp = c.cached_request(url)
+        c = CacheControl(mock.Mock())
+        resp = c.cached_request(self.url)
         assert not resp
 
     def test_cache_request_fresh_max_age(self):
-        url = 'http://foo.com'
         now = datetime.datetime.utcnow().strftime(TIME_FMT)
         resp = mock.Mock(headers={'cache-control': 'max-age=3600',
                                   'date': now})
-        cache = DictCache({'http://foo.com/': resp})
-        c = CacheControl(mock.Mock, cache)
-        r = c.cached_request(url)
+
+        # NOTE: httplib2 uses its own algorithm for finding the
+        # "defrag_uri" in order to use it for creating a cache key. It
+        # seems to append the trailing slash, which I'm pretty sure is
+        # b/c of the auto directory rules. I'm trusting it is correct.
+        cache = DictCache({self.url + '/': resp})
+        c = CacheControl(mock.Mock(), cache)
+        r = c.cached_request(self.url)
         assert r == resp
 
     def test_cache_request_unfresh_max_age(self):
-        url = 'http://foo.com'
         earlier = time.time() - 3700
         now = datetime.datetime.fromtimestamp(earlier).strftime(TIME_FMT)
 
         resp = mock.Mock(headers={'cache-control': 'max-age=3600',
                                   'date': now})
-        cache = DictCache({'http://foo.com/': resp})
-        c = CacheControl(mock.Mock, cache)
-        r = c.cached_request(url)
+        cache = DictCache({self.url: resp})
+        c = CacheControl(mock.Mock(), cache)
+        r = c.cached_request(self.url)
         assert not r
 
     def test_cache_request_fresh_expires(self):
-        url = 'http://foo.com'
         later = datetime.timedelta(days=1)
         expires = (datetime.datetime.utcnow() + later).strftime(TIME_FMT)
         now = datetime.datetime.utcnow().strftime(TIME_FMT)
         resp = mock.Mock(headers={'expires': expires,
                                   'date': now})
-        cache = DictCache({'http://foo.com/': resp})
+        cache = DictCache({self.url + '/': resp})
         c = CacheControl(mock.Mock, cache)
-        r = c.cached_request(url)
+        r = c.cached_request(self.url)
         assert r == resp
 
     def test_cache_request_unfresh_expires(self):
-        url = 'http://foo.com'
         later = datetime.timedelta(days=-1)
         expires = (datetime.datetime.utcnow() + later).strftime(TIME_FMT)
         now = datetime.datetime.utcnow().strftime(TIME_FMT)
         resp = mock.Mock(headers={'expires': expires,
                                   'date': now})
-        cache = DictCache({'http://foo.com/': resp})
+        cache = DictCache({self.url: resp})
         c = CacheControl(mock.Mock, cache)
-        r = c.cached_request(url)
+        r = c.cached_request(self.url)
         assert not r

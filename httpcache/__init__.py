@@ -151,21 +151,38 @@ class CacheControl(object):
         """
         Algorithm for caching requests
         """
-        if 'cache-control' not in resp.headers:
+
+        # From httplib2: Don't cache 206's since we aren't going to
+        # handle byte range requests
+        if resp.status_code not in [200, 203]:
             return
 
+        cc_req = _parse_cache_control(resp.request.headers)
         cc = _parse_cache_control(resp.headers)
 
         cache_url = self.cache_url(resp.request.full_url)
 
         # Delete it from the cache if we happen to have it stored there
-        if cc.get('no-store') and self.cache.get(cache_url):
+        no_store = cc.get('no-store') or cc_req.get('no-store')
+        if no_store and self.cache.get(cache_url):
             self.cache.delete(cache_url)
 
-        # Cache based on the datetime
+        # Add to the cache if the response headers demand it. If there
+        # is no date header then we can't do anything about expiring
+        # the cache.
+        print('HERE', resp.headers)            
         if 'date' in resp.headers:
-            if 'max-age' in cc and int(cc['max-age']) > 0:
-                self.cache.set(cache_url, resp)
+
+            # cache when there is a max-age > 0
+            if cc and cc.get('max-age'):
+                if int(cc['max-age']) > 0:
+                    self.cache.set(cache_url, resp)
+
+            # If the request can expire, it means we should cache it
+            # in the meantime.
+            elif 'expires' in resp.headers:
+                if int(resp.headers['expires']) > 0:
+                    self.cache.set(cache_url, resp)
 
     def from_cache(f):
         """

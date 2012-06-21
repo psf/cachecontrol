@@ -11,7 +11,12 @@ class TestServer(object):
         base = os.path.abspath(os.path.dirname(__file__))
         server_file = os.path.join(base, 'httpcache', 'tests', 'server.py')
         cmd = ['python', server_file]
-        self.proc = subprocess.Popen(cmd)
+
+        kw = {}
+        if not os.environ.get('TEST_SERVER_OUTPUT'):
+            kw = {'stdout': subprocess.PIPE,
+                  'stderr': subprocess.STDOUT}
+        self.proc = subprocess.Popen(cmd, **kw)
         url = 'http://localhost:8080'
         up = None
         while not up:
