@@ -86,7 +86,7 @@ TODO
 ====
 
  [ ]- Better integration with requests
- [X]- Support for HTTP 1.0 caching a response with Expires
+ [ ]- ETags / if-* header support
  [ ]- Tests that run a server from the stdlib
 
 
