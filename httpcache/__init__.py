@@ -197,6 +197,19 @@ class CacheControl(object):
             return f(self, *args, **kw)
         return cached_handler
 
+    def invalidates_cache(f):
+        """
+        A decorator for marking methods that can invalidate the cache.
+        """
+
+        def invalidating_handler(self, *args, **kw):
+            resp = f(self, *args, **kw)
+            if resp.ok:
+                cache_url = self.cache_url(resp.request.full_url)
+                self.cache.delete(cache_url)
+            return resp
+        return invalidating_handler
+
     @from_cache
     def get(self, url, headers=None, *args, **kw):
         resp = self.session.get(url, headers=headers, *args, **kw)
@@ -208,3 +221,11 @@ class CacheControl(object):
 
         # actually return the repsonse
         return resp
+
+    @invalidates_cache
+    def put(self, *args, **kw):
+        return self.session.put(*args, **kw)
+
+    @invalidates_cache
+    def delete(self, *args, **kw):
+        return self.session.delete(*args, **kw)
