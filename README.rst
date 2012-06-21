@@ -85,9 +85,9 @@ The tests are all in httpcache/tests and is runnable by py.test.
 TODO
 ====
 
- - Better integration with requests
- - Support for HTTP 1.0 caching a response with Expires
- - Tests that run a server from the stdlib
+ [ ]- Better integration with requests
+ [X]- Support for HTTP 1.0 caching a response with Expires
+ [ ]- Tests that run a server from the stdlib
 
 
 Disclaimers
