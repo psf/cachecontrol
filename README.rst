@@ -90,5 +90,14 @@ TODO
  - Tests that run a server from the stdlib
 
 
+Disclaimers
+===========
+
+Httpcache is brand new and maybe totally broken. I have some tests and
+it is a pretty direct port of httplib2 caching, which I've found to be
+very reliable. With that in mind, it hasn't been used in a production
+environment just yet. If you check it out and find bugs, let me know.
+
+
 .. _httplib2: http://code.google.com/p/httplib2/
 .. _requests: http://docs.python-requests.org/ 
