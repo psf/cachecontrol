@@ -1,5 +1,4 @@
-import mock
-from .. import CacheControl
+from httpcache import CacheControl
 import requests
 
 
