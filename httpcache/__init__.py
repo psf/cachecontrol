@@ -170,7 +170,6 @@ class CacheControl(object):
         # Add to the cache if the response headers demand it. If there
         # is no date header then we can't do anything about expiring
         # the cache.
-        print('HERE', resp.headers)            
         if 'date' in resp.headers:
 
             # cache when there is a max-age > 0

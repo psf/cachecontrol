@@ -28,6 +28,34 @@ class TestCacheControlResponse(object):
     def cache(self):
         return CacheControl(mock.Mock(), mock.MagicMock())
 
+    def test_no_cache_non_20x_response(self):
+        c = self.cache()
+
+        # No caching without some extra headers, so we add them
+        now = datetime.datetime.utcnow().strftime(TIME_FMT)
+        resp = self.resp({'cache-control': 'max-age=3600',
+                          'date': now})
+
+        no_cache_codes = [201, 300, 400, 500]
+        for code in no_cache_codes:
+            resp.status_code = code
+            c.cache_response(resp)
+            assert not c.cache.set.called
+
+        # this should work b/c the resp is 20x
+        resp.status_code = 203
+        c.cache_response(resp)
+        assert c.cache.set.called
+
+    def test_no_cache_with_no_date(self):
+        c = self.cache()
+
+        # No date header which makes our max-age pointless
+        resp = self.resp({'cache-control': 'max-age=3600'})
+        c.cache_response(resp)
+
+        assert not c.cache.set.called
+
     def test_cache_response_no_cache_control(self):
         c = self.cache()
         resp = self.resp()
