@@ -88,3 +88,7 @@ TODO
  - Better integration with requests
  - Support for HTTP 1.0 caching a response with Expires
  - Tests that run a server from the stdlib
+
+
+.. _httplib2: http://code.google.com/p/httplib2/
+.. _requests: http://docs.python-requests.org/ 
