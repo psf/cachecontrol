@@ -28,4 +28,5 @@ class DictCache(BaseCache):
         self.data.update({key: value})
 
     def delete(self, key):
-        self.data.pop(key)
+        if key in self.data:
+            self.data.pop(key)
