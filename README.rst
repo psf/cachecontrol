@@ -59,8 +59,25 @@ other cache backend: ::
 See? Really simple.
 
 
-Development
-===========
+Design
+======
+
+The CacheControl object's main task is to wrap the GET call of the
+session object. The caching takes place by examining the request to
+see if it should try to ue the cache. For example, if the request
+includes a 'no-cache' or 'max-age=0' Cache-Control header, it will not
+try to cache the request. If there is an cached value and its value
+has been deemed fresh, the it will return the cached response.
+
+If the request cannot be cached, the actual request is peformed. At
+this point we then analyze the response and see if we should add it to
+the cache. For example, if the request contains a 'max-age=3600' in
+the 'Cache-Control' header, it will cache the response before
+returning it to the caller. 
+
+
+Tests
+=====
 
 The tests are all in httpcache/tests and is runnable by py.test. 
 
