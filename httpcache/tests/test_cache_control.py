@@ -80,11 +80,9 @@ class TestCacheControlResponse(object):
         cache_url = c.cache_url(self.url)
 
         resp = self.resp({'cache-control': 'no-store'})
-
         assert c.cache.get(cache_url)
 
         c.cache_response(resp)
-
         assert not c.cache.get(cache_url)
 
 
@@ -95,6 +93,18 @@ class TestCacheControlRequest(object):
     def test_cache_request_no_cache(self):
         c = CacheControl(mock.Mock())
         hdrs = {'cache-control': 'no-cache'}
+        resp = c.cached_request(self.url, headers=hdrs)
+        assert not resp
+
+    def test_cache_request_pragma_no_cache(self):
+        c = CacheControl(mock.Mock())
+        hdrs = {'pragma': 'no-cache'}
+        resp = c.cached_request(self.url, headers=hdrs)
+        assert not resp
+
+    def test_cache_request_no_store(self):
+        c = CacheControl(mock.Mock())
+        hdrs = {'cache-control': 'no-store'}
         resp = c.cached_request(self.url, headers=hdrs)
         assert not resp
 
