@@ -100,7 +100,6 @@ class CacheControl(object):
         date = calendar.timegm(
             email.Utils.parsedate_tz(resp.headers['date']))
         current_age = max(0, now - date)
-        print(current_age, now, date)
 
         resp_cc = _parse_cache_control(resp.headers)
 
@@ -134,7 +133,6 @@ class CacheControl(object):
 
         # see how fresh we actually are
         fresh = (freshness_lifetime > current_age)
-        print('here', 'fresh', freshness_lifetime, current_age)
 
         if fresh:
             # make sure we set the from_cache to true
