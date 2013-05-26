@@ -79,14 +79,14 @@ class CacheControl(object):
         This is taken almost directly from httplib2._entry_disposition
         """
         req = requests.Request(*args, **kw)
-        cache_url = self.cache_url(req.full_url)
+        cache_url = self.cache_url(req.url)
 
         cc = _parse_cache_control(req.headers)
 
         # non-caching states
-        no_cache = False
-        if 'no-cache' in cc: no_cache = True
-        if 'max-age' in cc and cc['max-age'] == 0: no_cache = True
+        no_cache = True if 'no-cache' in cc else False
+        if 'max-age' in cc and cc['max-age'] == 0:
+            no_cache = True
 
         # see if it is in the cache anyways
         in_cache = self.cache.get(cache_url)
@@ -105,14 +105,11 @@ class CacheControl(object):
 
         # determine freshness
         freshness_lifetime = 0
-        if 'max-age' in resp_cc:
-            try:
-                freshness_lifetime = int(resp_cc['max-age'])
-            except ValueError:
-                pass
+        if 'max-age' in resp_cc and resp_cc['max-age'].isdigit():
+            freshness_lifetime = int(resp_cc['max-age'])
         elif 'expires' in resp.headers:
             expires = email.Utils.parsedate_tz(resp.headers['expires'])
-            if expires != None:
+            if expires is not None:
                 expire_time = calendar.timegm(expires) - date
                 freshness_lifetime = max(0, expire_time)
 
@@ -158,7 +155,7 @@ class CacheControl(object):
         cc_req = _parse_cache_control(resp.request.headers)
         cc = _parse_cache_control(resp.headers)
 
-        cache_url = self.cache_url(resp.request.full_url)
+        cache_url = self.cache_url(resp.request.url)
 
         # Delete it from the cache if we happen to have it stored there
         no_store = cc.get('no-store') or cc_req.get('no-store')
@@ -169,7 +166,6 @@ class CacheControl(object):
         # is no date header then we can't do anything about expiring
         # the cache.
         if 'date' in resp.headers:
-
             # cache when there is a max-age > 0
             if cc and cc.get('max-age'):
                 if int(cc['max-age']) > 0:
@@ -203,14 +199,17 @@ class CacheControl(object):
         def invalidating_handler(self, *args, **kw):
             resp = f(self, *args, **kw)
             if resp.ok:
-                cache_url = self.cache_url(resp.request.full_url)
+                cache_url = self.cache_url(resp.request.url)
                 self.cache.delete(cache_url)
             return resp
         return invalidating_handler
 
-    @from_cache
     def get(self, url, headers=None, *args, **kw):
-        resp = self.session.get(url, headers=headers, *args, **kw)
+        return self._get('GET', url, headers, *args, **kw)
+
+    @from_cache
+    def _get(self, verb, url, headers=None, *args, **kw):
+        resp = self.session.request(verb, url, headers=headers, *args, **kw)
         # We set this primarily for testing
         resp.from_cache = False
 
