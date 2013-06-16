@@ -7,9 +7,8 @@ setup_params = dict(
     author_email="eric@ionrock.org",
     url="https://bitbucket.org/elarson/httpcache",
     packages=setuptools.find_packages(),
-    tests_requires=[
-        'pytest',
-        'cherrypy',
+    install_requires=[
+        'requests',
     ],
 )
 
