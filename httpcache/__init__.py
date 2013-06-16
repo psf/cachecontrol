@@ -28,8 +28,13 @@ def _parse_cache_control(headers):
     for the different directives.
     """
     retval = {}
-    if 'cache-control' in headers:
-        parts = headers['cache-control'].split(',')
+
+    cc_header = 'cache-control'
+    if 'Cache-Control' in headers:
+        cc_header = 'Cache-Control'
+    
+    if cc_header in headers:
+        parts = headers[cc_header].split(',')
         parts_with_args = [
             tuple([x.strip().lower() for x in part.split("=", 1)])
             for part in parts if -1 != part.find("=")]
@@ -82,6 +87,9 @@ class CacheControl(object):
         cache_url = self.cache_url(req.url)
 
         cc = _parse_cache_control(req.headers)
+
+        print(req.url, req.headers)
+        print(cc)
 
         # non-caching states
         no_cache = True if 'no-cache' in cc else False
@@ -204,8 +212,18 @@ class CacheControl(object):
             return resp
         return invalidating_handler
 
+    # Handler wrappers
+    # NOTE: We create a _verb method b/c we need the verb in order to
+    #       create the Request object and handle the caching
+    #       correctly.
     def get(self, url, headers=None, *args, **kw):
         return self._get('GET', url, headers, *args, **kw)
+
+    def put(self, url, headers=None, *args, **kw):
+        return self._put('PUT', url, headers, *args, **kw)
+
+    def delete(self, url, headers=None, *args, **kw):
+        return self._delete('DELETE', url, headers, *args, **kw)
 
     @from_cache
     def _get(self, verb, url, headers=None, *args, **kw):
@@ -220,9 +238,9 @@ class CacheControl(object):
         return resp
 
     @invalidates_cache
-    def put(self, *args, **kw):
+    def _put(self, *args, **kw):
         return self.session.put(*args, **kw)
 
     @invalidates_cache
-    def delete(self, *args, **kw):
+    def _delete(self, *args, **kw):
         return self.session.delete(*args, **kw)

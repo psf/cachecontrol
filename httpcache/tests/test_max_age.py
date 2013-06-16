@@ -5,12 +5,12 @@ import requests
 
 class TestMaxAge(object):
 
-    def test_client_max_age_0(self):
+    def test_client_max_age_0(self, server):
         """
         Making sure when the client uses max-age=0 we don't get a
         cached copy even though we're still fresh.
         """
-        url = 'http://localhost:8080/max_age/'
+        url = server.application_url + 'max_age'
         s = requests.Session()
         c = CacheControl(s, {})
         print('first request')
@@ -23,15 +23,15 @@ class TestMaxAge(object):
 
         # don't remove from the cache
         assert c.cache.get(cache_url)
-        assert r.from_cache == False
+        assert r.from_cache is False
 
-    def test_client_max_age_3600(self):
+    def test_client_max_age_3600(self, server):
         """
         Verify we get a cached value when the client has a
         reasonable max-age value.
         """
         # prep our cache
-        url = 'http://localhost:8080/max_age/'
+        url = server.application_url + 'max_age'
         s = requests.Session()
         c = CacheControl(s, {})
         r = c.get(url)
@@ -40,11 +40,11 @@ class TestMaxAge(object):
 
         # request that we don't want a new one unless
         r = c.get(url, headers={'Cache-Control': 'max-age=3600'})
-        assert r.from_cache == True
+        assert r.from_cache is True
 
         # now lets grab one that forces a new request b/c the cache
         # has expired. To do that we'll inject a new time value.
         resp = c.cache.get(cache_url)
         resp.headers['date'] = 'Tue, 15 Nov 1994 08:12:31 GMT'
         r = c.get(url)
-        assert r.from_cache == False
+        assert r.from_cache is False

@@ -13,7 +13,7 @@ class TestInvalidations(object):
     url = 'http://foo.com/bar/'
 
     def resp(self):
-        req = mock.Mock(full_url=self.url)
+        req = mock.Mock(full_url=self.url, url=self.url)
         return mock.Mock(request=req)
 
     def test_put_invalidates_cache(self):

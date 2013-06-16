@@ -17,7 +17,9 @@ class TestCacheControlResponse(object):
 
     def req(self, headers=None):
         headers = headers or {}
-        return mock.Mock(full_url=self.url, headers=headers)
+        return mock.Mock(full_url=self.url,  # < 1.x support
+                         url=self.url,
+                         headers=headers)
 
     def resp(self, headers=None):
         headers = headers or {}
@@ -89,34 +91,35 @@ class TestCacheControlResponse(object):
 class TestCacheControlRequest(object):
 
     url = 'http://foo.com'
+    verb = 'GET'
 
     def test_cache_request_no_cache(self):
         c = CacheControl(mock.Mock())
         hdrs = {'cache-control': 'no-cache'}
-        resp = c.cached_request(self.url, headers=hdrs)
+        resp = c.cached_request(self.verb, self.url, headers=hdrs)
         assert not resp
 
     def test_cache_request_pragma_no_cache(self):
         c = CacheControl(mock.Mock())
         hdrs = {'pragma': 'no-cache'}
-        resp = c.cached_request(self.url, headers=hdrs)
+        resp = c.cached_request(self.verb, self.url, headers=hdrs)
         assert not resp
 
     def test_cache_request_no_store(self):
         c = CacheControl(mock.Mock())
         hdrs = {'cache-control': 'no-store'}
-        resp = c.cached_request(self.url, headers=hdrs)
+        resp = c.cached_request(self.verb, self.url, headers=hdrs)
         assert not resp
 
     def test_cache_request_max_age_0(self):
         c = CacheControl(mock.Mock())
         hdrs = {'cache-control': 'max-age=0'}
-        resp = c.cached_request(self.url, headers=hdrs)
+        resp = c.cached_request(self.verb, self.url, headers=hdrs)
         assert not resp
 
     def test_cache_request_not_in_cache(self):
         c = CacheControl(mock.Mock())
-        resp = c.cached_request(self.url)
+        resp = c.cached_request(self.verb, self.url)
         assert not resp
 
     def test_cache_request_fresh_max_age(self):
@@ -130,7 +133,7 @@ class TestCacheControlRequest(object):
         # b/c of the auto directory rules. I'm trusting it is correct.
         cache = DictCache({self.url + '/': resp})
         c = CacheControl(mock.Mock(), cache)
-        r = c.cached_request(self.url)
+        r = c.cached_request(self.verb, self.url)
         assert r == resp
 
     def test_cache_request_unfresh_max_age(self):
@@ -141,7 +144,7 @@ class TestCacheControlRequest(object):
                                   'date': now})
         cache = DictCache({self.url: resp})
         c = CacheControl(mock.Mock(), cache)
-        r = c.cached_request(self.url)
+        r = c.cached_request(self.verb, self.url)
         assert not r
 
     def test_cache_request_fresh_expires(self):
@@ -152,7 +155,7 @@ class TestCacheControlRequest(object):
                                   'date': now})
         cache = DictCache({self.url + '/': resp})
         c = CacheControl(mock.Mock, cache)
-        r = c.cached_request(self.url)
+        r = c.cached_request(self.verb, self.url)
         assert r == resp
 
     def test_cache_request_unfresh_expires(self):
@@ -163,5 +166,5 @@ class TestCacheControlRequest(object):
                                   'date': now})
         cache = DictCache({self.url: resp})
         c = CacheControl(mock.Mock, cache)
-        r = c.cached_request(self.url)
+        r = c.cached_request(self.verb, self.url)
         assert not r

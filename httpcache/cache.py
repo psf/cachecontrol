@@ -2,13 +2,8 @@
 The cache object API for implementing caches. The default is just a
 dictionary, which in turns means it is not threadsafe for writing.
 """
-import os
-import re
-import time
 
-from contextlib import contextmanager
-from cPickle import dump, load
-from hashlib import md5
+from threading import Lock
 
 
 class BaseCache(object):
@@ -26,14 +21,21 @@ class BaseCache(object):
 class DictCache(BaseCache):
 
     def __init__(self, init_dict=None):
+        self.lock = Lock()
         self.data = init_dict or {}
 
     def get(self, key):
+        if key in self.data:
+            print('CACHE HIT: %s' % key)
+        else:
+            print('CACHE MISS: %s' % key)
         return self.data.get(key, None)
 
     def set(self, key, value):
-        self.data.update({key: value})
+        with self.lock:
+            self.data.update({key: value})
 
     def delete(self, key):
-        if key in self.data:
-            self.data.pop(key)
+        with self.lock:
+            if key in self.data:
+                self.data.pop(key)
