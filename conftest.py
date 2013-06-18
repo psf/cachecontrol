@@ -1,7 +1,7 @@
 import pytest
 from webtest.http import StopableWSGIServer
 
-from httpcache.tests import SimpleApp
+from cachecontrol.tests import SimpleApp
 
 
 @pytest.fixture(scope='session')

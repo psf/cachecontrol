@@ -4,8 +4,8 @@ should invalidate them in our cache.
 """
 import mock
 
-from httpcache import CacheControl
-from httpcache.cache import DictCache
+from cachecontrol import CacheControl
+from cachecontrol.cache import DictCache
 
 
 class TestInvalidations(object):

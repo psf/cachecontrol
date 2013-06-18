@@ -1,8 +1,8 @@
 ===========
- HTTPCache
+ CacheControl
 ===========
 
-HTTPCache is a port of the caching algorithms in httplib2_ for use with
+CacheControl is a port of the caching algorithms in httplib2_ for use with
 requests_ session object. 
 
 It was written because httplib2's better support for caching is often
@@ -25,7 +25,7 @@ Here is the basic usage: ::
 
   import requests
 
-  from httpcache import CacheControl
+  from cachecontrol import CacheControl
 
 
   sess = requests.session()
@@ -40,7 +40,7 @@ Below is the implementation of the DictCache, the default cache
 backend. It is extremely simple and shows how you would implement some
 other cache backend: ::
 
-  from httpcache.cache import BaseCache
+  from cachecontrol.cache import BaseCache
 
 
   class DictCache(BaseCache):
@@ -83,7 +83,7 @@ ETags and If-* Headers
 ======================
 
 httplib2 handles etags and if-* headers according to `Editing the
-Web`_. I made an effort to include this functionality in HTTPCache,
+Web`_. I made an effort to include this functionality in CacheControl,
 but decided against it. The use of ETags is primarily described in
 terms of detecting a lost update. As such, even though it uses the
 data store's cache, it does not impact when and what is stored.
@@ -95,7 +95,7 @@ update (PUT), you could still use the storage object directly: ::
   import requests
 
   from mycache import CacheStore
-  from httpcache import CacheControl
+  from cachecontrol import CacheControl
 
 
   sess = CacheControl(requests.session(), 
@@ -132,14 +132,14 @@ update (PUT), you could still use the storage object directly: ::
 
 As you can see the actual decision to use PUT and perform an update is
 most likely application specific and falls outside the
-responsibilities of cache management, which is what HTTPCache is
+responsibilities of cache management, which is what CacheControl is
 designed to do.
 
 
 Tests
 =====
 
-The tests are all in httpcache/tests and is runnable by py.test. 
+The tests are all in cachecontrol/tests and is runnable by py.test. 
 
 TODO
 ====
@@ -150,7 +150,7 @@ TODO
 Disclaimers
 ===========
 
-HTTPCache is brand new and maybe totally broken. I have some tests and
+CacheControl is brand new and maybe totally broken. I have some tests and
 it is a pretty direct port of httplib2 caching, which I've found to be
 very reliable. With that in mind, it hasn't been used in a production
 environment just yet. If you check it out and find bugs, let me know.

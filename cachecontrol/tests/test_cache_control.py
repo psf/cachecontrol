@@ -5,8 +5,8 @@ import mock
 import datetime
 import time
 
-from httpcache import CacheControl
-from httpcache.cache import DictCache
+from cachecontrol import CacheControl
+from cachecontrol.cache import DictCache
 
 
 TIME_FMT = "%a, %d %b %Y %H:%M:%S"
