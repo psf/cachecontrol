@@ -1,18 +1,19 @@
 """
 Unit tests that verify our caching methods work correctly.
 """
+import pytest
 import mock
 import datetime
 import time
 
-from cachecontrol import CacheControl
+from cachecontrol import CacheControl, CacheController
 from cachecontrol.cache import DictCache
 
 
 TIME_FMT = "%a, %d %b %Y %H:%M:%S"
 
 
-class TestCacheControlResponse(object):
+class TestCacheControllerResponse(object):
     url = 'http://url.com/'
 
     def req(self, headers=None):
@@ -27,12 +28,12 @@ class TestCacheControlResponse(object):
                          headers=headers,
                          request=self.req())
 
-    def cache(self):
-        return CacheControl(mock.Mock(), mock.MagicMock())
+    @pytest.fixture()
+    def cc(self):
+        # Cache controller fixture
+        return CacheController(mock.Mock())
 
-    def test_no_cache_non_20x_response(self):
-        c = self.cache()
-
+    def test_no_cache_non_20x_response(self, cc):
         # No caching without some extra headers, so we add them
         now = datetime.datetime.utcnow().strftime(TIME_FMT)
         resp = self.resp({'cache-control': 'max-age=3600',
@@ -41,51 +42,47 @@ class TestCacheControlResponse(object):
         no_cache_codes = [201, 300, 400, 500]
         for code in no_cache_codes:
             resp.status_code = code
-            c.cache_response(resp)
-            assert not c.cache.set.called
+            cc.cache_response(resp)
+            assert not cc.cache.set.called
 
         # this should work b/c the resp is 20x
         resp.status_code = 203
-        c.cache_response(resp)
-        assert c.cache.set.called
+        cc.cache_response(resp)
+        assert cc.cache.set.called
 
-    def test_no_cache_with_no_date(self):
-        c = self.cache()
-
+    def test_no_cache_with_no_date(self, cc):
         # No date header which makes our max-age pointless
         resp = self.resp({'cache-control': 'max-age=3600'})
-        c.cache_response(resp)
+        cc.cache_response(resp)
 
-        assert not c.cache.set.called
+        assert not cc.cache.set.called
 
-    def test_cache_response_no_cache_control(self):
-        c = self.cache()
+    def test_cache_response_no_cache_control(self, cc):
         resp = self.resp()
-        c.cache_response(resp)
+        cc.cache_response(resp)
 
-        assert not c.cache.set.called
+        assert not cc.cache.set.called
 
-    def test_cache_response_cache_max_age(self):
-        c = self.cache()
+    def test_cache_response_cache_max_age(self, cc):
 
         now = datetime.datetime.utcnow().strftime(TIME_FMT)
         resp = self.resp({'cache-control': 'max-age=3600',
                           'date': now})
-        c.cache_response(resp)
-        c.cache.set.assert_called_with(self.url, resp)
+        cc.cache_response(resp)
+        cc.cache.set.assert_called_with(self.url, resp)
 
     def test_cache_repsonse_no_store(self):
         resp = mock.Mock()
         cache = DictCache({self.url: resp})
-        c = CacheControl(resp, cache)
+        cc = CacheController(cache)
 
-        cache_url = c.cache_url(self.url)
+        cache_url = cc.cache_url(self.url)
 
         resp = self.resp({'cache-control': 'no-store'})
-        assert c.cache.get(cache_url)
+        assert cc.cache.get(cache_url)
 
-        c.cache_response(resp)
-        assert not c.cache.get(cache_url)
+        cc.cache_response(resp)
+        assert not cc.cache.get(cache_url)
 
 
 class TestCacheControlRequest(object):

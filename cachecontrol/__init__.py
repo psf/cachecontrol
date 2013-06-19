@@ -22,74 +22,57 @@ def parse_uri(uri):
     return (groups[1], groups[3], groups[4], groups[6], groups[8])
 
 
-def _parse_cache_control(headers):
+class CacheController(object):
+    """An interface to see if request should cached or not.
     """
-    Parse the cache control headers returning a dictionary with values
-    for the different directives.
-    """
-    retval = {}
+    def __init__(self, cache):
+        self.cache = cache
 
-    cc_header = 'cache-control'
-    if 'Cache-Control' in headers:
-        cc_header = 'Cache-Control'
-    
-    if cc_header in headers:
-        parts = headers[cc_header].split(',')
-        parts_with_args = [
-            tuple([x.strip().lower() for x in part.split("=", 1)])
-            for part in parts if -1 != part.find("=")]
-        parts_wo_args = [(name.strip().lower(), 1)
-                         for name in parts if -1 == name.find("=")]
-        retval = dict(parts_with_args + parts_wo_args)
-    return retval
+    def _urlnorm(self, uri):
+        """Normalize the URL to create a safe key for the cache"""
+        (scheme, authority, path, query, fragment) = parse_uri(uri)
+        if not scheme or not authority:
+            raise Exception("Only absolute URIs are allowed. uri = %s" % uri)
+        authority = authority.lower()
+        scheme = scheme.lower()
+        if not path:
+            path = "/"
 
+         # Could do syntax based normalization of the URI before
+        # computing the digest. See Section 6.2.2 of Std 66.
+        request_uri = query and "?".join([path, query]) or path
+        scheme = scheme.lower()
+        defrag_uri = scheme + "://" + authority + request_uri
 
-def urlnorm(uri):
-    (scheme, authority, path, query, fragment) = parse_uri(uri)
-    if not scheme or not authority:
-        raise Exception("Only absolute URIs are allowed. uri = %s" % uri)
-    authority = authority.lower()
-    scheme = scheme.lower()
-    if not path:
-        path = "/"
-    # Could do syntax based normalization of the URI before
-    # computing the digest. See Section 6.2.2 of Std 66.
-    request_uri = query and "?".join([path, query]) or path
-    scheme = scheme.lower()
-    defrag_uri = scheme + "://" + authority + request_uri
-    return scheme, authority, request_uri, defrag_uri
-
-
-class CacheControl(object):
-
-    def __init__(self, session, cache=None):
-        self.session = session
-        self.cache = cache or DictCache()
-
-    def __getattr__(self, key):
-        if hasattr(self.session, key):
-            return getattr(self.session, key)
-        raise AttributeError('%s not found' % key)
-
-    def cache_url(self, url):
-        scheme, authority, request_uri, defrag_uri = urlnorm(url)
         return defrag_uri
 
-    def cached_request(self, *args, **kw):
+    def cache_url(self, uri):
+        return self._urlnorm(uri)
+
+    def parse_cache_control(self, headers):
         """
-        See if we should use a cached response. We are looking for
-        client conditions such as no-cache and testing our cached
-        value to see if we should use it or not.
-
-        This is taken almost directly from httplib2._entry_disposition
+        Parse the cache control headers returning a dictionary with values
+        for the different directives.
         """
-        req = requests.Request(*args, **kw)
-        cache_url = self.cache_url(req.url)
+        retval = {}
+     
+        cc_header = 'cache-control'
+        if 'Cache-Control' in headers:
+            cc_header = 'Cache-Control'
+     
+        if cc_header in headers:
+            parts = headers[cc_header].split(',')
+            parts_with_args = [
+                tuple([x.strip().lower() for x in part.split("=", 1)])
+                for part in parts if -1 != part.find("=")]
+            parts_wo_args = [(name.strip().lower(), 1)
+                             for name in parts if -1 == name.find("=")]
+            retval = dict(parts_with_args + parts_wo_args)
+        return retval
 
-        cc = _parse_cache_control(req.headers)
-
-        print(req.url, req.headers)
-        print(cc)
+    def cached_request(self, url, headers):
+        cache_url = self.cache_url(url)
+        cc = self.parse_cache_control(headers)
 
         # non-caching states
         no_cache = True if 'no-cache' in cc else False
@@ -109,7 +92,11 @@ class CacheControl(object):
             email.Utils.parsedate_tz(resp.headers['date']))
         current_age = max(0, now - date)
 
-        resp_cc = _parse_cache_control(resp.headers)
+        # TODO: There is an assumption that the result will be a
+        # requests response object. This may not be best since we
+        # could probably avoid instantiating or constructing the
+        # response until we know we need it.
+        resp_cc = self.parse_cache_control(resp.headers)
 
         # determine freshness
         freshness_lifetime = 0
@@ -152,16 +139,17 @@ class CacheControl(object):
 
     def cache_response(self, resp):
         """
-        Algorithm for caching requests
-        """
+        Algorithm for caching requests.
 
+        This assumes a requests Response object.
+        """
         # From httplib2: Don't cache 206's since we aren't going to
         # handle byte range requests
         if resp.status_code not in [200, 203]:
             return
 
-        cc_req = _parse_cache_control(resp.request.headers)
-        cc = _parse_cache_control(resp.headers)
+        cc_req = self.parse_cache_control(resp.request.headers)
+        cc = self.parse_cache_control(resp.headers)
 
         cache_url = self.cache_url(resp.request.url)
 
@@ -185,6 +173,30 @@ class CacheControl(object):
                 if int(resp.headers['expires']) > 0:
                     self.cache.set(cache_url, resp)
 
+
+class CacheControl(object):
+
+    def __init__(self, session, cache=None):
+        self.session = session
+        self.cache = cache or DictCache()
+        self.controller = CacheController(self.cache)
+
+    def __getattr__(self, key):
+        if hasattr(self.session, key):
+            return getattr(self.session, key)
+        raise AttributeError('%s not found' % key)
+
+    def cached_request(self, *args, **kw):
+        """
+        See if we should use a cached response. We are looking for
+        client conditions such as no-cache and testing our cached
+        value to see if we should use it or not.
+
+        This is taken almost directly from httplib2._entry_disposition
+        """
+        req = requests.Request(*args, **kw)
+        return self.controller.cached_request(req.url, req.headers)
+
     def from_cache(f):
         """
         A decorator that allows using a cached response.
@@ -207,7 +219,7 @@ class CacheControl(object):
         def invalidating_handler(self, *args, **kw):
             resp = f(self, *args, **kw)
             if resp.ok:
-                cache_url = self.cache_url(resp.request.url)
+                cache_url = self.controller.cache_url(resp.request.url)
                 self.cache.delete(cache_url)
             return resp
         return invalidating_handler
@@ -232,7 +244,7 @@ class CacheControl(object):
         resp.from_cache = False
 
         # See if we need to cache the response
-        self.cache_response(resp)
+        self.controller.cache_response(resp)
 
         # actually return the repsonse
         return resp
