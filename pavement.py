@@ -1,5 +1,7 @@
 from paver.easy import sh, task, needs, options, Bunch, consume_args
 
+from distutils.version import StrictVersion
+
 
 options(
     venv=Bunch(dir='.')
@@ -33,3 +35,11 @@ def clean_env():
 @consume_args
 def test(args):
     env_do('py.test %s' % ' '.join(args))
+
+
+@task
+@consume_args
+def release(args):
+    version = args[0]
+    StrictVersion(version)
+    env_do('python setup.py sdist upload')
