@@ -8,32 +8,24 @@ from cachecontrol import CacheControl
 from cachecontrol.cache import DictCache
 
 
-class TestInvalidations(object):
+class TestWrapperInvalidations(object):
 
     url = 'http://foo.com/bar/'
 
-    def resp(self):
-        req = mock.Mock(full_url=self.url, url=self.url)
-        return mock.Mock(request=req)
+    def setup(self):
+        req = mock.Mock(url=self.url)
+        resp = mock.Mock(request=req)
+        cache = DictCache({self.url: resp})
+        session = mock.Mock(put=mock.Mock(return_value=resp),
+                            delete=mock.Mock(return_value=resp))
+        self.session = CacheControl(session, cache)
 
     def test_put_invalidates_cache(self):
         # Prep our cache
-        resp = self.resp()
-        cache = DictCache({self.url: resp})
-        session = mock.Mock(put=mock.Mock(return_value=resp))
-        c = CacheControl(session, cache)
-
-        c.put(self.url)
-
-        assert not c.cache.get(self.url)
+        self.session.put(self.url)
+        assert not self.session.cache.get(self.url)
 
     def test_delete_invalidates_cache(self):
         # Prep our cache
-        resp = self.resp()
-        cache = DictCache({self.url: resp})
-        session = mock.Mock(delete=mock.Mock(return_value=resp))
-        c = CacheControl(session, cache)
-
-        c.delete(self.url)
-
-        assert not c.cache.get(self.url)
+        self.session.delete(self.url)
+        assert not self.session.cache.get(self.url)
