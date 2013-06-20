@@ -1,6 +1,6 @@
-===========
+==============
  CacheControl
-===========
+==============
 
 CacheControl is a port of the caching algorithms in httplib2_ for use with
 requests_ session object. 
@@ -13,15 +13,8 @@ terms of caching.
 Usage
 =====
 
-NOTE: Eventually, my hope is that this module can be integrated directly
-into requests. That said, I've had minimal exposure to requests, so I
-expect the initial implementation to be rather un-requests-like in
-terms of its API. Suggestions and patches welcome!
-
-UPDATE: See: https://github.com/kennethreitz/requests/issues/304
-
-
-Here is the basic usage: ::
+There are two ways to use CacheControl. The first is by using the
+CacheControl wrapper object. ::
 
   import requests
 
@@ -34,32 +27,48 @@ Here is the basic usage: ::
   response = cached_sess.get('http://google.com')
 
 If the URL contains any caching based headers, it will cache the
-result in a simple dictionary. 
+result in a simple dictionary.
 
-Below is the implementation of the DictCache, the default cache
-backend. It is extremely simple and shows how you would implement some
-other cache backend: ::
+The second way to use CacheControl is by the
+CacheControlAdapter. Requests in v1.x introduced the concept of a
+Transport Adapter. This allows you to configure different behaviors
+based on the endpoint you are using. For more info check the `the docs
+<http://docs.python-requests.org/en/latest/user/advanced/#transport-adapters>`_.
 
-  from cachecontrol.cache import BaseCache
+Here is how you can use the adapter: ::
+
+  import requests
+
+  from cachecontrol import CacheControlAdapter
+
+  sess = requests.session()
+  sess.mount('http://', CacheControlAdapter())
+
+  response = sess.get('http://google.com')
 
 
-  class DictCache(BaseCache):
-   
-      def __init__(self, init_dict=None):
-          self.data = init_dict or {}
+Cache Implementations
+=====================
+
+CacheControl comes with a simple, threadsafe, in memory dictionary
+like cache. Implementing a cache interface is simply a matter of
+inheriting from the BaseCache or implementing the necessary methods.
+
+To make it clear how simple this is, here is the base class: ::
+
+  class BaseCache(object):
    
       def get(self, key):
-          return self.data.get(key, None)
+          raise NotImplemented()
    
       def set(self, key, value):
-          self.data.update({key: value})
+          raise NotImplemented()
    
       def delete(self, key):
-          self.data.pop(key)
+          raise NotImplemented()
 
-  
 
-See? Really simple.
+See? Simple.
 
 
 Design
