@@ -1,50 +1,52 @@
 from __future__ import print_function
-from .. import CacheControl
-import requests
+import pytest
+
+from requests import Session
+from cachecontrol.adapter import CacheControlAdapter
+from cachecontrol.cache import DictCache
 
 
 class TestMaxAge(object):
 
-    def setup(self):
-        self.s = requests.Session()
-        self.c = CacheControl(self.s, {})
+    @pytest.fixture()
+    def sess(self, server):
+        self.url = server.application_url
+        self.cache = DictCache()
+        sess = Session()
+        sess.mount('http://', CacheControlAdapter(self.cache))
+        return sess
 
-    def test_client_max_age_0(self, server):
+    def test_client_max_age_0(self, sess):
         """
         Making sure when the client uses max-age=0 we don't get a
         cached copy even though we're still fresh.
         """
-        url = server.application_url + 'max_age'
         print('first request')
-        r = self.c.get(url)
-        cache_url = self.c.controller.cache_url(url)
-        assert self.c.cache.get(cache_url) == r
+        r = sess.get(self.url)
+        assert self.cache.get(self.url) == r
 
         print('second request')
-        r = self.c.get(url, headers={'Cache-Control': 'max-age=0'})
+        r = sess.get(self.url, headers={'Cache-Control': 'max-age=0'})
 
         # don't remove from the cache
-        assert self.c.cache.get(cache_url)
-        assert r.from_cache is False
+        assert self.cache.get(self.url)
+        assert not r.from_cache
 
-    def test_client_max_age_3600(self, server):
+    def test_client_max_age_3600(self, sess):
         """
         Verify we get a cached value when the client has a
         reasonable max-age value.
         """
-        # prep our cache
-        url = server.application_url + 'max_age'
-        r = self.c.get(url)
-        cache_url = self.c.controller.cache_url(url)
-        assert self.c.cache.get(cache_url) == r
+        r = sess.get(self.url)
+        assert self.cache.get(self.url) == r
 
         # request that we don't want a new one unless
-        r = self.c.get(url, headers={'Cache-Control': 'max-age=3600'})
+        r = sess.get(self.url, headers={'Cache-Control': 'max-age=3600'})
         assert r.from_cache is True
 
         # now lets grab one that forces a new request b/c the cache
         # has expired. To do that we'll inject a new time value.
-        resp = self.c.cache.get(cache_url)
+        resp = self.cache.get(self.url)
         resp.headers['date'] = 'Tue, 15 Nov 1994 08:12:31 GMT'
-        r = self.c.get(url)
-        assert r.from_cache is False
+        r = sess.get(self.url)
+        assert not r.from_cache

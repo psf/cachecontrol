@@ -2,41 +2,45 @@ import pytest
 
 from requests import Session
 from cachecontrol.adapter import CacheControlAdapter
-from cachecontrol.cache import DictCache
+from cachecontrol.wrapper import CacheControl
 
 
-class TestCacheControlAdapter(object):
+def use_wrapper():
+    print('Using helper')
+    sess = CacheControl(Session())
+    return sess
 
-    @pytest.fixture()
-    def url(self, server):
-        """Use the url fixture to do setup for each test. We want to
-        reuse the server fixture.
 
-        Probably a better way to do this...
-        """
-        url = server.application_url + 'max_age'
-        self.cache = DictCache()
-        self.sess = Session()
-        self.sess.mount('http://', CacheControlAdapter(self.cache))
-        self.sess.get(url)
-        return url
+def use_adapter():
+    print('Using adapter')
+    sess = Session()
+    sess.mount('http://', CacheControlAdapter())
+    return sess
 
-    def test_get_caches(self, url):
-        r2 = self.sess.get(url)
+
+@pytest.fixture(params=[use_adapter, use_wrapper])
+def sess(url, request):
+    sess = request.param()
+    sess.get(url)
+    return sess
+
+
+class TestSessionActions(object):
+
+    def test_get_caches(self, url, sess):
+        r2 = sess.get(url)
         assert r2.from_cache is True
 
-    def test_get_with_no_cache_does_not_cache(self, url):
-        r2 = self.sess.get(url, headers={'Cache-Control': 'no-cache'})
-        assert not hasattr(r2, 'from_cache')
+    def test_get_with_no_cache_does_not_cache(self, url, sess):
+        r2 = sess.get(url, headers={'Cache-Control': 'no-cache'})
+        assert not r2.from_cache
 
-    def test_put_invalidates_cache(self, url):
-        r2 = self.sess.put(url, data={'foo': 'bar'})
-        self.sess.get(url)
-        assert not hasattr(r2, 'from_cache')
+    def test_put_invalidates_cache(self, url, sess):
+        r2 = sess.put(url, data={'foo': 'bar'})
+        sess.get(url)
+        assert not r2.from_cache
 
-    def test_delete_invalidates_cache(self, url):
-        r2 = self.sess.delete(url)
-        self.sess.get(url)
-        assert not hasattr(r2, 'from_cache')
-        
-        
+    def test_delete_invalidates_cache(self, url, sess):
+        r2 = sess.delete(url)
+        sess.get(url)
+        assert not r2.from_cache

@@ -6,7 +6,7 @@ import mock
 import datetime
 import time
 
-from cachecontrol import CacheControl, CacheController
+from cachecontrol import CacheController
 from cachecontrol.cache import DictCache
 
 
@@ -86,37 +86,32 @@ class TestCacheControllerResponse(object):
 
 
 class TestCacheControlRequest(object):
+    url = 'http://foo.com/bar'
 
-    url = 'http://foo.com'
-    verb = 'GET'
+    def setup(self):
+        self.c = CacheController(DictCache())
+
+    def req(self, headers):
+        return self.c.cached_request(self.url, headers=headers)
 
     def test_cache_request_no_cache(self):
-        c = CacheControl(mock.Mock())
-        hdrs = {'cache-control': 'no-cache'}
-        resp = c.cached_request(self.verb, self.url, headers=hdrs)
+        resp = self.req({'cache-control': 'no-cache'})
         assert not resp
 
     def test_cache_request_pragma_no_cache(self):
-        c = CacheControl(mock.Mock())
-        hdrs = {'pragma': 'no-cache'}
-        resp = c.cached_request(self.verb, self.url, headers=hdrs)
+        resp = self.req({'pragma': 'no-cache'})
         assert not resp
 
     def test_cache_request_no_store(self):
-        c = CacheControl(mock.Mock())
-        hdrs = {'cache-control': 'no-store'}
-        resp = c.cached_request(self.verb, self.url, headers=hdrs)
+        resp = self.req({'cache-control': 'no-store'})
         assert not resp
 
     def test_cache_request_max_age_0(self):
-        c = CacheControl(mock.Mock())
-        hdrs = {'cache-control': 'max-age=0'}
-        resp = c.cached_request(self.verb, self.url, headers=hdrs)
+        resp = self.req({'cache-control': 'max-age=0'})
         assert not resp
 
     def test_cache_request_not_in_cache(self):
-        c = CacheControl(mock.Mock())
-        resp = c.cached_request(self.verb, self.url)
+        resp = self.req({})
         assert not resp
 
     def test_cache_request_fresh_max_age(self):
@@ -124,13 +119,9 @@ class TestCacheControlRequest(object):
         resp = mock.Mock(headers={'cache-control': 'max-age=3600',
                                   'date': now})
 
-        # NOTE: httplib2 uses its own algorithm for finding the
-        # "defrag_uri" in order to use it for creating a cache key. It
-        # seems to append the trailing slash, which I'm pretty sure is
-        # b/c of the auto directory rules. I'm trusting it is correct.
-        cache = DictCache({self.url + '/': resp})
-        c = CacheControl(mock.Mock(), cache)
-        r = c.cached_request(self.verb, self.url)
+        cache = DictCache({self.url: resp})
+        self.c.cache = cache
+        r = self.req({})
         assert r == resp
 
     def test_cache_request_unfresh_max_age(self):
@@ -139,9 +130,8 @@ class TestCacheControlRequest(object):
 
         resp = mock.Mock(headers={'cache-control': 'max-age=3600',
                                   'date': now})
-        cache = DictCache({self.url: resp})
-        c = CacheControl(mock.Mock(), cache)
-        r = c.cached_request(self.verb, self.url)
+        self.c.cache = DictCache({self.url: resp})
+        r = self.req({})
         assert not r
 
     def test_cache_request_fresh_expires(self):
@@ -150,9 +140,9 @@ class TestCacheControlRequest(object):
         now = datetime.datetime.utcnow().strftime(TIME_FMT)
         resp = mock.Mock(headers={'expires': expires,
                                   'date': now})
-        cache = DictCache({self.url + '/': resp})
-        c = CacheControl(mock.Mock, cache)
-        r = c.cached_request(self.verb, self.url)
+        cache = DictCache({self.url: resp})
+        self.c.cache = cache
+        r = self.req({})
         assert r == resp
 
     def test_cache_request_unfresh_expires(self):
@@ -162,6 +152,6 @@ class TestCacheControlRequest(object):
         resp = mock.Mock(headers={'expires': expires,
                                   'date': now})
         cache = DictCache({self.url: resp})
-        c = CacheControl(mock.Mock, cache)
-        r = c.cached_request(self.verb, self.url)
+        self.c.cache = cache
+        r = self.req({})
         assert not r

@@ -6,6 +6,8 @@ import email
 import calendar
 import time
 
+from cachecontrol.cache import DictCache
+
 
 URI = re.compile(r"^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\?([^#]*))?(#(.*))?")
 
@@ -22,8 +24,8 @@ def parse_uri(uri):
 class CacheController(object):
     """An interface to see if request should cached or not.
     """
-    def __init__(self, cache):
-        self.cache = cache
+    def __init__(self, cache=None):
+        self.cache = cache or DictCache()
 
     def _urlnorm(self, uri):
         """Normalize the URL to create a safe key for the cache"""

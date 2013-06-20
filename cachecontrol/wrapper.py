@@ -1,10 +1,17 @@
 import requests
 
 from cachecontrol.controller import CacheController
+from cachecontrol.adapter import CacheControlAdapter
 from cachecontrol.cache import DictCache
 
 
-class CacheControl(object):
+def CacheControl(sess, cache=None):
+    cache = cache or DictCache()
+    sess.mount('http://', CacheControlAdapter(cache))
+    return sess
+
+
+class _CacheControl(object):
 
     def __init__(self, session, cache=None):
         self.session = session
