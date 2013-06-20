@@ -2,9 +2,11 @@ import setuptools
 
 long_description = open('README.rst').read()
 
+VERSION = '0.6'
+
 setup_params = dict(
     name='CacheControl',
-    version='0.5',
+    version=VERSION,
     author='Eric Larson',
     author_email='eric@ionrock.org',
     license='MIT',
