@@ -25,10 +25,6 @@ class DictCache(BaseCache):
         self.data = init_dict or {}
 
     def get(self, key):
-        if key in self.data:
-            print('CACHE HIT: %s' % key)
-        else:
-            print('CACHE MISS: %s' % key)
         return self.data.get(key, None)
 
     def set(self, key, value):
