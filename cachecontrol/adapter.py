@@ -28,8 +28,9 @@ class CacheControlAdapter(HTTPAdapter):
         return resp
 
     def build_response(self, request, response):
-        resp = super(CacheControlAdapter, self).build_response(request,
-                                                               response)
+        resp = super(CacheControlAdapter, self).build_response(
+            request, response
+        )
 
         # See if we should invalidate the cache.
         if request.method in self.invalidating_methods and resp.ok:
@@ -38,7 +39,7 @@ class CacheControlAdapter(HTTPAdapter):
 
         # Try to store the response if it is a GET
         elif request.method == 'GET':
-            self.controller.cache_response(resp)
+            self.controller.cache_response(request, resp)
 
         # Give the request a from_cache attr to let people use it
         # rather than testing for hasattr.
@@ -46,5 +47,3 @@ class CacheControlAdapter(HTTPAdapter):
             resp.has_cache = False
 
         return resp
-        
-        
