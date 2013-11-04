@@ -1,3 +1,5 @@
+-e .
+
 pytest
 mock
 webtest
