@@ -37,7 +37,7 @@ class CacheController(object):
         if not path:
             path = "/"
 
-         # Could do syntax based normalization of the URI before
+        # Could do syntax based normalization of the URI before
         # computing the digest. See Section 6.2.2 of Std 66.
         request_uri = query and "?".join([path, query]) or path
         scheme = scheme.lower()
@@ -136,7 +136,7 @@ class CacheController(object):
         # return the original handler
         return False
 
-    def cache_response(self, resp):
+    def cache_response(self, request, resp):
         """
         Algorithm for caching requests.
 
@@ -147,10 +147,10 @@ class CacheController(object):
         if resp.status_code not in [200, 203]:
             return
 
-        cc_req = self.parse_cache_control(resp.request.headers)
+        cc_req = self.parse_cache_control(request.headers)
         cc = self.parse_cache_control(resp.headers)
 
-        cache_url = self.cache_url(resp.request.url)
+        cache_url = self.cache_url(request.url)
 
         # Delete it from the cache if we happen to have it stored there
         no_store = cc.get('no-store') or cc_req.get('no-store')
@@ -169,5 +169,5 @@ class CacheController(object):
             # If the request can expire, it means we should cache it
             # in the meantime.
             elif 'expires' in resp.headers:
-                if int(resp.headers['expires']) > 0:
+                if resp.headers['expires']:
                     self.cache.set(cache_url, resp)
