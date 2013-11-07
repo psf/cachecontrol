@@ -1,9 +1,8 @@
 from invoke import run, task
 
-from distutils.version import StrictVersion
-
 
 VENV = 'venv'
+
 
 def env_do(tail, **kw):
     return run('%s/bin/%s' % (VENV, tail), **kw)
@@ -27,3 +26,8 @@ def clean_env():
 @task
 def test(args):
     env_do('py.test %s' % ' '.join(args))
+
+
+@task
+def docs():
+    run('cd docs && make html')
