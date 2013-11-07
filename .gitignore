@@ -8,5 +8,5 @@ lib
 lib64
 include
 .Python
-docs/build
+docs/_build
 build/
