@@ -1,8 +1,14 @@
+from textwrap import dedent
+
 try:
-    import lockfile
     from cachecontrol.caches.file_cache import FileCache
 except ImportError:
-    pass
+    notice = dedent('''
+    NOTE: In order to use the FileCache you must have
+    lockfile installed. You can install it via pip:
+      pip install lockfile
+    ''')
+    print(notice)
 
 
 try:

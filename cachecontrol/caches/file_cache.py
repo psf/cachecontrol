@@ -3,13 +3,14 @@ import base64
 
 from cPickle import load, dump
 
-from locfile import FileLock
+from lockfile import FileLock
 
 
 class FileCache(object):
 
-    def __init__(self, directory):
+    def __init__(self, directory, forever=False):
         self.directory = directory
+        self.forever = forever
 
         if not os.path.isdir(self.directory):
             os.mkdir(self.directory)
@@ -33,4 +34,5 @@ class FileCache(object):
                 dump(value, fh)
 
     def delete(self, key):
-        os.remove(self._fn(key))
+        if not self.forever:
+            os.remove(self._fn(key))

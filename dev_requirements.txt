@@ -3,3 +3,6 @@
 pytest
 mock
 webtest
+sphinx
+redis
+lockfile
