@@ -21,9 +21,8 @@ CacheControl is available from PyPI_. You can install it with pip_ ::
 
   $ pip install CacheControl
 
-Or you can use easy_install ::
-
-  $ easy_install CacheControl
+Some of the included cache storage classes have external
+requirements. See :doc:`storage` for more info.
 
 
 
@@ -126,6 +125,7 @@ If you give it a try, please let me know of any issues.
 .. _requests: http://docs.python-requests.org/
 .. _Editing the Web: http://www.w3.org/1999/04/Editing/
 .. _PyPI: https://pypi.python.org/pypi/CacheControl/
+.. _pip: http://www.pip-installer.org/
 
 
 Contents:
