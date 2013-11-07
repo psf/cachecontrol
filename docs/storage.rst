@@ -84,3 +84,4 @@ a better method for utilizing redis as a cache.
 
 
 .. _httplib2: http://code.google.com/p/httplib2/
+.. _lockfile: https://github.com/smontanaro/pylockfile
