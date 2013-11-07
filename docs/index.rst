@@ -14,6 +14,19 @@ mitigated by its lack of threadsafety. The same is true of requests in
 terms of caching.
 
 
+Install
+=======
+
+CacheControl is available from PyPI_. You can install it with pip_ ::
+
+  $ pip install CacheControl
+
+Or you can use easy_install ::
+
+  $ easy_install CacheControl
+
+
+
 Quick Start
 ===========
 
@@ -112,6 +125,7 @@ If you give it a try, please let me know of any issues.
 .. _httplib2: http://code.google.com/p/httplib2/
 .. _requests: http://docs.python-requests.org/
 .. _Editing the Web: http://www.w3.org/1999/04/Editing/
+.. _PyPI: https://pypi.python.org/pypi/CacheControl/
 
 
 Contents:
