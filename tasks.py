@@ -31,3 +31,9 @@ def test(args):
 @task
 def docs():
     run('cd docs && make html')
+
+
+@task
+def release(part):
+    env_do('bumpversion %s' % part)
+    env_do('python setup.py sdist upload')
