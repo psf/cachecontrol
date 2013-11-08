@@ -86,6 +86,20 @@ class CacheController(object):
         # It is in the cache, so lets see if it is going to be
         # fresh enough
         resp = self.cache.get(cache_url)
+
+        # Check our Vary header to make sure our request headers match
+        # up. We don't delete it from the though, we just don't return
+        # our cached value.
+        if 'vary' in resp.headers:
+            varied_headers = resp.headers['vary'].replace(' ', '').split(',')
+            original_headers = resp.request.headers
+            for header in varied_headers:
+                print(headers.get(header), original_headers.get(header))
+                # If our headers don't match for the headers listed in
+                # the vary header, then don't use the cached response
+                if headers.get(header, None) != original_headers.get(header):
+                    return False
+
         now = time.time()
         date = calendar.timegm(
             email.Utils.parsedate_tz(resp.headers['date']))
