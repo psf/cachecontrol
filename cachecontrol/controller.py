@@ -90,6 +90,14 @@ class CacheController(object):
         # Check our Vary header to make sure our request headers match
         # up. We don't delete it from the though, we just don't return
         # our cached value.
+        #
+        # NOTE: Because httplib2 stores raw content, it denotes
+        #       headers that were sent in the original response by
+        #       adding -varied-$name. We don't have to do that b/c we
+        #       are storing the object which has a reference to the
+        #       original request. If that changes, then I'd propose
+        #       using the varied headers in the cache key to avoid the
+        #       situation all together.
         if 'vary' in resp.headers:
             varied_headers = resp.headers['vary'].replace(' ', '').split(',')
             original_headers = resp.request.headers
