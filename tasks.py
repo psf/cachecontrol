@@ -36,4 +36,5 @@ def docs():
 @task
 def release(part):
     env_do('bumpversion %s' % part)
+    run('git push origin master')
     env_do('python setup.py sdist upload')
