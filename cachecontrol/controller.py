@@ -102,7 +102,6 @@ class CacheController(object):
             varied_headers = resp.headers['vary'].replace(' ', '').split(',')
             original_headers = resp.request.headers
             for header in varied_headers:
-                print(headers.get(header), original_headers.get(header))
                 # If our headers don't match for the headers listed in
                 # the vary header, then don't use the cached response
                 if headers.get(header, None) != original_headers.get(header):
