@@ -7,6 +7,10 @@ from webtest.http import StopableWSGIServer
 
 class SimpleApp(object):
 
+    def __init__(self):
+        self.etag_count = 0
+        self.update_etag_string()
+
     def dispatch(self, env):
         path = env['PATH_INFO'][1:].split('/')
         segment = path.pop(0)
@@ -21,6 +25,29 @@ class SimpleApp(object):
             ('Vary', 'Accept-Encoding, Accept'),
         ]
         start_response('200 OK', headers)
+        return pformat(env)
+
+    def update_etag_string(self):
+        self.etag_count += 1
+        self.etag_string = '"ETAG-{0}"'.format(self.etag_count)
+
+    def update_etag(self, env, start_response):
+        self.update_etag_string()
+        headers = [
+            ('Cache-Control', 'max-age=5000'),
+            ('Content-Type', 'text/plain'),
+        ]
+        start_response('200 OK', headers)
+        return pformat(env)
+
+    def etag(self, env, start_response):
+        headers = [
+            ('Etag', self.etag_string),
+        ]
+        if env.get('HTTP_IF_NONE_MATCH') == self.etag_string:
+            start_response('304 Not Modified', headers)
+        else:
+            start_response('200 OK', headers)
         return pformat(env)
 
     def __call__(self, env, start_response):
