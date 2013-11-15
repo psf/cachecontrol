@@ -151,11 +151,26 @@ class CacheController(object):
             resp.from_cache = True
             return resp
 
-        # we're not fresh, clean out the junk
-        self.cache.delete(cache_url)
+        # we're not fresh. If we don't have an Etag, clear it out
+        if 'etag' not in resp.headers:
+            self.cache.delete(cache_url)
 
         # return the original handler
         return False
+
+    def add_headers(self, url):
+        resp = self.cache.get(url)
+        if resp and 'etag' in resp.headers:
+            return {'If-None-Match': resp.headers['etag']}
+        return {}
+
+    def get_cached_response(self, request):
+        cache_url = self.cache_url(request.url)
+        resp = self.cache.get(cache_url)
+        if not resp:
+            raise Exception("Server has supplied a 304 for an uncached url")
+        resp.from_cache = True
+        return resp
 
     def cache_response(self, request, resp):
         """
@@ -178,10 +193,14 @@ class CacheController(object):
         if no_store and self.cache.get(cache_url):
             self.cache.delete(cache_url)
 
+        # If we've been given an etag, then keep the response
+        if 'etag' in resp.headers:
+            self.cache.set(cache_url, resp)
+
         # Add to the cache if the response headers demand it. If there
         # is no date header then we can't do anything about expiring
         # the cache.
-        if 'date' in resp.headers:
+        elif 'date' in resp.headers:
             # cache when there is a max-age > 0
             if cc and cc.get('max-age'):
                 if int(cc['max-age']) > 0:
@@ -192,3 +211,4 @@ class CacheController(object):
             elif 'expires' in resp.headers:
                 if resp.headers['expires']:
                     self.cache.set(cache_url, resp)
+

@@ -22,9 +22,11 @@ class CacheControlAdapter(HTTPAdapter):
             )
             if cached_response:
                 return cached_response
+            # check for etags and add headers if appropriate
+            headers = self.controller.add_headers(request.url)
+            request.headers.update(headers)
 
         resp = super(CacheControlAdapter, self).send(request, **kw)
-        resp.from_cache = False
         return resp
 
     def build_response(self, request, response):
@@ -39,11 +41,15 @@ class CacheControlAdapter(HTTPAdapter):
 
         # Try to store the response if it is a GET
         elif request.method == 'GET':
-            self.controller.cache_response(request, resp)
+            if response.status == 304:
+                resp = self.controller.get_cached_response(request)
+            else:
+                self.controller.cache_response(request, resp)
+            print self.controller.cache.data
 
         # Give the request a from_cache attr to let people use it
         # rather than testing for hasattr.
         if not hasattr(resp, 'from_cache'):
-            resp.has_cache = False
+            resp.from_cache = False
 
         return resp
