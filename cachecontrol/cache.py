@@ -20,17 +20,13 @@ class BaseCache(object):
 class DictCache(BaseCache):
 
     def __init__(self, init_dict=None):
-        self.lock = Lock()
         self.data = init_dict or {}
 
     def get(self, key):
         return self.data.get(key, None)
 
     def set(self, key, value):
-        with self.lock:
-            self.data.update({key: value})
+        self.data[key] = value
 
     def delete(self, key):
-        with self.lock:
-            if key in self.data:
-                self.data.pop(key)
+        self.data.pop(key, None)
