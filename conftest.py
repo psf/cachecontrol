@@ -56,8 +56,6 @@ class SimpleApp(object):
         if func:
             return func(env, start_response)
 
-        print('default handler')
-
         headers = [
             ('Cache-Control', 'max-age=5000'),
             ('Content-Type', 'text/plain'),
