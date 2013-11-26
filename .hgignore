@@ -1,9 +1,0 @@
-syntax: glob
-*.swp
-*.pyc
-*.egg-info/*
-dist
-build
-lib
-bin
-include
