@@ -10,3 +10,4 @@ include
 .Python
 docs/_build
 build/
+.tox

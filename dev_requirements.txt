@@ -1,5 +1,6 @@
 -e .
 
+tox
 pytest
 mock
 webtest

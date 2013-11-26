@@ -24,8 +24,8 @@ def clean_env():
 
 
 @task
-def test(args):
-    env_do('py.test %s' % ' '.join(args))
+def test_all():
+    env_do('tox')
 
 
 @task
