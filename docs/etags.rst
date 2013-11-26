@@ -133,3 +133,5 @@ recommended that you use the `CacheControlAdapter` directly. ::
 Hopefully this more indepth example reveals how to configure a
 `requests.Session` to better utilize ETag based caching vs. Time
 Priority Caching.
+
+.. _lost update: http://www.w3.org/1999/04/Editing/
