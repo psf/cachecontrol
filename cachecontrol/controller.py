@@ -2,11 +2,11 @@
 The httplib2 algorithms ported for use with requests.
 """
 import re
-import email
 import calendar
 import time
 
 from cachecontrol.cache import DictCache
+from cachecontrol.compat import parsedate_tz
 
 
 URI = re.compile(r"^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\?([^#]*))?(#(.*))?")
@@ -110,7 +110,8 @@ class CacheController(object):
 
         now = time.time()
         date = calendar.timegm(
-            email.Utils.parsedate_tz(resp.headers['date']))
+            parsedate_tz(resp.headers['date'])
+        )
         current_age = max(0, now - date)
 
         # TODO: There is an assumption that the result will be a
@@ -124,7 +125,7 @@ class CacheController(object):
         if 'max-age' in resp_cc and resp_cc['max-age'].isdigit():
             freshness_lifetime = int(resp_cc['max-age'])
         elif 'expires' in resp.headers:
-            expires = email.Utils.parsedate_tz(resp.headers['expires'])
+            expires = parsedate_tz(resp.headers['expires'])
             if expires is not None:
                 expire_time = calendar.timegm(expires) - date
                 freshness_lifetime = max(0, expire_time)

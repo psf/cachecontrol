@@ -1,10 +1,9 @@
-from urlparse import urljoin
-
 import pytest
 import requests
 
 from cachecontrol import CacheControl
 from cachecontrol.cache import DictCache
+from cachecontrol.compat import urljoin
 
 
 class TestETag(object):
