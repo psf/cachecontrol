@@ -61,7 +61,7 @@ class SimpleApp(object):
             ('Content-Type', 'text/plain'),
         ]
         start_response('200 OK', headers)
-        return [u'Hello World']
+        return [pformat(env)]
 
 
 @pytest.fixture(scope='session')
