@@ -1,10 +1,12 @@
-import six
+try:
+    from urllib.parse import urljoin
+except ImportError:
+    from urlparse import urljoin
 
-from six.moves.urllib.parse import urljoin
 
-import email
-
-if six.PY3:
+try:
+    import email.utils
     parsedate_tz = email.utils.parsedate_tz
-else:
+except ImportError:
+    import email.Utils
     parsedate_tz = email.Utils.parsedate_tz
