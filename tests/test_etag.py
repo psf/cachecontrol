@@ -7,7 +7,12 @@ from cachecontrol import CacheControl
 from cachecontrol.cache import DictCache
 
 
-class TestEtag(object):
+class TestETag(object):
+    """Test our equal priority caching with ETags
+
+    Equal Priority Caching is a term I've defined to describe when
+    ETags are cached orthgonally from Time Based Caching.
+    """
 
     @pytest.fixture()
     def sess(self, server):
@@ -36,7 +41,7 @@ class TestEtag(object):
         a 304 (Not Modified) response, including the cache-related header
         fields (particularly ETag) of one of the entities that matched.
 
-        (Paraphrased) A server may provide an ETag header on a response. On 
+        (Paraphrased) A server may provide an ETag header on a response. On
         subsequent queries, the client may reference the value of this Etag
         header in an If-None-Match header; on receiving such a header, the
         server can check whether the entity at that URL has changed from the
@@ -59,3 +64,39 @@ class TestEtag(object):
         resp = sess.get(self.etag_url)
         assert resp != r
         assert not resp.from_cache
+
+        # Make sure we updated our cache with the new etag'd response.
+        assert self.cache.get(self.etag_url) == resp
+
+
+class TestDisabledETags(object):
+    """Test our use of ETags when the response is stale and the
+    response has an ETag.
+    """
+    @pytest.fixture()
+    def sess(self, server):
+        self.etag_url = urljoin(server.application_url, '/etag')
+        self.update_etag_url = urljoin(server.application_url, '/update_etag')
+        self.cache = DictCache()
+        sess = CacheControl(requests.Session(),
+                            cache=self.cache,
+                            cache_etags=False)
+        return sess
+
+    def test_expired_etags_if_none_match_response(self, sess):
+        """Make sure an expired response that contains an ETag uses
+        the If-None-Match header.
+        """
+        # get our response
+        r = sess.get(self.etag_url)
+
+        # expire our request by changing the date. Our test endpoint
+        # doesn't provide time base caching headers, so we add them
+        # here in order to expire the request.
+        r.headers['Date'] = 'Tue, 26 Nov 2012 00:50:49 GMT'
+        self.cache.set(self.etag_url, r)
+
+        r = sess.get(self.etag_url)
+        assert r.from_cache
+        assert 'if-none-match' in r.request.headers
+        assert r.status_code == 200

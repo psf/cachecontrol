@@ -24,8 +24,9 @@ def parse_uri(uri):
 class CacheController(object):
     """An interface to see if request should cached or not.
     """
-    def __init__(self, cache=None):
+    def __init__(self, cache=None, cache_etags=True):
         self.cache = cache or DictCache()
+        self.cache_etags = cache_etags
 
     def _urlnorm(self, uri):
         """Normalize the URL to create a safe key for the cache"""
@@ -155,6 +156,12 @@ class CacheController(object):
         if 'etag' not in resp.headers:
             self.cache.delete(cache_url)
 
+        if 'etag' in resp.headers:
+            headers['If-None-Match'] = resp.headers['ETag']
+
+        if 'last-modified' in resp.headers:
+            headers['If-Modified-Since'] = resp.headers['Last-Modified']
+
         # return the original handler
         return False
 
@@ -163,14 +170,6 @@ class CacheController(object):
         if resp and 'etag' in resp.headers:
             return {'If-None-Match': resp.headers['etag']}
         return {}
-
-    def get_cached_response(self, request):
-        cache_url = self.cache_url(request.url)
-        resp = self.cache.get(cache_url)
-        if not resp:
-            raise Exception("Server has supplied a 304 for an uncached url")
-        resp.from_cache = True
-        return resp
 
     def cache_response(self, request, resp):
         """
@@ -194,7 +193,7 @@ class CacheController(object):
             self.cache.delete(cache_url)
 
         # If we've been given an etag, then keep the response
-        if 'etag' in resp.headers:
+        if self.cache_etags and 'etag' in resp.headers:
             self.cache.set(cache_url, resp)
 
         # Add to the cache if the response headers demand it. If there
@@ -212,3 +211,36 @@ class CacheController(object):
                 if resp.headers['expires']:
                     self.cache.set(cache_url, resp)
 
+    def update_cached_response(self, request, response):
+        """On a 304 we will get a new set of headers that we want to
+        update our cached value with, assuming we have one.
+
+        This should only ever be called when we've sent an ETag and
+        gotten a 304 as the response.
+        """
+        cache_url = self.cache_url(request.url)
+
+        resp = self.cache.get(cache_url)
+
+        if not resp:
+            # we didn't have a cached response
+            return response
+
+        # did so lets update our headers
+        resp.headers.update(resp.headers)
+
+        # we want a 200 b/c we have content via the cache
+        request.status_code = 200
+
+        # update the request as it has the if-none-match header + any
+        # other headers that the server might have updated (ie Date,
+        # Cache-Control, Expires, etc.)
+        resp.request = request
+
+        # update our cache
+        self.cache.set(cache_url, resp)
+
+        # Let everyone know this was from the cache.
+        resp.from_cache = True
+
+        return resp
