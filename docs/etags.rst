@@ -6,17 +6,17 @@ CacheControl's support of ETags is slightly different than
 httplib2. In httplib2, an ETag is considered when using a cached
 response when the cache is considered stale. When a cached response is
 expired and it has an ETag header, it returns a response with the
-appropriate `If-None-Match` header. We'll call this behavior a **time
-priority** cache as the ETag support only takes effect when the time has
+appropriate `If-None-Match` header. We'll call this behavior a **Time
+Priority** cache as the ETag support only takes effect when the time has
 expired.
 
 In CacheControl the default behavior when an ETag an sent by the
 server is to cache the response. We'll refer to this pattern as a
-**equal priority** cache as the decision to cache is either time base or
+**Equal Priority** cache as the decision to cache is either time base or
 due to the presense of an ETag.
 
 The spec is not explicit what takes priority when caching with both
-ETags and time based headers. Therefore, CacheControl support the
+ETags and time based headers. Therefore, CacheControl supports the
 different mechanisms via configuration where possible.
 
 
@@ -37,7 +37,7 @@ This will only utilize ETags when they exist within the context of
 time based caching headers. If a response has time base caching
 headers that are valid along with an ETag, we will still attempt to
 handle a 304 Not Modified even though the cached value as
-expired. Here is a simple example:
+expired. Here is a simple example. ::
 
   # Server response
   GET /foo.html
@@ -47,14 +47,14 @@ expired. Here is a simple example:
 
 On a subsequent request, if the cache has expired, the next request
 will still include the `If-None-Match` header. The cached response
-will remain in the cache awaiting the response:
+will remain in the cache awaiting the response. ::
 
   # Client request
   GET /foo.html
   If-None-Match: JAsUYM8K
 
 If the server returns a `304 Not Modified`, it will use the stale
-cached value, updating the headers from the most recent request.
+cached value, updating the headers from the most recent request. ::
 
   # Server response
   GET /foo.html
