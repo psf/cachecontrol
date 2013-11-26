@@ -30,6 +30,9 @@ result in a simple dictionary.
 
 For more info, check out the docs_
 
+.. image:: https://travis-ci.org/ionrock/cachecontrol.png?branch=master
+  :target: https://travis-ci.org/ionrock/cachecontrol
+
 .. _docs: http://cachecontrol.readthedocs.org/en/latest/
 .. _httplib2: http://code.google.com/p/httplib2/
 .. _requests: http://docs.python-requests.org/
