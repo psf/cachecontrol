@@ -1,7 +1,11 @@
 import os
 import base64
+import codecs
 
-from cPickle import load, dump
+try:
+    from pickle import load, dump
+except ImportError:
+    from cPickle import load, dump
 
 from lockfile import FileLock
 
@@ -16,7 +20,8 @@ class FileCache(object):
             os.mkdir(self.directory)
 
     def encode(self, x):
-        return base64.b64encode(x)
+        x = codecs.encode(x)
+        return codecs.decode(base64.b64encode(x), "ascii")
 
     def _fn(self, name):
         return os.path.join(self.directory, self.encode(name))
@@ -24,13 +29,13 @@ class FileCache(object):
     def get(self, key):
         name = self._fn(key)
         if os.path.exists(name):
-            return load(open(name))
+            return load(codecs.open(name, 'rb'))
 
     def set(self, key, value):
         name = self._fn(key)
         lock = FileLock(name)
         with lock:
-            with open(lock.path, 'w+') as fh:
+            with codecs.open(lock.path, 'w+b') as fh:
                 dump(value, fh)
 
     def delete(self, key):
