@@ -42,7 +42,7 @@ def response_setstate(self, state):
 
 def make_responses_pickleable():
     try:
-        version_parts = map(int, requests.__version__.split('.'))
+        version_parts = [int(part) for part in requests.__version__.split('.')]
 
         # must be >= 2.2.x
         if not version_parts[0] >= 2 or not version_parts[1] >= 2:
