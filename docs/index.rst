@@ -54,10 +54,13 @@ The tests are all in cachecontrol/tests and is runnable by py.test.
 Disclaimers
 ===========
 
-CacheControl is relatively new and maybe totally broken. I have some
-tests and it is a pretty direct port of httplib2 caching, which I've
-found to be very reliable. With that in mind, it hasn't been used very
-extensively in a production environment to my knowledge.
+CacheControl is relatively new and maybe have bugs. I have made an
+effort to faithfully port the tests from httplib2 to CacheControl, but
+there is a decent chance that I've missed something. Please file bugs
+if you find any issues!
+
+With that in mind, CacheControl has been used sucessfully in a
+production environments, replacing httplib2's usage.
 
 If you give it a try, please let me know of any issues.
 

@@ -48,11 +48,12 @@ helpful in testing. Here is an example of how to use it: ::
 :A Note About Pickle:
 
   It should be noted that the `FileCache` uses pickle to store the
-  cached response. Currently, `requests.Response` objects are not
-  'pickleable' due to the use of `IOBase` base classes in `urllib3`
-  `HTTPResponse` objects. In CacheControl we work around this by
-  patching the Response objects with the appropriate `__getstate__` and
-  `__setstate__` methods.
+  cached response. Prior to `requests 2.1`_, `requests.Response`
+  objects were not 'pickleable' due to the use of `IOBase` base
+  classes in `urllib3` `HTTPResponse` objects. In CacheControl we work
+  around this by patching the Response objects with the appropriate
+  `__getstate__` and `__setstate__` methods when the requests version
+  doesn't natively support Response pickling.
 
 
 
@@ -85,3 +86,4 @@ a better method for utilizing redis as a cache.
 
 .. _httplib2: http://code.google.com/p/httplib2/
 .. _lockfile: https://github.com/smontanaro/pylockfile
+.. _requests 2.1: http://docs.python-requests.org/en/latest/community/updates/#id2
