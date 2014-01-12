@@ -1,6 +1,7 @@
+import requests
+
 from requests import models
 from requests.packages.urllib3.response import HTTPResponse
-
 
 __attrs__ = [
     '_content',
@@ -39,5 +40,17 @@ def response_setstate(self, state):
     self.raw._original_response = state['raw_original_response']
 
 
-models.Response.__getstate__ = response_getstate
-models.Response.__setstate__ = response_setstate
+def make_responses_pickleable():
+    try:
+        version_parts = map(int, requests.__version__.split('.'))
+
+        # must be >= 2.2.x
+        if not version_parts[0] >= 2 or not version_parts[1] >= 2:
+            models.Response.__getstate__ = response_getstate
+            models.Response.__setstate__ = response_setstate
+    except:
+        raise
+        pass
+
+
+make_responses_pickleable()
