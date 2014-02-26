@@ -3,14 +3,13 @@ Unit tests that verify our caching methods work correctly.
 """
 import pytest
 from mock import Mock
-import datetime
 import time
 
 from cachecontrol import CacheController
 from cachecontrol.cache import DictCache
 
 
-TIME_FMT = "%a, %d %b %Y %H:%M:%S"
+TIME_FMT = "%a, %d %b %Y %H:%M:%S GMT"
 
 
 class TestCacheControllerResponse(object):
@@ -35,7 +34,7 @@ class TestCacheControllerResponse(object):
 
     def test_no_cache_non_20x_response(self, cc):
         # No caching without some extra headers, so we add them
-        now = datetime.datetime.utcnow().strftime(TIME_FMT)
+        now = time.strftime(TIME_FMT, time.gmtime())
         resp = self.resp({'cache-control': 'max-age=3600',
                           'date': now})
 
@@ -64,8 +63,7 @@ class TestCacheControllerResponse(object):
         assert not cc.cache.set.called
 
     def test_cache_response_cache_max_age(self, cc):
-
-        now = datetime.datetime.utcnow().strftime(TIME_FMT)
+        now = time.strftime(TIME_FMT, time.gmtime())
         resp = self.resp({'cache-control': 'max-age=3600',
                           'date': now})
         cc.cache_response(self.req(), resp)
@@ -115,7 +113,7 @@ class TestCacheControlRequest(object):
         assert not resp
 
     def test_cache_request_fresh_max_age(self):
-        now = datetime.datetime.utcnow().strftime(TIME_FMT)
+        now = time.strftime(TIME_FMT, time.gmtime())
         resp = Mock(headers={'cache-control': 'max-age=3600',
                              'date': now})
 
@@ -125,9 +123,8 @@ class TestCacheControlRequest(object):
         assert r == resp
 
     def test_cache_request_unfresh_max_age(self):
-        earlier = time.time() - 3700
-        now = datetime.datetime.fromtimestamp(earlier).strftime(TIME_FMT)
-
+        earlier = time.time() - 3700  # epoch - 1h01m40s
+        now = time.strftime(TIME_FMT, time.gmtime(earlier))
         resp = Mock(headers={'cache-control': 'max-age=3600',
                              'date': now})
         self.c.cache = DictCache({self.url: resp})
@@ -135,9 +132,9 @@ class TestCacheControlRequest(object):
         assert not r
 
     def test_cache_request_fresh_expires(self):
-        later = datetime.timedelta(days=1)
-        expires = (datetime.datetime.utcnow() + later).strftime(TIME_FMT)
-        now = datetime.datetime.utcnow().strftime(TIME_FMT)
+        later = time.time() + 86400  # GMT + 1 day
+        expires = time.strftime(TIME_FMT, time.gmtime(later))
+        now = time.strftime(TIME_FMT, time.gmtime())
         resp = Mock(headers={'expires': expires,
                              'date': now})
         cache = DictCache({self.url: resp})
@@ -146,9 +143,9 @@ class TestCacheControlRequest(object):
         assert r == resp
 
     def test_cache_request_unfresh_expires(self):
-        later = datetime.timedelta(days=-1)
-        expires = (datetime.datetime.utcnow() + later).strftime(TIME_FMT)
-        now = datetime.datetime.utcnow().strftime(TIME_FMT)
+        sooner = time.time() - 86400  # GMT - 1 day
+        expires = time.strftime(TIME_FMT, time.gmtime(sooner))
+        now = time.strftime(TIME_FMT, time.gmtime())
         resp = Mock(headers={'expires': expires,
                              'date': now})
         cache = DictCache({self.url: resp})
