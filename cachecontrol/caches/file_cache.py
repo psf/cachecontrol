@@ -1,6 +1,7 @@
 import os
-import base64
 import codecs
+
+from hashlib import md5
 
 try:
     from pickle import load, dump
@@ -20,8 +21,7 @@ class FileCache(object):
             os.mkdir(self.directory)
 
     def encode(self, x):
-        x = codecs.encode(x)
-        return codecs.decode(base64.b64encode(x), "ascii")
+        return md5(x.encode()).hexdigest()
 
     def _fn(self, name):
         return os.path.join(self.directory, self.encode(name))
