@@ -1,4 +1,7 @@
-from cPickle import loads, dumps
+try:
+    from cPickle import loads, dumps
+except ImportError:  # Python 3.x
+    from pickle import loads, dumps
 
 
 class RedisCache(object):
