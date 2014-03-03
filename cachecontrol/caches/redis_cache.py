@@ -1,3 +1,5 @@
+from datetime import datetime
+
 try:
     from cPickle import loads, dumps
 except ImportError:  # Python 3.x
@@ -15,8 +17,12 @@ class RedisCache(object):
             return loads(val)
         return None
 
-    def set(self, key, value):
-        self.conn.set(key, dumps(value))
+    def set(self, key, value, expires=None):
+        if not expires:
+            self.conn.set(key, dumps(value))
+        else:
+            expires = expires - datetime.now()
+            self.conn.setex(key, expires.total_seconds(), value)
 
     def delete(self, key):
         self.conn.delete(key)
