@@ -80,6 +80,7 @@ Contents:
    usage
    storage
    etags
+   tips
 
 
 
