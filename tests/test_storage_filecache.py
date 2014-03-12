@@ -16,9 +16,9 @@ STORAGE_FOLDER = ".cache"
 
 def randomdata():
     """Plain random http data generator:"""
-    key = ''.join(sample(string.ascii_lowercase, randint(2,4)))
-    val = ''.join(sample(string.ascii_lowercase + string.digits ,
-                                                 randint(2,10)))
+    key = ''.join(sample(string.ascii_lowercase, randint(2, 4)))
+    val = ''.join(sample(string.ascii_lowercase + string.digits,
+                         randint(2, 10)))
     return '&{0}={1}'.format(key, val)
 
 
