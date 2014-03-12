@@ -21,6 +21,9 @@ class CacheControlAdapter(HTTPAdapter):
                 request.url, request.headers
             )
             if cached_response:
+                # Cached responses should not have a raw field since
+                # they *cannot* be created from some stream.
+                cached_response.raw = None
                 return cached_response
 
             # check for etags and add headers if appropriate
