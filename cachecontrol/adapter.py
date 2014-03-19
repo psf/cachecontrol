@@ -58,6 +58,11 @@ class CacheControlAdapter(HTTPAdapter):
                 resp = self.controller.update_cached_response(
                     request, response
                 )
+                # Fix possible exception to use missing raw fiel
+                # by requests
+                # TODO: remove when requests will be bump to 2.2.2
+                # or 2.3 version
+                resp.raw = None
             else:
                 # try to cache the response
                 self.controller.cache_response(request, resp)
