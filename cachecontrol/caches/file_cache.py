@@ -4,9 +4,9 @@ import codecs
 from hashlib import md5
 
 try:
-    from pickle import load, dump
+    from pickle import load, dump, HIGHEST_PROTOCOL
 except ImportError:
-    from cPickle import load, dump
+    from cPickle import load, dump, HIGHEST_PROTOCOL
 
 from lockfile import FileLock
 
@@ -36,7 +36,7 @@ class FileCache(object):
         lock = FileLock(name)
         with lock:
             with codecs.open(lock.path, 'w+b') as fh:
-                dump(value, fh)
+                dump(value, fh, HIGHEST_PROTOCOL)
 
     def delete(self, key):
         if not self.forever:
