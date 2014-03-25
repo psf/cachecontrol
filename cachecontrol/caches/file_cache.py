@@ -35,7 +35,7 @@ class FileCache(object):
                 if sys.version < '3':
                     return load(fh)
                 else:
-                    return load(fh, encoding='utf-8')
+                    return load(fh, encoding='latin1')
             except ValueError:
                 return None
 
