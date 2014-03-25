@@ -18,7 +18,8 @@ class FileCache(object):
         if not os.path.isdir(self.directory):
             os.mkdir(self.directory)
 
-    def encode(self, x):
+    @staticmethod
+    def encode(x):
         return md5(x.encode()).hexdigest()
 
     def _fn(self, name):
