@@ -1,6 +1,5 @@
 import os
-import codecs
-
+import sys
 from hashlib import md5
 
 try:
@@ -12,7 +11,6 @@ from lockfile import FileLock
 
 
 class FileCache(object):
-
     def __init__(self, directory, forever=False):
         self.directory = directory
         self.forever = forever
@@ -28,16 +26,25 @@ class FileCache(object):
 
     def get(self, key):
         name = self._fn(key)
-        if os.path.exists(name):
-            return load(codecs.open(name, 'rb'))
+        if not os.path.exists(name):
+            return None
+
+        with open(name, 'rb') as fh:
+            try:
+                if sys.version < '3':
+                    return load(fh)
+                else:
+                    return load(fh, encoding='utf-8')
+            except ValueError:
+                return None
 
     def set(self, key, value):
         name = self._fn(key)
-        lock = FileLock(name)
-        with lock:
-            with codecs.open(lock.path, 'w+b') as fh:
+        with FileLock(name) as lock:
+            with open(lock.path, 'wb') as fh:
                 dump(value, fh, HIGHEST_PROTOCOL)
 
     def delete(self, key):
+        name = self._fn(key)
         if not self.forever:
-            os.remove(self._fn(key))
+            os.remove(name)
