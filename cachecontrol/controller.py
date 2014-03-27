@@ -4,6 +4,7 @@ The httplib2 algorithms ported for use with requests.
 import re
 import calendar
 import time
+import datetime
 
 from cachecontrol.cache import DictCache
 from cachecontrol.compat import parsedate_tz
@@ -24,9 +25,10 @@ def parse_uri(uri):
 class CacheController(object):
     """An interface to see if request should cached or not.
     """
-    def __init__(self, cache=None, cache_etags=True):
+    def __init__(self, cache=None, cache_etags=True, cache_all=False):
         self.cache = cache or DictCache()
         self.cache_etags = cache_etags
+        self.cache_all = cache_all
 
     def _urlnorm(self, uri):
         """Normalize the URL to create a safe key for the cache"""
@@ -195,6 +197,15 @@ class CacheController(object):
 
         # If we've been given an etag, then keep the response
         if self.cache_etags and 'etag' in resp.headers:
+            self.cache.set(cache_url, resp)
+
+        # If we want to cache sites not setup with cache headers then add the proper headers and keep the response
+        if self.cache_all:
+            expires = datetime.datetime.utcnow() + datetime.timedelta(days=(25 * 365))
+            expires = expires.strftime("%a, %d %b %Y %H:%M:%S GMT")
+            headers = {'Cache-Control': 'public,max-age=%d' % int(3600),
+                       'Expires': expires}
+            resp.headers.update(headers)
             self.cache.set(cache_url, resp)
 
         # Add to the cache if the response headers demand it. If there
