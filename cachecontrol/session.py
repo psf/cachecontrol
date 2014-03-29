@@ -11,9 +11,9 @@ class CacheControlSession(Session):
             self.cache_auto = kw.pop('cache_auto')
 
         # urls allowed to cache
-        self.cache_urls = [str(args[1])]
+        self.cache_urls = []
         if kw.has_key('cache_urls'):
-            self.cache_urls = kw.pop('cache_urls')
+            self.cache_urls = [str(args[1])] + kw.pop('cache_urls')
 
         # timeout for cached responses
         self.cache_max_age = None
