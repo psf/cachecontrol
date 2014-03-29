@@ -191,13 +191,12 @@ class CacheController(object):
         cache_max_age = getattr(self.sess, 'cache_max_age', None)
 
         if cache_urls:
-            if not any(s in cache_url for s in self.sess.cache_urls):
+            if not any(s in cache_url for s in cache_urls):
                 return
             
         # If we want to cache sites not setup with cache headers then add the proper headers and keep the response
         if cache_auto and getattr(resp.headers, 'cache-control', None) is None:
-            cache_max_age = int(self.sess.cache_max_age or 3600)
-            headers = {'Cache-Control': 'public,max-age=%d' % int(cache_max_age)}
+            headers = {'Cache-Control': 'public,max-age=%d' % int(cache_max_age or 3600)}
             resp.headers.update(headers)
 
             if getattr(resp.headers, 'expires', None) is None:
@@ -226,7 +225,7 @@ class CacheController(object):
             if cc and cc.get('max-age'):
                 if int(cc['max-age']) > 0:
                     if cache_max_age:
-                        cc['max-age'] = int(self.sess.cache_max_age)
+                        cc['max-age'] = int(cache_max_age)
                         resp.headers['cache-control'] = ''.join(['%s=%s' % (key, value) for (key, value) in cc.items()])
                     self.cache.set(cache_url, resp)
 
