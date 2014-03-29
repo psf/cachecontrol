@@ -15,8 +15,8 @@ class CacheControlSession(Session):
         if kw.has_key('cache_urls'):
             self.cache_urls = kw.pop('cache_urls')
 
-        # timeout for cacheed responses
-        self.cache_max_age = 3600
+        # timeout for cached responses
+        self.cache_max_age = None
         if kw.has_key('cache_max_age'):
             self.cache_max_age = int(kw.pop('cache_max_age'))
 
