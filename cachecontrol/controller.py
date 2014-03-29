@@ -25,10 +25,10 @@ def parse_uri(uri):
 class CacheController(object):
     """An interface to see if request should cached or not.
     """
-    def __init__(self, cache=None, cache_etags=True, cache_all=False):
+    def __init__(self, sess=None, cache=None, cache_etags=True):
+        self.sess = sess
         self.cache = cache or DictCache()
         self.cache_etags = cache_etags
-        self.cache_all = cache_all
 
     def _urlnorm(self, uri):
         """Normalize the URL to create a safe key for the cache"""
@@ -186,7 +186,7 @@ class CacheController(object):
             return
 
         # If we want to cache sites not setup with cache headers then add the proper headers and keep the response
-        if self.cache_all and getattr(resp.headers, 'cache-control', None) is None:
+        if self.sess.autocache and getattr(resp.headers, 'cache-control', None) is None:
             headers = {'Cache-Control': 'public,max-age=%d' % int(900)}
             resp.headers.update(headers)
 

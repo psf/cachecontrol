@@ -11,3 +11,4 @@ include
 docs/_build
 build/
 .tox
+/.idea/
