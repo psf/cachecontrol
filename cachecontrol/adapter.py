@@ -1,8 +1,8 @@
-from cachecontrol.session import CacheControlSession
 from requests.adapters import HTTPAdapter
 
 from cachecontrol.controller import CacheController
 from cachecontrol.cache import DictCache
+from cachecontrol.session import CacheControlSession
 
 class CacheControlAdapter(HTTPAdapter):
     invalidating_methods = set(['PUT', 'DELETE'])

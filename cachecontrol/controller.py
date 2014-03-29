@@ -8,7 +8,7 @@ import datetime
 
 from cachecontrol.cache import DictCache
 from cachecontrol.compat import parsedate_tz
-
+from cachecontrol.session import CacheControlSession
 
 URI = re.compile(r"^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\?([^#]*))?(#(.*))?")
 
@@ -26,7 +26,7 @@ class CacheController(object):
     """An interface to see if request should cached or not.
     """
     def __init__(self, sess=None, cache=None, cache_etags=True):
-        self.sess = sess
+        self.sess = sess or CacheControlSession()
         self.cache = cache or DictCache()
         self.cache_etags = cache_etags
 
