@@ -9,7 +9,7 @@ from random import randint, sample
 import pytest
 import requests
 from cachecontrol import CacheControl
-from cachecontrol.caches import FileCache
+from cachecontrol.caches import file_cache
 
 STORAGE_FOLDER = ".cache"
 
