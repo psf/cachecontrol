@@ -190,9 +190,10 @@ class CacheController(object):
         cache_urls = getattr(self.sess, 'cache_urls', None)
         cache_max_age = getattr(self.sess, 'cache_max_age', None)
 
-        if not any(s in cache_url for s in self.sess.cache_urls if cache_urls):
-            return
-
+        if cache_urls:
+            if not any(s in cache_url for s in self.sess.cache_urls):
+                return
+            
         # If we want to cache sites not setup with cache headers then add the proper headers and keep the response
         if cache_auto and getattr(resp.headers, 'cache-control', None) is None:
             cache_max_age = int(self.sess.cache_max_age or 3600)
