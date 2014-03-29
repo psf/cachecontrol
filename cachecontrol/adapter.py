@@ -1,3 +1,4 @@
+from cachecontrol.session import CacheControlSession
 from requests.adapters import HTTPAdapter
 
 from cachecontrol.controller import CacheController
@@ -8,7 +9,7 @@ class CacheControlAdapter(HTTPAdapter):
 
     def __init__(self, sess=None, cache=None, cache_etags=True, *args, **kw):
         super(CacheControlAdapter, self).__init__(*args, **kw)
-        self.sess = sess
+        self.sess = sess or CacheControlSession()
         self.cache = cache or DictCache()
         self.controller = CacheController(self.sess, self.cache, cache_etags=cache_etags)
 
