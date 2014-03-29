@@ -5,6 +5,9 @@ class CacheControlSession(Session):
         super(CacheControlSession, self).__init__(*args, **kw)
 
     def request(self, *args, **kw):
-        self.autocache = kw.pop('autocache')
+        # auto-cache response
+        self.autocache = False
+        if kw.has_key('autocache'):
+            self.autocache = kw.pop('autocache')
 
         return super(CacheControlSession, self).request(*args, **kw)
