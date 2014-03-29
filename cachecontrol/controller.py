@@ -186,7 +186,7 @@ class CacheController(object):
             return
 
         cache_url = self.cache_url(request.url)
-        if self.sess.cache_urls and not any(s in cache_url for s in self.sess.cache_urls):
+        if self.sess and self.sess.cache_urls and not any(s in cache_url for s in self.sess.cache_urls):
             return
 
         # If we want to cache sites not setup with cache headers then add the proper headers and keep the response
