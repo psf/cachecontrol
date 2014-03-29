@@ -6,8 +6,18 @@ class CacheControlSession(Session):
 
     def request(self, *args, **kw):
         # auto-cache response
-        self.autocache = False
-        if kw.has_key('autocache'):
-            self.autocache = kw.pop('autocache')
+        self.cache_auto = False
+        if kw.has_key('cache_auto'):
+            self.cache_auto = kw.pop('cache_auto')
+
+        # urls allowed to cache
+        self.cache_urls = [str(args[1])]
+        if kw.has_key('cache_urls'):
+            self.cache_urls = kw.pop('cache_urls')
+
+        # timeout for cacheed responses
+        self.cache_max_age = 3600
+        if kw.has_key('cache_max_age'):
+            self.cache_max_age = int(kw.pop('cache_max_age'))
 
         return super(CacheControlSession, self).request(*args, **kw)
