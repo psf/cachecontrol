@@ -3,7 +3,6 @@ from mock import patch
 from cachecontrol.patch_requests import (make_responses_pickleable,
                                          models)
 
-
 class TestPatchingPickledResponses(object):
 
     @patch('requests.__version__', '1.0')

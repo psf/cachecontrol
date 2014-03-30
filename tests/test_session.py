@@ -1,24 +1,24 @@
 import pytest
 
-from requests import Session
 from cachecontrol.adapter import CacheControlAdapter
 from cachecontrol.wrapper import CacheControl
+from cachecontrol.session import CacheControlSession
 
 def use_wrapper():
-    print('Using helper with Requests Session Handler')
-    sess = CacheControl(Session())
+    print('Using helper with Cache Session Handler')
+    sess = CacheControl(CacheControlSession())
     return sess
 
 def use_adapter():
-    print('Using adapter with Requests Session Handler')
-    sess = Session()
+    print('Using adapter with Cache Session Handler')
+    sess = CacheControlSession()
     sess.mount('http://', CacheControlAdapter())
     return sess
 
 @pytest.fixture(params=[use_adapter, use_wrapper])
 def sess(url, request):
     sess = request.param()
-    sess.get(url)
+    sess.get(url, cache_auto=True, cache_urls=['http://127.0.0.1'], cache_max_age=900)
     return sess
 
 class TestSessionActions(object):

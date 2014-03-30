@@ -4,10 +4,11 @@ The httplib2 algorithms ported for use with requests.
 import re
 import calendar
 import time
+import datetime
 
 from cachecontrol.cache import DictCache
 from cachecontrol.compat import parsedate_tz
-
+from cachecontrol.session import CacheControlSession
 
 URI = re.compile(r"^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\?([^#]*))?(#(.*))?")
 
@@ -24,7 +25,7 @@ def parse_uri(uri):
 class CacheController(object):
     """An interface to see if request should cached or not.
     """
-    def __init__(self, cache=None, cache_etags=True):
+    def __init__(self, cache=None, sess=None, cache_etags=True):
         self.cache = cache or DictCache()
         self.cache_etags = cache_etags
 
@@ -183,10 +184,18 @@ class CacheController(object):
         if resp.status_code not in [200, 203]:
             return
 
+        # Cache Session Params
+        cache_auto = getattr(request, 'cache_auto', False)
+        cache_urls = getattr(request, 'cache_urls', [])
+        cache_max_age = getattr(request, 'cache_max_age', None)
+
+        # Check if we are wanting to cache responses from specific urls only
+        cache_url = self.cache_url(request.url)
+        if len(cache_urls) > 0 and not any(s in cache_url for s in cache_urls):
+                return
+
         cc_req = self.parse_cache_control(request.headers)
         cc = self.parse_cache_control(resp.headers)
-
-        cache_url = self.cache_url(request.url)
 
         # Delete it from the cache if we happen to have it stored there
         no_store = cc.get('no-store') or cc_req.get('no-store')
@@ -197,6 +206,20 @@ class CacheController(object):
         if self.cache_etags and 'etag' in resp.headers:
             self.cache.set(cache_url, resp)
 
+        # If we want to cache sites not setup with cache headers then add the proper headers and keep the response
+        elif cache_auto and not cc and resp.headers:
+            headers = {'Cache-Control': 'public,max-age=%d' % int(cache_max_age or 900)}
+            resp.headers.update(headers)
+
+            if 'expires' not in resp.headers:
+                if getattr(resp.headers, 'expires', None) is None:
+                    expires = datetime.datetime.utcnow() + datetime.timedelta(days=(1))
+                    expires = expires.strftime("%a, %d %b %Y %H:%M:%S GMT")
+                    headers = {'Expires': expires}
+                    resp.headers.update(headers)
+
+            self.cache.set(cache_url, resp)
+
         # Add to the cache if the response headers demand it. If there
         # is no date header then we can't do anything about expiring
         # the cache.
@@ -204,12 +227,15 @@ class CacheController(object):
             # cache when there is a max-age > 0
             if cc and cc.get('max-age'):
                 if int(cc['max-age']) > 0:
+                    if isinstance(cache_max_age, (int)):
+                        cc['max-age'] = int(cache_max_age)
+                        resp.headers['cache-control'] = ''.join(['%s=%s' % (key, value) for (key, value) in cc.items()])
                     self.cache.set(cache_url, resp)
 
             # If the request can expire, it means we should cache it
             # in the meantime.
             elif 'expires' in resp.headers:
-                if resp.headers['expires']:
+                if getattr(resp.headers, 'expires', None) is not None:
                     self.cache.set(cache_url, resp)
 
     def update_cached_response(self, request, response):
