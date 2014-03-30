@@ -3,16 +3,33 @@ Unit tests that verify FileCache storage works correctly.
 """
 
 import string
+import os
+import getpass
+import tempfile
 
 from random import randint, sample
 
 import pytest
 import requests
 from cachecontrol import CacheControl
-from cachecontrol.caches import file_cache
+from cachecontrol.caches import FileCache
 
-STORAGE_FOLDER = ".cache"
+def _getTempDir():
+    """Returns the [system temp dir]/tvdb_api-u501 (or
+    tvdb_api-myuser)
+    """
+    if hasattr(os, 'getuid'):
+        uid = "u%d" % (os.getuid())
+    else:
+        # For Windows
+        try:
+            uid = getpass.getuser()
+        except ImportError:
+            return os.path.join(tempfile.gettempdir(), "cachecontrol")
 
+    return os.path.join(tempfile.gettempdir(), "cachecontrol-%s" % (uid))
+
+STORAGE_FOLDER = _getTempDir()
 
 def randomdata():
     """Plain random http data generator:"""

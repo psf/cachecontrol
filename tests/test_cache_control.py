@@ -2,12 +2,11 @@
 Unit tests that verify our caching methods work correctly.
 """
 import pytest
-from mock import Mock
+from mock import Mock, MagicMock
 import time
 
 from cachecontrol import CacheController
 from cachecontrol.cache import DictCache
-
 
 TIME_FMT = "%a, %d %b %Y %H:%M:%S GMT"
 
@@ -17,20 +16,20 @@ class TestCacheControllerResponse(object):
 
     def req(self, headers=None):
         headers = headers or {}
-        return Mock(full_url=self.url,  # < 1.x support
+        return MagicMock(full_url=self.url,  # < 1.x support
                     url=self.url,
                     headers=headers)
 
     def resp(self, headers=None):
         headers = headers or {}
-        return Mock(status_code=200,
+        return MagicMock(status_code=200,
                     headers=headers,
                     request=self.req())
 
     @pytest.fixture()
     def cc(self):
         # Cache controller fixture
-        return CacheController(Mock())
+        return CacheController(MagicMock())
 
     def test_no_cache_non_20x_response(self, cc):
         # No caching without some extra headers, so we add them
@@ -41,7 +40,7 @@ class TestCacheControllerResponse(object):
         no_cache_codes = [201, 300, 400, 500]
         for code in no_cache_codes:
             resp.status_code = code
-            cc.cache_response(Mock(), resp)
+            cc.cache_response(MagicMock(), resp)
             assert not cc.cache.set.called
 
         # this should work b/c the resp is 20x
@@ -70,7 +69,7 @@ class TestCacheControllerResponse(object):
         cc.cache.set.assert_called_with(self.url, resp)
 
     def test_cache_repsonse_no_store(self):
-        resp = Mock()
+        resp = MagicMock()
         cache = DictCache({self.url: resp})
         cc = CacheController(cache)
 
@@ -114,7 +113,7 @@ class TestCacheControlRequest(object):
 
     def test_cache_request_fresh_max_age(self):
         now = time.strftime(TIME_FMT, time.gmtime())
-        resp = Mock(headers={'cache-control': 'max-age=3600',
+        resp = MagicMock(headers={'cache-control': 'max-age=3600',
                              'date': now})
 
         cache = DictCache({self.url: resp})
@@ -125,7 +124,7 @@ class TestCacheControlRequest(object):
     def test_cache_request_unfresh_max_age(self):
         earlier = time.time() - 3700  # epoch - 1h01m40s
         now = time.strftime(TIME_FMT, time.gmtime(earlier))
-        resp = Mock(headers={'cache-control': 'max-age=3600',
+        resp = MagicMock(headers={'cache-control': 'max-age=3600',
                              'date': now})
         self.c.cache = DictCache({self.url: resp})
         r = self.req({})
@@ -135,7 +134,7 @@ class TestCacheControlRequest(object):
         later = time.time() + 86400  # GMT + 1 day
         expires = time.strftime(TIME_FMT, time.gmtime(later))
         now = time.strftime(TIME_FMT, time.gmtime())
-        resp = Mock(headers={'expires': expires,
+        resp = MagicMock(headers={'expires': expires,
                              'date': now})
         cache = DictCache({self.url: resp})
         self.c.cache = cache
@@ -146,7 +145,7 @@ class TestCacheControlRequest(object):
         sooner = time.time() - 86400  # GMT - 1 day
         expires = time.strftime(TIME_FMT, time.gmtime(sooner))
         now = time.strftime(TIME_FMT, time.gmtime())
-        resp = Mock(headers={'expires': expires,
+        resp = MagicMock(headers={'expires': expires,
                              'date': now})
         cache = DictCache({self.url: resp})
         self.c.cache = cache

@@ -1,13 +1,13 @@
 from datetime import datetime
 
-from mock import Mock
+from mock import Mock, MagicMock
 from cachecontrol.caches import RedisCache
 
 
 class TestRedisCache(object):
 
     def setup(self):
-        self.conn = Mock()
+        self.conn = MagicMock()
         self.cache = RedisCache(self.conn)
 
     def test_set_expiration(self):

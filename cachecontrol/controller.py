@@ -25,8 +25,7 @@ def parse_uri(uri):
 class CacheController(object):
     """An interface to see if request should cached or not.
     """
-    def __init__(self, sess=None, cache=None, cache_etags=True):
-        self.sess = sess or CacheControlSession()
+    def __init__(self, cache=None, sess=None, cache_etags=True):
         self.cache = cache or DictCache()
         self.cache_etags = cache_etags
 
@@ -186,9 +185,9 @@ class CacheController(object):
             return
 
         # Cache Session Params
-        cache_auto = getattr(self.sess, 'cache_auto', False)
-        cache_urls = getattr(self.sess, 'cache_auto', [])
-        cache_max_age = getattr(self.sess, 'cache_auto', None)
+        cache_auto = getattr(request, 'cache_auto', False)
+        cache_urls = getattr(request, 'cache_urls', [])
+        cache_max_age = getattr(request, 'cache_max_age', None)
 
         # Check if we are wanting to cache responses from specific urls only
         cache_url = self.cache_url(request.url)
