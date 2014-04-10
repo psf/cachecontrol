@@ -7,13 +7,12 @@ from cachecontrol.cache import DictCache
 class CacheControlAdapter(HTTPAdapter):
     invalidating_methods = set(['PUT', 'DELETE'])
 
-    def __init__(self, cache=None, cache_etags=True, cache_controller_factory=None, *args, **kw):
+    def __init__(self, cache=None, cache_etags=True, controller_class=None, *args, **kw):
         super(CacheControlAdapter, self).__init__(*args, **kw)
         self.cache = cache or DictCache()
 
-        if cache_controller_factory is None:
-            cache_controller_factory = CacheController
-        self.controller = cache_controller_factory(self.cache, cache_etags=cache_etags)
+        controller_factory = controller_class or CacheController
+        self.controller = controller_factory(self.cache, cache_etags=cache_etags)
 
     def send(self, request, **kw):
         """Send a request. Use the request information to see if it
