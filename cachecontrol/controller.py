@@ -5,8 +5,8 @@ import re
 import calendar
 import time
 
-from cachecontrol.cache import DictCache
-from cachecontrol.compat import parsedate_tz
+from .cache import DictCache
+from .compat import parsedate_tz
 
 
 URI = re.compile(r"^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\?([^#]*))?(#(.*))?")

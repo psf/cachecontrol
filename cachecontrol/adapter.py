@@ -1,7 +1,7 @@
 from requests.adapters import HTTPAdapter
 
-from cachecontrol.controller import CacheController
-from cachecontrol.cache import DictCache
+from .controller import CacheController
+from .cache import DictCache
 
 
 class CacheControlAdapter(HTTPAdapter):

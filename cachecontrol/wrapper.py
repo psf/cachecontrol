@@ -1,5 +1,5 @@
-from cachecontrol.adapter import CacheControlAdapter
-from cachecontrol.cache import DictCache
+from .adapter import CacheControlAdapter
+from .cache import DictCache
 
 
 def CacheControl(sess, cache=None, cache_etags=True):
