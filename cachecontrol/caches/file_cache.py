@@ -1,6 +1,6 @@
+import hashlib
 import os
 import sys
-from hashlib import md5
 
 try:
     from pickle import load, dump, HIGHEST_PROTOCOL
@@ -20,7 +20,7 @@ class FileCache(object):
 
     @staticmethod
     def encode(x):
-        return md5(x.encode()).hexdigest()
+        return hashlib.sha224(x.encode()).hexdigest()
 
     def _fn(self, name):
         return os.path.join(self.directory, self.encode(name))
