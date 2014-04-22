@@ -25,7 +25,7 @@ class SimpleApp(object):
             ('Vary', 'Accept-Encoding, Accept'),
         ]
         start_response('200 OK', headers)
-        return [pformat(env)]
+        return [pformat(env).encode("utf8")]
 
     def update_etag_string(self):
         self.etag_count += 1
@@ -38,7 +38,7 @@ class SimpleApp(object):
             ('Content-Type', 'text/plain'),
         ]
         start_response('200 OK', headers)
-        return [pformat(env)]
+        return [pformat(env).encode("utf8")]
 
     def etag(self, env, start_response):
         headers = [
@@ -48,7 +48,7 @@ class SimpleApp(object):
             start_response('304 Not Modified', headers)
         else:
             start_response('200 OK', headers)
-        return [pformat(env)]
+        return [pformat(env).encode("utf8")]
 
     def __call__(self, env, start_response):
         func = self.dispatch(env)
@@ -61,7 +61,7 @@ class SimpleApp(object):
             ('Content-Type', 'text/plain'),
         ]
         start_response('200 OK', headers)
-        return [pformat(env)]
+        return [pformat(env).encode("utf8")]
 
 
 @pytest.fixture(scope='session')
