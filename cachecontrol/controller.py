@@ -5,8 +5,11 @@ import re
 import calendar
 import time
 
+from requests.structures import CaseInsensitiveDict
+
 from .cache import DictCache
 from .compat import parsedate_tz
+from .serialize import Serializer
 
 
 URI = re.compile(r"^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\?([^#]*))?(#(.*))?")
@@ -24,9 +27,10 @@ def parse_uri(uri):
 class CacheController(object):
     """An interface to see if request should cached or not.
     """
-    def __init__(self, cache=None, cache_etags=True):
+    def __init__(self, cache=None, cache_etags=True, serializer=None):
         self.cache = cache or DictCache()
         self.cache_etags = cache_etags
+        self.serializer = serializer or Serializer()
 
     def _urlnorm(self, uri):
         """Normalize the URL to create a safe key for the cache"""
@@ -70,62 +74,47 @@ class CacheController(object):
             retval = dict(parts_with_args + parts_wo_args)
         return retval
 
-    def cached_request(self, url, headers):
-        cache_url = self.cache_url(url)
-        cc = self.parse_cache_control(headers)
+    def cached_request(self, request):
+        cache_url = self.cache_url(request.url)
+        cc = self.parse_cache_control(request.headers)
 
         # non-caching states
         no_cache = True if 'no-cache' in cc else False
         if 'max-age' in cc and cc['max-age'] == 0:
             no_cache = True
 
-        # see if it is in the cache anyways
-        in_cache = self.cache.get(cache_url)
-        if no_cache or not in_cache:
+        # Bail out if no-cache was set
+        if no_cache:
             return False
 
         # It is in the cache, so lets see if it is going to be
         # fresh enough
-        resp = self.cache.get(cache_url)
+        resp = self.serializer.loads(request, self.cache.get(cache_url))
 
-        # Check our Vary header to make sure our request headers match
-        # up. We don't delete it from the though, we just don't return
-        # our cached value.
-        #
-        # NOTE: Because httplib2 stores raw content, it denotes
-        #       headers that were sent in the original response by
-        #       adding -varied-$name. We don't have to do that b/c we
-        #       are storing the object which has a reference to the
-        #       original request. If that changes, then I'd propose
-        #       using the varied headers in the cache key to avoid the
-        #       situation all together.
-        if 'vary' in resp.headers:
-            varied_headers = resp.headers['vary'].replace(' ', '').split(',')
-            original_headers = resp.request.headers
-            for header in varied_headers:
-                # If our headers don't match for the headers listed in
-                # the vary header, then don't use the cached response
-                if headers.get(header, None) != original_headers.get(header):
-                    return False
+        # Check to see if we have a cached object
+        if not resp:
+            return False
+
+        headers = CaseInsensitiveDict(resp.headers)
 
         now = time.time()
         date = calendar.timegm(
-            parsedate_tz(resp.headers['date'])
+            parsedate_tz(headers['date'])
         )
         current_age = max(0, now - date)
 
         # TODO: There is an assumption that the result will be a
-        # requests response object. This may not be best since we
+        # urllib3 response object. This may not be best since we
         # could probably avoid instantiating or constructing the
         # response until we know we need it.
-        resp_cc = self.parse_cache_control(resp.headers)
+        resp_cc = self.parse_cache_control(headers)
 
         # determine freshness
         freshness_lifetime = 0
         if 'max-age' in resp_cc and resp_cc['max-age'].isdigit():
             freshness_lifetime = int(resp_cc['max-age'])
-        elif 'expires' in resp.headers:
-            expires = parsedate_tz(resp.headers['expires'])
+        elif 'expires' in headers:
+            expires = parsedate_tz(headers['expires'])
             if expires is not None:
                 expire_time = calendar.timegm(expires) - date
                 freshness_lifetime = max(0, expire_time)
@@ -149,30 +138,32 @@ class CacheController(object):
         fresh = (freshness_lifetime > current_age)
 
         if fresh:
-            # make sure we set the from_cache to true
-            resp.from_cache = True
             return resp
 
         # we're not fresh. If we don't have an Etag, clear it out
-        if 'etag' not in resp.headers:
+        if 'etag' not in headers:
             self.cache.delete(cache_url)
-
-        if 'etag' in resp.headers:
-            headers['If-None-Match'] = resp.headers['ETag']
-
-        if 'last-modified' in resp.headers:
-            headers['If-Modified-Since'] = resp.headers['Last-Modified']
 
         # return the original handler
         return False
 
-    def add_headers(self, url):
-        resp = self.cache.get(url)
-        if resp and 'etag' in resp.headers:
-            return {'If-None-Match': resp.headers['etag']}
-        return {}
+    def conditional_headers(self, request):
+        cache_url = self.cache_url(request.url)
+        resp = self.serializer.loads(request, self.cache.get(cache_url))
+        new_headers = {}
 
-    def cache_response(self, request, resp):
+        if resp:
+            headers = CaseInsensitiveDict(resp.headers)
+
+            if 'etag' in headers:
+                new_headers['If-None-Match'] = headers['ETag']
+
+            if 'last-modified' in headers:
+                new_headers['If-Modified-Since'] = headers['Last-Modified']
+
+        return new_headers
+
+    def cache_response(self, request, response):
         """
         Algorithm for caching requests.
 
@@ -180,11 +171,13 @@ class CacheController(object):
         """
         # From httplib2: Don't cache 206's since we aren't going to
         # handle byte range requests
-        if resp.status_code not in [200, 203]:
+        if response.status not in [200, 203]:
             return
 
+        response_headers = CaseInsensitiveDict(response.headers)
+
         cc_req = self.parse_cache_control(request.headers)
-        cc = self.parse_cache_control(resp.headers)
+        cc = self.parse_cache_control(response_headers)
 
         cache_url = self.cache_url(request.url)
 
@@ -194,23 +187,29 @@ class CacheController(object):
             self.cache.delete(cache_url)
 
         # If we've been given an etag, then keep the response
-        if self.cache_etags and 'etag' in resp.headers:
-            self.cache.set(cache_url, resp)
+        if self.cache_etags and 'etag' in response_headers:
+            self.cache.set(cache_url, self.serializer.dumps(request, response))
 
         # Add to the cache if the response headers demand it. If there
         # is no date header then we can't do anything about expiring
         # the cache.
-        elif 'date' in resp.headers:
+        elif 'date' in response_headers:
             # cache when there is a max-age > 0
             if cc and cc.get('max-age'):
                 if int(cc['max-age']) > 0:
-                    self.cache.set(cache_url, resp)
+                    self.cache.set(
+                        cache_url,
+                        self.serializer.dumps(request, response),
+                    )
 
             # If the request can expire, it means we should cache it
             # in the meantime.
-            elif 'expires' in resp.headers:
-                if resp.headers['expires']:
-                    self.cache.set(cache_url, resp)
+            elif 'expires' in response_headers:
+                if response_headers['expires']:
+                    self.cache.set(
+                        cache_url,
+                        self.serializer.dumps(request, response),
+                    )
 
     def update_cached_response(self, request, response):
         """On a 304 we will get a new set of headers that we want to
@@ -221,27 +220,22 @@ class CacheController(object):
         """
         cache_url = self.cache_url(request.url)
 
-        resp = self.cache.get(cache_url)
+        cached_response = self.serializer.loads(request, self.cache.get(cache_url))
 
-        if not resp:
+        if not cached_response:
             # we didn't have a cached response
             return response
 
         # did so lets update our headers
-        resp.headers.update(resp.headers)
+        cached_response.headers.update(response.headers)
 
         # we want a 200 b/c we have content via the cache
-        request.status_code = 200
-
-        # update the request as it has the if-none-match header + any
-        # other headers that the server might have updated (ie Date,
-        # Cache-Control, Expires, etc.)
-        resp.request = request
+        cached_response.status = 200
 
         # update our cache
-        self.cache.set(cache_url, resp)
+        self.cache.set(
+            cache_url,
+            self.serializer.dumps(request, cached_response),
+        )
 
-        # Let everyone know this was from the cache.
-        resp.from_cache = True
-
-        return resp
+        return cached_response

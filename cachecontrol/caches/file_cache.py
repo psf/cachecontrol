@@ -1,11 +1,5 @@
 import hashlib
 import os
-import sys
-
-try:
-    from pickle import load, dump, HIGHEST_PROTOCOL
-except ImportError:
-    from cPickle import load, dump, HIGHEST_PROTOCOL
 
 from lockfile import FileLock
 
@@ -73,19 +67,13 @@ class FileCache(object):
             return None
 
         with open(name, 'rb') as fh:
-            try:
-                if sys.version < '3':
-                    return load(fh)
-                else:
-                    return load(fh, encoding='latin1')
-            except ValueError:
-                return None
+            return fh.read()
 
     def set(self, key, value):
         name = self._fn(key)
         with FileLock(name) as lock:
             with _secure_open_write(lock.path, self.filemode) as fh:
-                dump(value, fh, HIGHEST_PROTOCOL)
+                fh.write(value)
 
     def delete(self, key):
         name = self._fn(key)

@@ -15,6 +15,18 @@ class TestVary(object):
         sess = CacheControl(requests.Session(), cache=self.cache)
         return sess
 
+    def cached_equal(self, cached, resp):
+        checks = [
+            cached._fp.getvalue() == resp.content,
+            cached.headers == resp.raw.headers,
+            cached.status == resp.raw.status,
+            cached.version == resp.raw.version,
+            cached.reason == resp.raw.reason,
+            cached.strict == resp.raw.strict,
+            cached.decode_content == resp.raw.decode_content,
+        ]
+        return all(checks)
+
     def test_vary_example(self, sess):
         """RFC 2616 13.6
 
@@ -30,19 +42,21 @@ class TestVary(object):
         in the Vary header are the same, it won't use the cached
         value.
         """
+        s = sess.adapters["http://"].controller.serializer
         r = sess.get(self.url)
+        c = s.loads(r.request, self.cache.get(self.url))
 
         # make sure we cached it
-        assert self.cache.get(self.url) == r
+        assert self.cached_equal(c, r)
 
         # make the same request
         resp = sess.get(self.url)
-        assert resp == r
+        assert self.cached_equal(c, resp)
         assert resp.from_cache
 
         # make a similar request, changing the accept header
         resp = sess.get(self.url, headers={'Accept': 'text/plain, text/html'})
-        assert resp != r
+        assert not self.cached_equal(c, resp)
         assert not resp.from_cache
 
         # Just confirming two things here:

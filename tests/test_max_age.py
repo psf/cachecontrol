@@ -6,6 +6,15 @@ from cachecontrol.adapter import CacheControlAdapter
 from cachecontrol.cache import DictCache
 
 
+class NullSerializer(object):
+
+    def dumps(self, request, response):
+        return response
+
+    def loads(self, request, data):
+        return data
+
+
 class TestMaxAge(object):
 
     @pytest.fixture()
@@ -13,7 +22,10 @@ class TestMaxAge(object):
         self.url = server.application_url
         self.cache = DictCache()
         sess = Session()
-        sess.mount('http://', CacheControlAdapter(self.cache))
+        sess.mount(
+            'http://',
+            CacheControlAdapter(self.cache, serializer=NullSerializer()),
+        )
         return sess
 
     def test_client_max_age_0(self, sess):
@@ -23,7 +35,7 @@ class TestMaxAge(object):
         """
         print('first request')
         r = sess.get(self.url)
-        assert self.cache.get(self.url) == r
+        assert self.cache.get(self.url) == r.raw
 
         print('second request')
         r = sess.get(self.url, headers={'Cache-Control': 'max-age=0'})
@@ -38,7 +50,7 @@ class TestMaxAge(object):
         reasonable max-age value.
         """
         r = sess.get(self.url)
-        assert self.cache.get(self.url) == r
+        assert self.cache.get(self.url) == r.raw
 
         # request that we don't want a new one unless
         r = sess.get(self.url, headers={'Cache-Control': 'max-age=3600'})
