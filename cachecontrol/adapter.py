@@ -7,12 +7,17 @@ from .cache import DictCache
 class CacheControlAdapter(HTTPAdapter):
     invalidating_methods = set(['PUT', 'DELETE'])
 
-    def __init__(self, cache=None, cache_etags=True, controller_class=None, *args, **kw):
+    def __init__(self, cache=None, cache_etags=True, controller_class=None,
+                 serializer=None, *args, **kw):
         super(CacheControlAdapter, self).__init__(*args, **kw)
         self.cache = cache or DictCache()
 
         controller_factory = controller_class or CacheController
-        self.controller = controller_factory(self.cache, cache_etags=cache_etags)
+        self.controller = controller_factory(
+            self.cache,
+            cache_etags=cache_etags,
+            serializer=serializer,
+        )
 
     def send(self, request, **kw):
         """
@@ -44,9 +49,14 @@ class CacheControlAdapter(HTTPAdapter):
                 # that we've been expired already or that we simply
                 # have an etag. In either case, we want to try and
                 # update the cache if that is the case.
-                response = self.controller.update_cached_response(
+                cached_response = self.controller.update_cached_response(
                     request, response
                 )
+
+                if cached_response is not response:
+                    from_cache = True
+
+                response = cached_response
             else:
                 # try to cache the response
                 self.controller.cache_response(request, response)

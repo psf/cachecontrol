@@ -2,7 +2,7 @@
 Unit tests that verify our caching methods work correctly.
 """
 import pytest
-from mock import Mock
+from mock import ANY, Mock
 import time
 
 from cachecontrol import CacheController
@@ -10,6 +10,15 @@ from cachecontrol.cache import DictCache
 
 
 TIME_FMT = "%a, %d %b %Y %H:%M:%S GMT"
+
+
+class NullSerializer(object):
+
+    def dumps(self, request, response):
+        return response
+
+    def loads(self, request, data):
+        return data
 
 
 class TestCacheControllerResponse(object):
@@ -23,14 +32,15 @@ class TestCacheControllerResponse(object):
 
     def resp(self, headers=None):
         headers = headers or {}
-        return Mock(status_code=200,
+        return Mock(status=200,
                     headers=headers,
-                    request=self.req())
+                    request=self.req(),
+                    read=lambda **k: b"testing")
 
     @pytest.fixture()
     def cc(self):
         # Cache controller fixture
-        return CacheController(Mock())
+        return CacheController(Mock(), serializer=Mock())
 
     def test_no_cache_non_20x_response(self, cc):
         # No caching without some extra headers, so we add them
@@ -40,13 +50,14 @@ class TestCacheControllerResponse(object):
 
         no_cache_codes = [201, 300, 400, 500]
         for code in no_cache_codes:
-            resp.status_code = code
+            resp.status = code
             cc.cache_response(Mock(), resp)
             assert not cc.cache.set.called
 
         # this should work b/c the resp is 20x
-        resp.status_code = 203
+        resp.status = 203
         cc.cache_response(self.req(), resp)
+        assert cc.serializer.dumps.called
         assert cc.cache.set.called
 
     def test_no_cache_with_no_date(self, cc):
@@ -66,8 +77,10 @@ class TestCacheControllerResponse(object):
         now = time.strftime(TIME_FMT, time.gmtime())
         resp = self.resp({'cache-control': 'max-age=3600',
                           'date': now})
-        cc.cache_response(self.req(), resp)
-        cc.cache.set.assert_called_with(self.url, resp)
+        req = self.req()
+        cc.cache_response(req, resp)
+        cc.serializer.dumps.assert_called_with(req, resp)
+        cc.cache.set.assert_called_with(self.url, ANY)
 
     def test_cache_repsonse_no_store(self):
         resp = Mock()
@@ -87,10 +100,13 @@ class TestCacheControlRequest(object):
     url = 'http://foo.com/bar'
 
     def setup(self):
-        self.c = CacheController(DictCache())
+        self.c = CacheController(
+            DictCache(),
+            serializer=NullSerializer(),
+        )
 
     def req(self, headers):
-        return self.c.cached_request(self.url, headers=headers)
+        return self.c.cached_request(Mock(url=self.url, headers=headers))
 
     def test_cache_request_no_cache(self):
         resp = self.req({'cache-control': 'no-cache'})

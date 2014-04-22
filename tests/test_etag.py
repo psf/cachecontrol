@@ -6,6 +6,15 @@ from cachecontrol.cache import DictCache
 from cachecontrol.compat import urljoin
 
 
+class NullSerializer(object):
+
+    def dumps(self, request, response):
+        return response
+
+    def loads(self, request, data):
+        return data
+
+
 class TestETag(object):
     """Test our equal priority caching with ETags
 
@@ -18,7 +27,11 @@ class TestETag(object):
         self.etag_url = urljoin(server.application_url, '/etag')
         self.update_etag_url = urljoin(server.application_url, '/update_etag')
         self.cache = DictCache()
-        sess = CacheControl(requests.Session(), cache=self.cache)
+        sess = CacheControl(
+            requests.Session(),
+            cache=self.cache,
+            serializer=NullSerializer(),
+        )
         return sess
 
     def test_etags_get_example(self, sess, server):
@@ -50,11 +63,11 @@ class TestETag(object):
         r = sess.get(self.etag_url)
 
         # make sure we cached it
-        assert self.cache.get(self.etag_url) == r
+        assert self.cache.get(self.etag_url) == r.raw
 
         # make the same request
         resp = sess.get(self.etag_url)
-        assert resp == r
+        assert resp.raw == r.raw
         assert resp.from_cache
 
         # tell the server to change the etags of the response
@@ -65,7 +78,7 @@ class TestETag(object):
         assert not resp.from_cache
 
         # Make sure we updated our cache with the new etag'd response.
-        assert self.cache.get(self.etag_url) == resp
+        assert self.cache.get(self.etag_url) == resp.raw
 
 
 class TestDisabledETags(object):
@@ -79,7 +92,8 @@ class TestDisabledETags(object):
         self.cache = DictCache()
         sess = CacheControl(requests.Session(),
                             cache=self.cache,
-                            cache_etags=False)
+                            cache_etags=False,
+                            serializer=NullSerializer())
         return sess
 
     def test_expired_etags_if_none_match_response(self, sess):
