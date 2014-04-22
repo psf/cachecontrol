@@ -51,7 +51,7 @@ class CacheController(object):
 
         return defrag_uri
 
-    def cache_to_response(self, cached):
+    def cache_to_response(self, request, cached):
         # If we don't have a cached object, return None
         if not cached:
             return
@@ -61,6 +61,17 @@ class CacheController(object):
         if not isinstance(cached, collections.Mapping):
             return
 
+        # Special case the '*' Vary value as it means we cannot actually
+        # determine if the cached response is suitable for this request.
+        if "*" in cached.get("vary", {}):
+            return
+
+        # Ensure that the Vary headers for the cached response match our
+        # request
+        for header, value in cached.get("vary", {}).items():
+            if request.headers.get(header, None) != value:
+                return
+
         body = io.BytesIO(cached["response"].pop("body"))
         return HTTPResponse(
             body=body,
@@ -68,7 +79,9 @@ class CacheController(object):
             **cached["response"]
         )
 
-    def response_to_cache(self, response):
+    def response_to_cache(self, request, response):
+        response_headers = CaseInsensitiveDict(response.headers)
+
         # Construct a dictionary of cached data
         data = {
             "response": {
@@ -87,6 +100,13 @@ class CacheController(object):
         # Replace the response._fp with a in memory file object since we've
         #   now consumed it.
         response._fp = io.BytesIO(data["response"]["body"])
+
+        # Construct our vary headers
+        data["vary"] = {}
+        if "vary" in response_headers:
+            varied_headers = response_headers['vary'].replace(' ', '').split(',')
+            for header in varied_headers:
+                data["vary"][header] = request.headers.get(header, None)
 
         # Return our cache data
         return data
@@ -130,37 +150,13 @@ class CacheController(object):
 
         # It is in the cache, so lets see if it is going to be
         # fresh enough
-        resp = self.cache_to_response(self.cache.get(cache_url))
+        resp = self.cache_to_response(request, self.cache.get(cache_url))
 
         # Check to see if we have a cached object
         if not resp:
             return False
 
         headers = CaseInsensitiveDict(resp.headers)
-
-        # Check our Vary header to make sure our request headers match
-        # up. We don't delete it from the though, we just don't return
-        # our cached value.
-        #
-        # NOTE: Because httplib2 stores raw content, it denotes
-        #       headers that were sent in the original response by
-        #       adding -varied-$name. We don't have to do that b/c we
-        #       are storing the object which has a reference to the
-        #       original request. If that changes, then I'd propose
-        #       using the varied headers in the cache key to avoid the
-        #       situation all together.
-        # TODO: Figure out how to handle this? Ideally we'd key our cache by
-        #   this instead of just failing to cache if our Vary headers don't
-        #   match
-        # if 'vary' in resp.headers:
-        #     varied_headers = resp.headers['vary'].replace(' ', '').split(',')
-        #     original_headers = resp.request.headers
-        #     for header in varied_headers:
-        #         # If our headers don't match for the headers listed in
-        #         # the vary header, then don't use the cached response
-        #         if request.headers.get(header, None) != original_headers.get(
-        #                 header):
-        #             return False
 
         now = time.time()
         date = calendar.timegm(
@@ -212,8 +208,11 @@ class CacheController(object):
         # return the original handler
         return False
 
-    def conditional_headers(self, url):
-        resp = self.cache_to_response(self.cache.get(url))
+    def conditional_headers(self, request):
+        resp = self.cache_to_response(
+            request,
+            self.cache.get(self.cache_url(request.url)),
+        )
         new_headers = {}
 
         if resp:
@@ -252,7 +251,7 @@ class CacheController(object):
 
         # If we've been given an etag, then keep the response
         if self.cache_etags and 'etag' in response_headers:
-            self.cache.set(cache_url, self.response_to_cache(response))
+            self.cache.set(cache_url, self.response_to_cache(request, response))
 
         # Add to the cache if the response headers demand it. If there
         # is no date header then we can't do anything about expiring
@@ -261,13 +260,19 @@ class CacheController(object):
             # cache when there is a max-age > 0
             if cc and cc.get('max-age'):
                 if int(cc['max-age']) > 0:
-                    self.cache.set(cache_url, self.response_to_cache(response))
+                    self.cache.set(
+                        cache_url,
+                        self.response_to_cache(request, response),
+                    )
 
             # If the request can expire, it means we should cache it
             # in the meantime.
             elif 'expires' in response_headers:
                 if response_headers['expires']:
-                    self.cache.set(cache_url, self.response_to_cache(response))
+                    self.cache.set(
+                        cache_url,
+                        self.response_to_cache(request, response),
+                    )
 
     def update_cached_response(self, request, response):
         """On a 304 we will get a new set of headers that we want to
@@ -278,7 +283,10 @@ class CacheController(object):
         """
         cache_url = self.cache_url(request.url)
 
-        cached_response = self.cache_to_response(self.cache.get(cache_url))
+        cached_response = self.cache_to_response(
+            request,
+            self.cache.get(cache_url),
+        )
 
         if not cached_response:
             # we didn't have a cached response
@@ -291,6 +299,9 @@ class CacheController(object):
         cached_response.status = 200
 
         # update our cache
-        self.cache.set(cache_url, self.response_to_cache(cached_response))
+        self.cache.set(
+            cache_url,
+            self.response_to_cache(request, cached_response),
+        )
 
         return cached_response
