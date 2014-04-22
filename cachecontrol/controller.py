@@ -4,6 +4,7 @@ The httplib2 algorithms ported for use with requests.
 import io
 import re
 import calendar
+import collections
 import time
 
 from requests.packages.urllib3.response import HTTPResponse
@@ -51,7 +52,13 @@ class CacheController(object):
         return defrag_uri
 
     def cache_to_response(self, cached):
+        # If we don't have a cached object, return None
         if not cached:
+            return
+
+        # Ensure that our cached object is a mapping, this will fail on objects
+        # cached by an older CacheControl and trigger a cache miss.
+        if not isinstance(cached, collections.Mapping):
             return
 
         body = io.BytesIO(cached["response"].pop("body"))
@@ -117,14 +124,18 @@ class CacheController(object):
         if 'max-age' in cc and cc['max-age'] == 0:
             no_cache = True
 
-        # see if it is in the cache anyways
-        in_cache = self.cache.get(cache_url)
-        if no_cache or not in_cache:
+        # Bail out if no-cache was set
+        if no_cache:
             return False
 
         # It is in the cache, so lets see if it is going to be
         # fresh enough
         resp = self.cache_to_response(self.cache.get(cache_url))
+
+        # Check to see if we have a cached object
+        if not resp:
+            return False
+
         headers = CaseInsensitiveDict(resp.headers)
 
         # Check our Vary header to make sure our request headers match
