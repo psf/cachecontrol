@@ -4,11 +4,6 @@ dictionary, which in turns means it is not threadsafe for writing.
 """
 from threading import Lock
 
-try:
-    from pickle import loads, dumps, HIGHEST_PROTOCOL
-except ImportError:
-    from cPickle import loads, dumps, HIGHEST_PROTOCOL
-
 
 class BaseCache(object):
 
@@ -29,17 +24,11 @@ class DictCache(BaseCache):
         self.data = init_dict or {}
 
     def get(self, key):
-        data = self.data.get(key, None)
-        if data is not None:
-            try:
-                data = loads(data)
-            except ValueError:
-                data = None
-        return data
+        return self.data.get(key, None)
 
     def set(self, key, value):
         with self.lock:
-            self.data.update({key: dumps(value, HIGHEST_PROTOCOL)})
+            self.data.update({key: value})
 
     def delete(self, key):
         with self.lock:

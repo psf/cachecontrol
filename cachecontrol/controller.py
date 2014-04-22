@@ -1,17 +1,15 @@
 """
 The httplib2 algorithms ported for use with requests.
 """
-import io
 import re
 import calendar
-import collections
 import time
 
-from requests.packages.urllib3.response import HTTPResponse
 from requests.structures import CaseInsensitiveDict
 
 from .cache import DictCache
 from .compat import parsedate_tz
+from .serialize import Serializer
 
 
 URI = re.compile(r"^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\?([^#]*))?(#(.*))?")
@@ -29,9 +27,10 @@ def parse_uri(uri):
 class CacheController(object):
     """An interface to see if request should cached or not.
     """
-    def __init__(self, cache=None, cache_etags=True):
+    def __init__(self, cache=None, cache_etags=True, serializer=None):
         self.cache = cache or DictCache()
         self.cache_etags = cache_etags
+        self.serializer = serializer or Serializer()
 
     def _urlnorm(self, uri):
         """Normalize the URL to create a safe key for the cache"""
@@ -50,66 +49,6 @@ class CacheController(object):
         defrag_uri = scheme + "://" + authority + request_uri
 
         return defrag_uri
-
-    def cache_to_response(self, request, cached):
-        # If we don't have a cached object, return None
-        if not cached:
-            return
-
-        # Ensure that our cached object is a mapping, this will fail on objects
-        # cached by an older CacheControl and trigger a cache miss.
-        if not isinstance(cached, collections.Mapping):
-            return
-
-        # Special case the '*' Vary value as it means we cannot actually
-        # determine if the cached response is suitable for this request.
-        if "*" in cached.get("vary", {}):
-            return
-
-        # Ensure that the Vary headers for the cached response match our
-        # request
-        for header, value in cached.get("vary", {}).items():
-            if request.headers.get(header, None) != value:
-                return
-
-        body = io.BytesIO(cached["response"].pop("body"))
-        return HTTPResponse(
-            body=body,
-            preload_content=False,
-            **cached["response"]
-        )
-
-    def response_to_cache(self, request, response):
-        response_headers = CaseInsensitiveDict(response.headers)
-
-        # Construct a dictionary of cached data
-        data = {
-            "response": {
-                # We want to always store the "raw" responses, without any
-                # decoding
-                "body": response.read(decode_content=False),
-                "headers": response.headers,
-                "status": response.status,
-                "version": response.version,
-                "reason": response.reason,
-                "strict": response.strict,
-                "decode_content": response.decode_content,
-            }
-        }
-
-        # Replace the response._fp with a in memory file object since we've
-        #   now consumed it.
-        response._fp = io.BytesIO(data["response"]["body"])
-
-        # Construct our vary headers
-        data["vary"] = {}
-        if "vary" in response_headers:
-            varied_headers = response_headers['vary'].replace(' ', '').split(',')
-            for header in varied_headers:
-                data["vary"][header] = request.headers.get(header, None)
-
-        # Return our cache data
-        return data
 
     def cache_url(self, uri):
         return self._urlnorm(uri)
@@ -150,7 +89,7 @@ class CacheController(object):
 
         # It is in the cache, so lets see if it is going to be
         # fresh enough
-        resp = self.cache_to_response(request, self.cache.get(cache_url))
+        resp = self.serializer.loads(request, self.cache.get(cache_url))
 
         # Check to see if we have a cached object
         if not resp:
@@ -209,10 +148,8 @@ class CacheController(object):
         return False
 
     def conditional_headers(self, request):
-        resp = self.cache_to_response(
-            request,
-            self.cache.get(self.cache_url(request.url)),
-        )
+        cache_url = self.cache_url(request.url)
+        resp = self.serializer.loads(request, self.cache.get(cache_url))
         new_headers = {}
 
         if resp:
@@ -251,7 +188,7 @@ class CacheController(object):
 
         # If we've been given an etag, then keep the response
         if self.cache_etags and 'etag' in response_headers:
-            self.cache.set(cache_url, self.response_to_cache(request, response))
+            self.cache.set(cache_url, self.serializer.dumps(request, response))
 
         # Add to the cache if the response headers demand it. If there
         # is no date header then we can't do anything about expiring
@@ -262,7 +199,7 @@ class CacheController(object):
                 if int(cc['max-age']) > 0:
                     self.cache.set(
                         cache_url,
-                        self.response_to_cache(request, response),
+                        self.serializer.dumps(request, response),
                     )
 
             # If the request can expire, it means we should cache it
@@ -271,7 +208,7 @@ class CacheController(object):
                 if response_headers['expires']:
                     self.cache.set(
                         cache_url,
-                        self.response_to_cache(request, response),
+                        self.serializer.dumps(request, response),
                     )
 
     def update_cached_response(self, request, response):
@@ -283,10 +220,7 @@ class CacheController(object):
         """
         cache_url = self.cache_url(request.url)
 
-        cached_response = self.cache_to_response(
-            request,
-            self.cache.get(cache_url),
-        )
+        cached_response = self.serializer.loads(request, self.cache.get(cache_url))
 
         if not cached_response:
             # we didn't have a cached response
@@ -301,7 +235,7 @@ class CacheController(object):
         # update our cache
         self.cache.set(
             cache_url,
-            self.response_to_cache(request, cached_response),
+            self.serializer.dumps(request, cached_response),
         )
 
         return cached_response
