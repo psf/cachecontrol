@@ -13,7 +13,7 @@ terms of caching.
 Quickstart
 ==========
 
-::
+.. code-block:: python
 
   import requests
 
