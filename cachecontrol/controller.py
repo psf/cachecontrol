@@ -163,7 +163,7 @@ class CacheController(object):
 
         return new_headers
 
-    def cache_response(self, request, response):
+    def cache_response(self, request, response, body=None):
         """
         Algorithm for caching requests.
 
@@ -188,7 +188,10 @@ class CacheController(object):
 
         # If we've been given an etag, then keep the response
         if self.cache_etags and 'etag' in response_headers:
-            self.cache.set(cache_url, self.serializer.dumps(request, response))
+            self.cache.set(
+                cache_url,
+                self.serializer.dumps(request, response, body=body),
+            )
 
         # Add to the cache if the response headers demand it. If there
         # is no date header then we can't do anything about expiring
@@ -199,7 +202,7 @@ class CacheController(object):
                 if int(cc['max-age']) > 0:
                     self.cache.set(
                         cache_url,
-                        self.serializer.dumps(request, response),
+                        self.serializer.dumps(request, response, body=body),
                     )
 
             # If the request can expire, it means we should cache it
@@ -208,7 +211,7 @@ class CacheController(object):
                 if response_headers['expires']:
                     self.cache.set(
                         cache_url,
-                        self.serializer.dumps(request, response),
+                        self.serializer.dumps(request, response, body=body),
                     )
 
     def update_cached_response(self, request, response):

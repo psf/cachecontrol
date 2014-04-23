@@ -11,8 +11,6 @@ class Serializer(object):
         response_headers = CaseInsensitiveDict(response.headers)
 
         if body is None:
-            # TODO: Figure out a way to handle this which doesn't break
-            #   streaming
             body = response.read(decode_content=False)
             response._fp = io.BytesIO(body)
 

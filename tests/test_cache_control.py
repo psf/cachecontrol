@@ -79,7 +79,7 @@ class TestCacheControllerResponse(object):
                           'date': now})
         req = self.req()
         cc.cache_response(req, resp)
-        cc.serializer.dumps.assert_called_with(req, resp)
+        cc.serializer.dumps.assert_called_with(req, resp, body=None)
         cc.cache.set.assert_called_with(self.url, ANY)
 
     def test_cache_repsonse_no_store(self):

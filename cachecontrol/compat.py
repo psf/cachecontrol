@@ -24,3 +24,8 @@ try:
     from requests.packages.urllib3.response import HTTPResponse
 except ImportError:
     from urllib3.response import HTTPResponse
+
+try:
+    from requests.packages.urllib3.util import is_fp_closed
+except ImportError:
+    from urllib3.util import is_fp_closed

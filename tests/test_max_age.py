@@ -8,7 +8,7 @@ from cachecontrol.cache import DictCache
 
 class NullSerializer(object):
 
-    def dumps(self, request, response):
+    def dumps(self, request, response, body=None):
         return response
 
     def loads(self, request, data):
