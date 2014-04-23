@@ -1,3 +1,5 @@
+from io import BytesIO
+
 from .compat import is_fp_closed
 
 
@@ -14,7 +16,7 @@ class CallbackFileWrapper(object):
     """
 
     def __init__(self, fp, callback):
-        self.__buf = b""
+        self.__buf = BytesIO()
         self.__fp = fp
         self.__callback = callback
 
@@ -23,11 +25,11 @@ class CallbackFileWrapper(object):
 
     def read(self, amt=None):
         data = self.__fp.read(amt)
-        self.__buf += data
+        self.__buf.write(data)
 
         # Is this the best way to figure out if the file has been completely
         #   consumed?
         if is_fp_closed(self.__fp):
-            self.__callback(self.__buf)
+            self.__callback(self.__buf.getvalue())
 
         return data
