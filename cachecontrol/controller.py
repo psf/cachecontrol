@@ -229,8 +229,21 @@ class CacheController(object):
             # we didn't have a cached response
             return response
 
-        # did so lets update our headers
-        cached_response.headers.update(response.headers)
+        # Lets update our headers with the headers from the new request:
+        # http://tools.ietf.org/html/draft-ietf-httpbis-p4-conditional-26#section-4.1
+        #
+        # The server isn't supposed to send headers that would make
+        # the cached body invalid. But... just in case, we'll be sure
+        # to strip out ones we know that might be problmatic due to
+        # typical assumptions.
+        excluded_headers = [
+            "content-length",
+        ]
+
+        cached_response.headers.update(
+            dict((k, v) for k, v in response.headers.items()
+                 if k.lower() not in excluded_headers)
+        )
 
         # we want a 200 b/c we have content via the cache
         cached_response.status = 200

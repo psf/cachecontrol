@@ -95,6 +95,28 @@ class TestCacheControllerResponse(object):
         cc.cache_response(self.req(), resp)
         assert not cc.cache.get(cache_url)
 
+    def test_update_cached_response_with_valid_headers(self):
+        cached_resp = Mock(headers={'ETag': 'jfd9094r808', 'Content-Length': 100})
+
+        # Set our content length to 200. That would be a mistake in
+        # the server, but we'll handle it gracefully... for now.
+        resp = Mock(headers={'ETag': '28371947465', 'Content-Length': 200})
+        cache = DictCache({self.url: cached_resp})
+
+        cc = CacheController(cache)
+
+        # skip our in/out processing
+        cc.serializer = Mock()
+        cc.serializer.loads.return_value = cached_resp
+        cc.cache_url = Mock(return_value='http://foo.com')
+
+        result = cc.update_cached_response(Mock(), resp)
+
+        assert result.headers['ETag'] == resp.headers['ETag']
+        assert result.headers['Content-Length'] == 100
+
+
+
 
 class TestCacheControlRequest(object):
     url = 'http://foo.com/bar'
