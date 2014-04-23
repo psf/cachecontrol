@@ -1,7 +1,10 @@
+import functools
+
 from requests.adapters import HTTPAdapter
 
 from .controller import CacheController
 from .cache import DictCache
+from .filewrapper import CallbackFileWrapper
 
 
 class CacheControlAdapter(HTTPAdapter):
@@ -58,8 +61,16 @@ class CacheControlAdapter(HTTPAdapter):
 
                 response = cached_response
             else:
-                # try to cache the response
-                self.controller.cache_response(request, response)
+                # Wrap the response file with a wrapper that will cache the
+                #   response when the stream has been consumed.
+                response._fp = CallbackFileWrapper(
+                    response._fp,
+                    functools.partial(
+                        self.controller.cache_response,
+                        request,
+                        response,
+                    )
+                )
 
         resp = super(CacheControlAdapter, self).build_response(
             request, response
