@@ -81,6 +81,7 @@ Contents:
    storage
    etags
    tips
+   release_notes
 
 
 
