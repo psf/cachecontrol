@@ -50,16 +50,16 @@ class FileCache(object):
         self.directory = directory
         self.forever = forever
         self.filemode = filemode
-
-        if not os.path.isdir(self.directory):
-            os.makedirs(self.directory, dirmode)
+        self.dirmode = dirmode
 
     @staticmethod
     def encode(x):
         return hashlib.sha224(x.encode()).hexdigest()
 
     def _fn(self, name):
-        return os.path.join(self.directory, self.encode(name))
+        hashed = self.encode(name)
+        parts = list(hashed[:5]) + [hashed]
+        return os.path.join(self.directory, *parts)
 
     def get(self, key):
         name = self._fn(key)
@@ -71,7 +71,15 @@ class FileCache(object):
 
     def set(self, key, value):
         name = self._fn(key)
+
+        # Make sure the directory exists
+        try:
+            os.makedirs(os.path.dirname(name), self.dirmode)
+        except (FileExistsError, IOError, OSError):
+            pass
+
         with FileLock(name) as lock:
+            # Write our actual file
             with _secure_open_write(lock.path, self.filemode) as fh:
                 fh.write(value)
 
