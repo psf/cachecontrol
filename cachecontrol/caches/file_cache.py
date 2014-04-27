@@ -75,7 +75,7 @@ class FileCache(object):
         # Make sure the directory exists
         try:
             os.makedirs(os.path.dirname(name), self.dirmode)
-        except (FileExistsError, IOError, OSError):
+        except (IOError, OSError):
             pass
 
         with FileLock(name) as lock:
