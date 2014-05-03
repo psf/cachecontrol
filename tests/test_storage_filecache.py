@@ -5,6 +5,7 @@ Unit tests that verify FileCache storage works correctly.
 import string
 
 from random import randint, sample
+import os
 
 import pytest
 import requests
@@ -36,6 +37,15 @@ class TestStorageFileCache(object):
         assert not response.from_cache
         response = sess.get(self.url)
         assert response.from_cache
+
+    def test_filecache_directory_exists(self, sess):
+        url = self.url + ''.join(sample(string.ascii_lowercase, randint(2, 4)))
+        path = self.cache._fn(url)
+        os.makedirs(os.path.dirname(path), self.cache.dirmode)
+        try:
+            sess.get(url)
+        except Exception as e:
+            assert False, e
 
     def test_key_length(self, sess):
         """
