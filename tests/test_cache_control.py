@@ -116,8 +116,6 @@ class TestCacheControllerResponse(object):
         assert result.headers['Content-Length'] == 100
 
 
-
-
 class TestCacheControlRequest(object):
     url = 'http://foo.com/bar'
 
