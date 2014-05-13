@@ -1,18 +1,15 @@
 """
 Unit tests that verify FileCache storage works correctly.
 """
-
+import os
 import string
 
 from random import randint, sample
-import os
 
 import pytest
 import requests
 from cachecontrol import CacheControl
 from cachecontrol.caches import FileCache
-
-STORAGE_FOLDER = ".cache"
 
 
 def randomdata():
@@ -26,9 +23,9 @@ def randomdata():
 class TestStorageFileCache(object):
 
     @pytest.fixture()
-    def sess(self, server):
+    def sess(self, server, tmpdir):
         self.url = server.application_url
-        self.cache = FileCache(STORAGE_FOLDER)
+        self.cache = FileCache(str(tmpdir))
         sess = CacheControl(requests.Session(), cache=self.cache)
         return sess
 
@@ -38,14 +35,20 @@ class TestStorageFileCache(object):
         response = sess.get(self.url)
         assert response.from_cache
 
-    def test_filecache_directory_exists(self, sess):
+    def test_filecache_directory_not_exists(self, tmpdir, sess):
         url = self.url + ''.join(sample(string.ascii_lowercase, randint(2, 4)))
-        path = self.cache._fn(url)
-        os.makedirs(os.path.dirname(path), self.cache.dirmode)
-        try:
-            sess.get(url)
-        except Exception as e:
-            assert False, e
+
+        # Make sure our cache dir doesn't exist
+        tmp_cache = tmpdir.join('missing', 'folder', 'name').strpath
+        assert not os.path.exists(tmp_cache)
+
+        self.cache.directory = tmp_cache
+
+        # trigger a cache save
+        sess.get(url)
+
+        # Now our cache dir does exist
+        assert os.path.exists(tmp_cache)
 
     def test_key_length(self, sess):
         """
