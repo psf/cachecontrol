@@ -50,6 +50,26 @@ class TestStorageFileCache(object):
         # Now our cache dir does exist
         assert os.path.exists(tmp_cache)
 
+    def test_filecache_directory_already_exists(self, tmpdir, sess):
+        """
+        Assert no errors are raised when using a cache directory
+        that already exists on the filesystem.
+        """
+        url = self.url + ''.join(sample(string.ascii_lowercase, randint(2, 4)))
+
+        # Make sure our cache dir DOES exist
+        tmp_cache = tmpdir.join('missing', 'folder', 'name').strpath
+        os.makedirs(tmp_cache, self.cache.dirmode)
+
+        assert os.path.exists(tmp_cache)
+
+        self.cache.directory = tmp_cache
+
+        # trigger a cache save
+        sess.get(url)
+
+        assert True  # b/c no exceptions were raised
+
     def test_key_length(self, sess):
         """
         Hash table keys:
