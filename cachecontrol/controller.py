@@ -4,11 +4,11 @@ The httplib2 algorithms ported for use with requests.
 import re
 import calendar
 import time
+from email.utils import parsedate_tz
 
 from requests.structures import CaseInsensitiveDict
 
 from .cache import DictCache
-from .compat import parsedate_tz
 from .serialize import Serializer
 
 
