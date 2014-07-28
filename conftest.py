@@ -18,6 +18,24 @@ class SimpleApp(object):
             return getattr(self, segment)
         return None
 
+    def optional_cacheable_request(self, env, start_response):
+        """A request with no hints as to whether it should be
+        cached. Yet, we might still choose to cache it via a
+        heuristic."""
+
+        headers = {
+            'content-encoding': 'gzip',
+            'transfer-encoding': 'chunked',
+            'server': 'nginx/1.2.6 (Ubuntu)',
+            'last-modified': 'Mon, 21 Jul 2014 17:45:39 GMT',
+            'connection': 'keep-alive',
+            'date': 'Wed, 23 Jul 2014 04:57:40 GMT',
+            'content-type': 'text/html'
+        }
+
+        start_response('200 OK', headers)
+        return [pformat(env).encode("utf8")]
+
     def vary_accept(self, env, start_response):
         headers = [
             ('Cache-Control', 'max-age=5000'),

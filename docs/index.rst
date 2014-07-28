@@ -80,6 +80,7 @@ Contents:
    usage
    storage
    etags
+   custom_heuristics
    tips
    release_notes
 

@@ -10,10 +10,15 @@ from .filewrapper import CallbackFileWrapper
 class CacheControlAdapter(HTTPAdapter):
     invalidating_methods = set(['PUT', 'DELETE'])
 
-    def __init__(self, cache=None, cache_etags=True, controller_class=None,
-                 serializer=None, *args, **kw):
+    def __init__(self, cache=None,
+                 cache_etags=True,
+                 controller_class=None,
+                 serializer=None,
+                 heuristic=None,
+                 *args, **kw):
         super(CacheControlAdapter, self).__init__(*args, **kw)
         self.cache = cache or DictCache()
+        self.heuristic = heuristic
 
         controller_factory = controller_class or CacheController
         self.controller = controller_factory(
@@ -47,6 +52,8 @@ class CacheControlAdapter(HTTPAdapter):
         cached response
         """
         if not from_cache and request.method == 'GET':
+
+            # apply any expiration heurstics
             if response.status == 304:
                 # We must have sent an ETag request. This could mean
                 # that we've been expired already or that we simply
@@ -61,6 +68,9 @@ class CacheControlAdapter(HTTPAdapter):
 
                 response = cached_response
             else:
+                if self.heuristic:
+                    response = self.heuristic.apply(response)
+
                 # Wrap the response file with a wrapper that will cache the
                 #   response when the stream has been consumed.
                 response._fp = CallbackFileWrapper(
