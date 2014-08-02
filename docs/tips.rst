@@ -30,7 +30,7 @@ response, but there are aspects that are different for somewhat
 obvious reasons.
 
  - Cached responses are never streaming
- - Cached repsonses have `None` for the `raw` attribute
+ - Cached responses have `None` for the `raw` attribute
 
 Obviously, when you cache a response, you have downloaded the entire
 body. Therefore, there is never a use case for streaming a cached
