@@ -1,4 +1,7 @@
 import pytest
+
+from mock import Mock, patch
+
 import requests
 
 from cachecontrol import CacheControl
@@ -113,3 +116,28 @@ class TestDisabledETags(object):
         assert r.from_cache
         assert 'if-none-match' in r.request.headers
         assert r.status_code == 200
+
+
+class TestReleaseConnection(object):
+    """
+    On 304s we still make a request using our connection pool, yet
+    we do not call the parent adapter, which releases the connection
+    back to the pool. This test ensures that when the parent `get`
+    method is not called we consume the response (which should be
+    empty according to the HTTP spec) and release the connection.
+    """
+    def test_not_modified_releases_connection(self, server):
+        sess = CacheControl(requests.Session())
+        etag_url = urljoin(server.application_url, '/etag')
+        sess.get(etag_url)
+
+        resp = Mock(status=304, headers={})
+
+        # This is how the urllib3 response is created in
+        # requests.adapters
+        response_mod = 'requests.adapters.HTTPResponse.from_httplib'
+
+        with patch(response_mod, Mock(return_value=resp)):
+            sess.get(etag_url)
+            assert resp.read.called
+            assert resp.release_conn.called
