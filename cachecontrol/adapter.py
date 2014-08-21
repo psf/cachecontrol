@@ -66,6 +66,13 @@ class CacheControlAdapter(HTTPAdapter):
                 if cached_response is not response:
                     from_cache = True
 
+                # We are done with the server response, read a
+                # possible response body (compliant servers will
+                # not return one, but we cannot be 100% sure) and
+                # release the connection back to the pool.
+                response.read(decode_content=None)
+                response.release_conn()
+
                 response = cached_response
             else:
                 if self.heuristic:
