@@ -70,7 +70,7 @@ class CacheControlAdapter(HTTPAdapter):
                 # possible response body (compliant servers will
                 # not return one, but we cannot be 100% sure) and
                 # release the connection back to the pool.
-                response.read(decode_content=None)
+                response.read(decode_content=False)
                 response.release_conn()
 
                 response = cached_response
