@@ -37,15 +37,16 @@ class CacheController(object):
         (scheme, authority, path, query, fragment) = parse_uri(uri)
         if not scheme or not authority:
             raise Exception("Only absolute URIs are allowed. uri = %s" % uri)
-        authority = authority.lower()
+
         scheme = scheme.lower()
+        authority = authority.lower()
+
         if not path:
             path = "/"
 
         # Could do syntax based normalization of the URI before
         # computing the digest. See Section 6.2.2 of Std 66.
         request_uri = query and "?".join([path, query]) or path
-        scheme = scheme.lower()
         defrag_uri = scheme + "://" + authority + request_uri
 
         return defrag_uri
