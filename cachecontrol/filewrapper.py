@@ -1,7 +1,5 @@
 from io import BytesIO
 
-from .compat import is_fp_closed
-
 
 class CallbackFileWrapper(object):
     """
@@ -43,7 +41,8 @@ class CallbackFileWrapper(object):
         self.__buf.write(data)
 
         if self.__is_fp_closed():
-            self.__callback(self.__buf.getvalue())
+            if self.__callback:
+                self.__callback(self.__buf.getvalue())
 
             # We assign this to None here, because otherwise we can get into
             # really tricky problems where the CPython interpreter dead locks
