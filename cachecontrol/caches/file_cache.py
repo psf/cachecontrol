@@ -50,6 +50,7 @@ def warning_on_one_line(message, category, filename, lineno, file=None,
                         line=None):
     return ' %s:%s: %s' % (filename, lineno, message)
 
+
 class FileCache(object):
     def __init__(self, directory, forever=False, filemode=0o0600,
                  dirmode=0o0700, max_bytes=1000000000):
