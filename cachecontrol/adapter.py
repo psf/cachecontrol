@@ -75,6 +75,8 @@ class CacheControlAdapter(HTTPAdapter):
 
                 response = cached_response
             else:
+                # Check for any heuristics that might update headers
+                # before trying to cache.
                 if self.heuristic:
                     response = self.heuristic.apply(response)
 
