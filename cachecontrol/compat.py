@@ -10,8 +10,8 @@ except ImportError:
     import pickle
 
 
-# Handle the case where the requests has been patched to not have urllib3
-# bundled as part of it's source.
+# Handle the case where the requests module has been patched to not have
+# urllib3 bundled as part of its source.
 try:
     from requests.packages.urllib3.response import HTTPResponse
 except ImportError:
