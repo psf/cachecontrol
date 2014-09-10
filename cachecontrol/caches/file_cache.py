@@ -1,7 +1,5 @@
 import hashlib
 import os
-import sys
-import warnings
 
 from lockfile import FileLock
 
@@ -53,14 +51,12 @@ def warning_on_one_line(message, category, filename, lineno, file=None,
 
 class FileCache(object):
     def __init__(self, directory, forever=False, filemode=0o0600,
-                 dirmode=0o0700, max_bytes=1000000000):
+                 dirmode=0o0700):
         self.directory = directory
         self.forever = forever
         self.filemode = filemode
         self.dirmode = dirmode
-        self.max_bytes = max_bytes
         self.curr_bytes = 0
-        warnings.formatwarning = warning_on_one_line
 
     @staticmethod
     def encode(x):
@@ -82,15 +78,6 @@ class FileCache(object):
     def set(self, key, value):
         name = self._fn(key)
 
-        new_bytes = sys.getsizeof(value)
-        total = (self.curr_bytes + new_bytes)
-        if total > self.max_bytes:
-            message = "Tried adding %d bytes but %d bytes are currently saved" \
-                      " in the cache and the max_bytes is set to %d.\n" % \
-                      (new_bytes, self.curr_bytes, self.max_bytes)
-            warnings.warn(message)
-            return
-
         # Make sure the directory exists
         try:
             os.makedirs(os.path.dirname(name), self.dirmode)
@@ -101,12 +88,8 @@ class FileCache(object):
             # Write our actual file
             with _secure_open_write(lock.path, self.filemode) as fh:
                 fh.write(value)
-                self.curr_bytes += new_bytes
 
     def delete(self, key):
         name = self._fn(key)
-        value = self.get(key)
-        removed_bytes = sys.getsizeof(value)
         if not self.forever:
             os.remove(name)
-            self.curr_bytes -= removed_bytes
