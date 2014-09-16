@@ -4,6 +4,7 @@ import pytest
 
 from cachecontrol import CacheControl
 from cachecontrol.caches.file_cache import FileCache
+from cachecontrol.filewrapper import CallbackFileWrapper
 from requests import Session
 
 
@@ -16,3 +17,15 @@ class Test39(object):
         s.get('http://httpbin.org/cache/60')
         r = s.get('http://httpbin.org/cache/60')
         assert r.from_cache
+
+
+def test_getattr_during_gc():
+    s = CallbackFileWrapper(None, None)
+    # normal behavior:
+    with pytest.raises(AttributeError):
+        s.x
+
+    # this previously had caused an infinite recursion
+    vars(s).clear()  # gc does this.
+    with pytest.raises(AttributeError):
+        s.x

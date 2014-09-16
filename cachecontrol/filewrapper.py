@@ -19,7 +19,11 @@ class CallbackFileWrapper(object):
         self.__callback = callback
 
     def __getattr__(self, name):
-        return getattr(self.__fp, name)
+        # The vaguaries of garbage collection means that self.__fp is not always set.
+        # This strange style lets us throw AttributeError in that case, rather than
+        # recursing infinitely
+        fp = self.__getattribute__('_CallbackFileWrapper__fp')
+        return getattr(fp, name)
 
     def __is_fp_closed(self):
         try:
