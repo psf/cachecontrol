@@ -19,9 +19,14 @@ class CallbackFileWrapper(object):
         self.__callback = callback
 
     def __getattr__(self, name):
-        # The vaguaries of garbage collection means that self.__fp is not always set.
-        # This strange style lets us throw AttributeError in that case, rather than
-        # recursing infinitely
+        # The vaguaries of garbage collection means that self.__fp is
+        # not always set.  By using __getattribute__ and the private
+        # name[0] allows looking up the attribute value and raising an
+        # AttributeError when it doesn't exist. This stop thigns from
+        # infinitely recursing calls to getattr in the case where
+        # self.__fp hasn't been set.
+        #
+        # [0] https://docs.python.org/2/reference/expressions.html#atom-identifiers
         fp = self.__getattribute__('_CallbackFileWrapper__fp')
         return getattr(fp, name)
 
