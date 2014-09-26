@@ -1,7 +1,9 @@
+import mock
 import pytest
 
 from requests import Session
 from cachecontrol.adapter import CacheControlAdapter
+from cachecontrol.cache import DictCache
 from cachecontrol.wrapper import CacheControl
 
 
@@ -44,3 +46,11 @@ class TestSessionActions(object):
         r2 = sess.delete(url)
         sess.get(url)
         assert not r2.from_cache
+
+    def test_close(self):
+        cache = mock.Mock(spec=DictCache)
+        sess = Session()
+        sess.mount('http://', CacheControlAdapter(cache))
+
+        sess.close()
+        assert cache.close.called

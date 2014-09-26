@@ -16,6 +16,9 @@ class BaseCache(object):
     def delete(self, key):
         raise NotImplemented()
 
+    def close(self):
+        pass
+
 
 class DictCache(BaseCache):
 
