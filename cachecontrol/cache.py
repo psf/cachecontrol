@@ -1,6 +1,6 @@
 """
-The cache object API for implementing caches. The default is just a
-dictionary, which in turns means it is not threadsafe for writing.
+The cache object API for implementing caches. The default is a thread
+safe in-memory dictionary.
 """
 from threading import Lock
 
