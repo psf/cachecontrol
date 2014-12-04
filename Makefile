@@ -1,4 +1,4 @@
-VENV   = venv
+VENV = venv
 VENV_BIN = $(VENV)/bin
 ACTIVATE = $(VENV_BIN)/activate
 
