@@ -23,15 +23,11 @@ class SimpleApp(object):
         cached. Yet, we might still choose to cache it via a
         heuristic."""
 
-        headers = {
-            'content-encoding': 'gzip',
-            'transfer-encoding': 'chunked',
-            'server': 'nginx/1.2.6 (Ubuntu)',
-            'last-modified': 'Mon, 21 Jul 2014 17:45:39 GMT',
-            'connection': 'keep-alive',
-            'date': 'Wed, 23 Jul 2014 04:57:40 GMT',
-            'content-type': 'text/html'
-        }
+        headers = [
+            ('server', 'nginx/1.2.6 (Ubuntu)'),
+            ('last-modified', 'Mon, 21 Jul 2014 17:45:39 GMT'),
+            ('content-type', 'text/html'),
+        ]
 
         start_response('200 OK', headers)
         return [pformat(env).encode("utf8")]
@@ -66,6 +62,13 @@ class SimpleApp(object):
             start_response('304 Not Modified', headers)
         else:
             start_response('200 OK', headers)
+        return [pformat(env).encode("utf8")]
+
+    def no_cache(self, env, start_response):
+        headers = [
+            ('Cache-Control', 'no-cache'),
+        ]
+        start_response('200 OK', headers)
         return [pformat(env).encode("utf8")]
 
     def __call__(self, env, start_response):

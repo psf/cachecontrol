@@ -1,8 +1,10 @@
 from mock import Mock
 
-from requests import Session
+from requests import Session, get
 from cachecontrol import CacheControl
-from cachecontrol.heuristics import OneDayCache
+from cachecontrol.heuristics import OneDayCache, ExpiresAfter
+
+from pprint import pprint
 
 
 class TestUseExpiresHeuristic(object):
@@ -22,11 +24,37 @@ class TestOneDayCache(object):
         )
 
     def test_cache_for_one_day(self, url):
-        hurl = url + '/optional_cacheable_request'
-        r = self.sess.get(hurl)
+        the_url = url + 'optional_cacheable_request'
+        r = self.sess.get(the_url)
 
         assert 'expires' in r.headers
         assert 'warning' in r.headers
 
-        r = self.sess.get(hurl)
+        pprint(dict(r.headers))
+
+        r = self.sess.get(the_url)
+        pprint(dict(r.headers))
+        assert r.from_cache
+
+
+class TestExpiresAfter(object):
+
+    def setup(self):
+        self.sess = Session()
+        self.cache_sess = CacheControl(
+            self.sess, heuristic=ExpiresAfter(days=1)
+        )
+
+    def test_expires_after_one_day(self, url):
+        the_url = url + 'no_cache'
+        resp = get(the_url)
+        assert resp.headers['cache-control'] == 'no-cache'
+
+        r = self.sess.get(the_url)
+
+        assert 'expires' in r.headers
+        assert 'warning' in r.headers
+        assert r.headers['cache-control'] == 'public'
+
+        r = self.sess.get(the_url)
         assert r.from_cache
