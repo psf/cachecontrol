@@ -16,9 +16,13 @@ def datetime_to_header(dt):
 
 class BaseHeuristic(object):
 
-    def warning(self):
+    def warning(self, response):
         """
         Return a valid 1xx warning header value describing the cache adjustments.
+
+        The response is provided too allow warnings like 113
+        http://tools.ietf.org/html/rfc7234#section-5.5.4 where we need
+        to explicitly say response is over 24 hours old.
         """
         return '110 - "Response is Stale"'
 
@@ -26,15 +30,15 @@ class BaseHeuristic(object):
         """Update the response headers with any new headers.
 
         NOTE: This SHOULD always include some Warning header to
-              signify that the response was cached by the client, not by way
-              of the provided headers.
-              return response.
+              signify that the response was cached by the client, not
+              by way of the provided headers.
         """
         return {}
 
     def apply(self, response):
+        warning_header = {'warning': self.warning(response)}
         response.headers.update(self.update_headers(response))
-        response.headers.update({'warning': self.warning()})
+        response.headers.update(warning_header)
         return response
 
 
@@ -70,6 +74,6 @@ class ExpiresAfter(BaseHeuristic):
             'cache-control': 'public',
         }
 
-    def warning(self):
+    def warning(self, response):
         tmpl = '110 - Automatically cached for %s. Response might be stale'
         return tmpl % self.delta
