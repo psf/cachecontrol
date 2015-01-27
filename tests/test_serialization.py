@@ -1,3 +1,5 @@
+import requests
+
 from mock import Mock
 
 from cachecontrol.compat import pickle
@@ -35,23 +37,31 @@ class TestSerializer(object):
         resp = self.serializer.loads(req, data)
         assert resp.data == 'Hello World'
 
-    def current_response_format(self):
-        """The current format of the response by constructing a fake
-        response and getting the dumped value from the serializer.
-        """
-        data = self.response_data['response']
+    def test_read_version_three_streamable(self, url):
+        original_resp = requests.get(url, stream=True)
+        # data = original_resp.content
+        req = original_resp.request
 
-        resp = Mock()
-        resp.headers = data['headers']
-        resp.status = data['status']
-        resp.version = data['version']
-        resp.reason = data['reason']
-        resp.strict = data['strict']
-        resp.decode_content = data['decode_content']
+        resp = self.serializer.loads(
+            req, self.serializer.dumps(
+                req,
+                original_resp.raw
+            )
+        )
 
-        return self.serializer.dumps(Mock(name='request'), resp, data['body'])
+        assert resp.read()
 
-    def test_read_version_three(self):
-        req = Mock()
-        resp = self.serializer.loads(req, self.current_response_format())
-        assert resp.data == 'Hello World'
+    def test_read_version_three(self, url):
+        original_resp = requests.get(url)
+        data = original_resp.content
+        req = original_resp.request
+
+        resp = self.serializer.loads(
+            req, self.serializer.dumps(
+                req,
+                original_resp.raw,
+                body=data
+            )
+        )
+
+        assert resp.read()
