@@ -2,6 +2,28 @@
  Release Notes
 ===============
 
+0.11.0
+======
+
+The biggest change is the introduction of using compressed JSON rather
+than pickle for storing cached values. This allows Python 3.4 and
+Python 2.7 to use the same cache store. Previously, if a cache was
+created on 3.4, a 2.7 client would fail loading it, causing an invalid
+cache miss. Using JSON also avoids the exec call used in pickle,
+making the cache more secure by avoiding a potential code injection
+point. Finally, the compressed JSON is a smaller payload, saving a bit
+of space.
+
+In order to support arbitrary binary data in the JSON format, base64
+encoding is used to turn the data into strings. It has to do some encoding dances
+to make sure that the bytes/str types are correct, so **please** open
+a new issue if you notice any issues.
+
+This release also introduces the
+`cachecontrol.heuristics.ExpiresAfter` heuristic. This allows passing
+in arguments like a `datetime.timedelta` in order to configure that
+all responses are cached for the specific period of time.
+
 
 0.10.0
 ======
