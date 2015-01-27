@@ -88,6 +88,29 @@ If you do find a helpful best practice or create a helpful heuristic,
 please consider sending a pull request or opening a issue.
 
 
+Expires After
+-------------
+
+CacheControl bundles an `ExpiresAfter` heuristic that is aimed at
+making it relatively easy to automatically cache responses for a
+period of time. Here is an example
+
+.. code-block: python
+
+   import requests
+   from cachecontrol import CacheControlAdapter
+   from cachecontrol.heuristics import ExpiresAfter
+
+   adapter = CacheControlAdapter(heuristic=ExpiresAfter(days=1))
+
+   sess = requests.Session()
+   sess.mount('http://', adapter)
+
+The arguments are the same as the `datetime.timedelta`
+object. `ExpiresAfter` will override or add the `Expires` header and
+override or set the `Cache-Control` header to `public`.
+
+
 Site Specific Heuristics
 ------------------------
 
