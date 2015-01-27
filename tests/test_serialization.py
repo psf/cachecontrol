@@ -1,10 +1,7 @@
-import json
-import zlib
-
 from mock import Mock
-import cPickle as pickle
 
-from cachecontrol.serialize import Serializer, _b64_encode_str
+from cachecontrol.compat import pickle
+from cachecontrol.serialize import Serializer
 
 
 class TestSerializer(object):
