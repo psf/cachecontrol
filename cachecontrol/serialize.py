@@ -69,7 +69,7 @@ class Serializer(object):
 
         # Encode our Vary headers to ensure they can be serialized as JSON
         data["vary"] = dict(
-            (_b64_encode_str(k), _b64_encode_str(v))
+            (_b64_encode_str(k), _b64_encode_str(v) if v is not None else v)
             for k, v in data["vary"].items()
         )
 
@@ -165,7 +165,7 @@ class Serializer(object):
             cached["response"]["reason"],
         )
         cached["vary"] = dict(
-            (_b64_decode_str(k), _b64_decode_str(v))
+            (_b64_decode_str(k), _b64_decode_str(v) if v is not None else v)
             for k, v in cached["vary"].items()
         )
 
