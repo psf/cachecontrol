@@ -1,5 +1,5 @@
 VENV = venv
-ACTIVATE = $(VENV_BIN)/activate
+ACTIVATE = $(VENV)/bin/activate
 CHEESE=https://pypi.python.org/pypi
 BUMPTYPE=patch
 
