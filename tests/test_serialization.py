@@ -68,3 +68,20 @@ class TestSerializer(object):
         )
 
         assert resp.read() == data
+
+    def test_no_vary_header(self, url):
+        original_resp = requests.get(url)
+        data = original_resp.content
+        req = original_resp.request
+
+        # We make sure our response has a Vary header and that the
+        # request doesn't have the header.
+        original_resp.raw.headers['vary'] = 'Foo'
+
+        assert self.serializer.loads(
+            req, self.serializer.dumps(
+                req,
+                original_resp.raw,
+                body=data
+            )
+        )
