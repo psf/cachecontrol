@@ -111,18 +111,10 @@ class Serializer(object):
             # just treat it as a miss and return None
             return
 
-    def _loads_v0(self, request, data):
-        # The original legacy cache data. This doesn't contain enough
-        # information to construct everything we need, so we'll treat this as
-        # a miss.
-        return
-
-    def _loads_v1(self, request, data):
-        try:
-            cached = pickle.loads(data)
-        except ValueError:
-            return
-
+    def prepare_response(self, request, cached):
+        """Verify our vary headers match and construct a real urllib3
+        HTTPResponse object.
+        """
         # Special case the '*' Vary value as it means we cannot actually
         # determine if the cached response is suitable for this request.
         if "*" in cached.get("vary", {}):
@@ -140,6 +132,20 @@ class Serializer(object):
             preload_content=False,
             **cached["response"]
         )
+
+    def _loads_v0(self, request, data):
+        # The original legacy cache data. This doesn't contain enough
+        # information to construct everything we need, so we'll treat this as
+        # a miss.
+        return
+
+    def _loads_v1(self, request, data):
+        try:
+            cached = pickle.loads(data)
+        except ValueError:
+            return
+
+        return self.prepare_response(request, cached)
 
     def _loads_v2(self, request, data):
         try:
@@ -163,20 +169,4 @@ class Serializer(object):
             for k, v in cached["vary"].items()
         )
 
-        # Special case the '*' Vary value as it means we cannot actually
-        # determine if the cached response is suitable for this request.
-        if "*" in cached.get("vary", {}):
-            return
-
-        # Ensure that the Vary headers for the cached response match our
-        # request
-        for header, value in cached.get("vary", {}).items():
-            if request.headers.get(header, None) != value:
-                return
-
-        body = io.BytesIO(cached["response"].pop("body"))
-        return HTTPResponse(
-            body=body,
-            preload_content=False,
-            **cached["response"]
-        )
+        return self.prepare_response(request, cached)
