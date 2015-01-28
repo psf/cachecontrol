@@ -130,6 +130,17 @@ class CacheController(object):
             if expires is not None:
                 expire_time = calendar.timegm(expires) - date
                 freshness_lifetime = max(0, expire_time)
+        # Fall back on last-modified using heuristic from
+        # http://tools.ietf.org/html/rfc7234#section-4.2.2
+        # Firefox also does something like this per
+        # https://developer.mozilla.org/en-US/docs/Web/HTTP/Caching_FAQ
+        # http://lxr.mozilla.org/mozilla-release/source/netwerk/protocol/http/nsHttpResponseHead.cpp#397
+        # Unlike mozilla we limit this to 24-hr.
+        elif 'last-modified' in headers:
+            last_modified = parsedate_tz(headers['last-modified'])
+            if last_modified is not None:
+                delta = date - calendar.timegm(last_modified)
+                freshness_lifetime = max(0, min(delta / 10, 24 * 3600))
 
         # determine if we are setting freshness limit in the req
         if 'max-age' in cc:
@@ -152,8 +163,8 @@ class CacheController(object):
         if fresh:
             return resp
 
-        # we're not fresh. If we don't have an Etag, clear it out
-        if 'etag' not in headers:
+        # Clear out stale entry unless it can feed a conditional request.
+        if 'etag' not in headers and 'last-modified' not in headers:
             self.cache.delete(cache_url)
 
         # return the original handler
@@ -221,6 +232,14 @@ class CacheController(object):
             # in the meantime.
             elif 'expires' in response_headers:
                 if response_headers['expires']:
+                    self.cache.set(
+                        cache_url,
+                        self.serializer.dumps(request, response, body=body),
+                    )
+
+            # Fall back on last-modified using heuristic from rfc7234
+            elif 'last-modified' in response_headers:
+                if response_headers['last-modified']:
                     self.cache.set(
                         cache_url,
                         self.serializer.dumps(request, response, body=body),
