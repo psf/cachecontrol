@@ -188,3 +188,58 @@ class TestCacheControlRequest(object):
         self.c.cache = cache
         r = self.req({})
         assert not r
+
+    def test_cache_request_fresh_last_modified(self):
+        later = time.time() - 86400  # GMT - 1 day
+        last_modified = time.strftime(TIME_FMT, time.gmtime(later))
+        now = time.strftime(TIME_FMT, time.gmtime())
+        resp = Mock(headers={'last-modified': last_modified,
+                             'date': now})
+        cache = DictCache({self.url: resp})
+        self.c.cache = cache
+        r = self.req({})
+        assert r == resp
+
+    def test_cache_request_fresh_last_modified_2H(self):
+        later = time.time() - 86400  # GMT - 1 day
+        last_modified = time.strftime(TIME_FMT, time.gmtime(later))
+        now = time.strftime(TIME_FMT, time.gmtime(time.time() - 2*3600))
+        resp = Mock(headers={'last-modified': last_modified,
+                             'date': now})
+        cache = DictCache({self.url: resp})
+        self.c.cache = cache
+        r = self.req({})
+        assert r == resp
+
+    def test_cache_request_stale_last_modified_3H(self):
+        later = time.time() - 86400  # GMT - 1 day
+        last_modified = time.strftime(TIME_FMT, time.gmtime(later))
+        now = time.strftime(TIME_FMT, time.gmtime(time.time() - 3*3600))
+        resp = Mock(headers={'last-modified': last_modified,
+                             'date': now})
+        cache = DictCache({self.url: resp})
+        self.c.cache = cache
+        r = self.req({})
+        assert not r
+
+    def test_cache_request_fresh_last_modified_23H(self):
+        later = time.time() - 20*86400  # GMT - 1 day
+        last_modified = time.strftime(TIME_FMT, time.gmtime(later))
+        now = time.strftime(TIME_FMT, time.gmtime(time.time() - 23*3600))
+        resp = Mock(headers={'last-modified': last_modified,
+                             'date': now})
+        cache = DictCache({self.url: resp})
+        self.c.cache = cache
+        r = self.req({})
+        assert r == resp
+
+    def test_cache_request_stale_last_modified_24H(self):
+        later = time.time() - 20*86400  # GMT - 1 day
+        last_modified = time.strftime(TIME_FMT, time.gmtime(later))
+        now = time.strftime(TIME_FMT, time.gmtime(time.time() - 24*3600))
+        resp = Mock(headers={'last-modified': last_modified,
+                             'date': now})
+        cache = DictCache({self.url: resp})
+        self.c.cache = cache
+        r = self.req({})
+        assert not r
