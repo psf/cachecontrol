@@ -1,6 +1,7 @@
 -e .
 
 tox
+pytest-cov
 pytest
 mock
 webtest

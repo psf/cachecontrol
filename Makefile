@@ -1,34 +1,56 @@
 VENV = venv
-VENV_BIN = $(VENV)/bin
 ACTIVATE = $(VENV_BIN)/activate
+CHEESE=https://pypi.python.org/pypi
+BUMPTYPE=patch
 
-virtualenv: $(VENV)
+
+virtualenv:
 	virtualenv $(VENV)
 
-bootstrap: $(VENV_BIN)/python $(VENV_BIN)/sphinx-build
-	$(VENV_BIN)/pip install -r dev_requirements.txt
+$(VENV)/bin/pip:
+	virtualenv $(VENV)
 
-docs: $(VENV_BIN)/sphinx-build
+bootstrap: $(VENV)/bin/pip
+	$(VENV)/bin/pip install -r dev_requirements.txt
+
+doc: $(VENV)/bin/sphinx-build
 	. $(ACTIVATE);
 	cd docs && make html
 
-release_patch:
-	. $(ACTIVATE);
-	bumpversion patch
-	git push origin master
-	git push --tags origin master
-	python setup.py sdist upload
+clean: clean-build clean-pyc clean-test
 
-release_minor:
-	. $(ACTIVATE);
-	bumpversion minor
-	git push origin master
-	git push --tags origin master
-	python setup.py sdist upload
+clean-build:
+	rm -fr build/
+	rm -fr dist/
+	rm -fr *.egg-info
 
-release_major:
-	. $(ACTIVATE);
-	bumpversion major
-	git push origin master
-	git push --tags origin master
-	python setup.py sdist upload
+clean-pyc:
+	find . -name '*.pyc' -exec rm -f {} +
+	find . -name '*.pyo' -exec rm -f {} +
+	find . -name '*~' -exec rm -f {} +
+	find . -name '__pycache__' -exec rm -fr {} +
+
+clean-test:
+	rm -fr .tox/
+	rm -f .coverage
+	rm -fr htmlcov/
+
+test-all:
+	tox
+
+test:
+	$(VENV)/bin/py.test
+
+coverage:
+	$(VENV)/bin/py.test --cov cachecontrol
+
+release: clean
+	$(VENV)/bin/python setup.py sdist register -r $(CHEESE) upload -r $(CHEESE)
+
+dist: clean
+	python setup.py sdist
+	ls -l dist
+
+bump:
+	$(VENV)/bin/bumpversion $(BUMPTYPE)
+	git push && git push --tags
