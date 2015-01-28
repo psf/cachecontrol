@@ -12,7 +12,9 @@ class TestSerializer(object):
         self.serializer = Serializer()
         self.response_data = {
             'response': {
-                'body': 'Hello World',
+                # Encode the body as bytes b/c it will eventually be
+                # converted back into a BytesIO object.
+                'body': 'Hello World'.encode('utf-8'),
                 'headers': {
                     'Content-Type': 'text/plain',
                     'Expires': '87654',
@@ -27,19 +29,20 @@ class TestSerializer(object):
         }
 
     def test_load_by_version_one(self):
-        data = 'cc=0,somedata'
-        req = Mock()
-        assert not self.serializer.loads(req, data)
-
-    def test_read_version_two(self):
-        data = 'cc=1,%s' % pickle.dumps(self.response_data)
+        data = b'cc=0,somedata'
         req = Mock()
         resp = self.serializer.loads(req, data)
-        assert resp.data == 'Hello World'
+        assert resp is None
+
+    def test_read_version_two(self):
+        req = Mock()
+        resp = self.serializer._loads_v1(req, pickle.dumps(self.response_data))
+        # We have to decode our urllib3 data back into a unicode
+        # string.
+        assert resp.data.decode('utf-8') == u'Hello World'
 
     def test_read_version_three_streamable(self, url):
         original_resp = requests.get(url, stream=True)
-        # data = original_resp.content
         req = original_resp.request
 
         resp = self.serializer.loads(
@@ -64,4 +67,4 @@ class TestSerializer(object):
             )
         )
 
-        assert resp.read()
+        assert resp.read() == data
