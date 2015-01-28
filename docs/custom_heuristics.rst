@@ -95,7 +95,7 @@ CacheControl bundles an `ExpiresAfter` heuristic that is aimed at
 making it relatively easy to automatically cache responses for a
 period of time. Here is an example
 
-.. code-block: python
+.. code-block:: python
 
    import requests
    from cachecontrol import CacheControlAdapter
