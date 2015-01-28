@@ -39,7 +39,7 @@ class TestSerializer(object):
         resp = self.serializer._loads_v1(req, pickle.dumps(self.response_data))
         # We have to decode our urllib3 data back into a unicode
         # string.
-        assert resp.data.decode('utf-8') == u'Hello World'
+        assert resp.data == 'Hello World'.encode('utf-8')
 
     def test_read_version_three_streamable(self, url):
         original_resp = requests.get(url, stream=True)
