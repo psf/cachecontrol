@@ -18,6 +18,9 @@ setup_params = dict(
     install_requires=[
         'requests',
     ],
+    extras_require = {
+        'filecache': ['lockfile'],
+    },
     classifiers=[
         'Development Status :: 4 - Beta',
         'Environment :: Web Environment',
