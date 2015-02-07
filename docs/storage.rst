@@ -26,6 +26,13 @@ The `FileCache` is similar to the caching mechanism provided by
 httplib2_. It requires `lockfile`_ be installed as it prevents
 multiple threads from writing to the same file at the same time.
 
+.. note::
+
+  Note that you can install this dependency automatically with pip
+  by requesting the *filecache* extra: ::
+
+    pip install cachecontrol[filecache]
+
 Here is an example using the `FileCache`: ::
 
   import requests
