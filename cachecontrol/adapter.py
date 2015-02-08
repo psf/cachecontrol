@@ -77,6 +77,10 @@ class CacheControlAdapter(HTTPAdapter):
                 response.release_conn()
 
                 response = cached_response
+
+            # We always cache the 301 responses
+            elif response.status == 301:
+                self.controller.cache_response(request, response)
             else:
                 # Check for any heuristics that might update headers
                 # before trying to cache.

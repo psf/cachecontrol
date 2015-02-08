@@ -71,6 +71,17 @@ class SimpleApp(object):
         start_response('200 OK', headers)
         return [pformat(env).encode("utf8")]
 
+    def permanent_redirect(self, env, start_response):
+        headers = [
+            ('Location', '/permalink')
+        ]
+        start_response('301 Moved Permanently', headers)
+        return ['See: /permalink']
+
+    def permalink(self, env, start_response):
+        start_response('200 OK', [('Content-Type', 'text/plain')])
+        return ['The permanent resource']
+
     def __call__(self, env, start_response):
         func = self.dispatch(env)
 
