@@ -103,6 +103,17 @@ class CacheController(object):
         if not resp:
             return False
 
+        # If we have a cached 301, return it immediately. We don't
+        # need to test our response for other headers b/c it is
+        # intrinsically "cacheable" as it is Permanent.
+        # See:
+        #   https://tools.ietf.org/html/rfc7231#section-6.4.2
+        #
+        # Client can try to refresh the value by repeating the request
+        # with cache busting headers as usual (ie no-cache).
+        if resp.status == 301:
+            return resp
+
         headers = CaseInsensitiveDict(resp.headers)
 
         now = time.time()
@@ -183,7 +194,7 @@ class CacheController(object):
         """
         # From httplib2: Don't cache 206's since we aren't going to
         # handle byte range requests
-        if response.status not in [200, 203]:
+        if response.status not in [200, 203, 300, 301]:
             return
 
         response_headers = CaseInsensitiveDict(response.headers)
@@ -203,6 +214,14 @@ class CacheController(object):
             self.cache.set(
                 cache_url,
                 self.serializer.dumps(request, response, body=body),
+            )
+
+        # Add to the cache any 301s. We do this before looking that
+        # the Date headers.
+        elif response.status == 301:
+            self.cache.set(
+                cache_url,
+                self.serializer.dumps(request, response)
             )
 
         # Add to the cache if the response headers demand it. If there
@@ -235,7 +254,10 @@ class CacheController(object):
         """
         cache_url = self.cache_url(request.url)
 
-        cached_response = self.serializer.loads(request, self.cache.get(cache_url))
+        cached_response = self.serializer.loads(
+            request,
+            self.cache.get(cache_url)
+        )
 
         if not cached_response:
             # we didn't have a cached response
