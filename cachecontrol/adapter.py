@@ -35,10 +35,13 @@ class CacheControlAdapter(HTTPAdapter):
         if request.method == 'GET':
             cached_response = self.controller.cached_request(request)
             if cached_response:
-                return self.build_response(request, cached_response, from_cache=True)
+                return self.build_response(request, cached_response,
+                                           from_cache=True)
 
             # check for etags and add headers if appropriate
-            request.headers.update(self.controller.conditional_headers(request))
+            request.headers.update(
+                self.controller.conditional_headers(request)
+            )
 
         resp = super(CacheControlAdapter, self).send(request, **kw)
 
