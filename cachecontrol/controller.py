@@ -194,7 +194,7 @@ class CacheController(object):
         """
         # From httplib2: Don't cache 206's since we aren't going to
         # handle byte range requests
-        if response.status not in [200, 203, 301]:
+        if response.status not in [200, 203, 300, 301]:
             return
 
         response_headers = CaseInsensitiveDict(response.headers)
