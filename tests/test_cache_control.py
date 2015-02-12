@@ -48,7 +48,7 @@ class TestCacheControllerResponse(object):
         resp = self.resp({'cache-control': 'max-age=3600',
                           'date': now})
 
-        no_cache_codes = [201, 300, 400, 500]
+        no_cache_codes = [201, 400, 500]
         for code in no_cache_codes:
             resp.status = code
             cc.cache_response(Mock(), resp)
