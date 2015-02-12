@@ -110,7 +110,7 @@ class TestDisabledETags(object):
         # doesn't provide time base caching headers, so we add them
         # here in order to expire the request.
         r.headers['Date'] = 'Tue, 26 Nov 2012 00:50:49 GMT'
-        self.cache.set(self.etag_url, r)
+        self.cache.set(self.etag_url, r.raw)
 
         r = sess.get(self.etag_url)
         assert r.from_cache
