@@ -76,18 +76,18 @@ class SimpleApp(object):
             ('Location', '/permalink')
         ]
         start_response('301 Moved Permanently', headers)
-        return ['See: /permalink']
+        return ['See: /permalink'.encode('utf-8')]
 
     def permalink(self, env, start_response):
         start_response('200 OK', [('Content-Type', 'text/plain')])
-        return ['The permanent resource']
+        return ['The permanent resource'.encode('utf-8')]
 
     def multiple_choices(self, env, start_response):
         headers = [
             ('Link', '/permalink')
         ]
         start_response('300 Multiple Choices', headers)
-        return ['See: /permalink']
+        return ['See: /permalink'.encode('utf-8')]
 
     def __call__(self, env, start_response):
         func = self.dispatch(env)
