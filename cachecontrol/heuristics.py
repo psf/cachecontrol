@@ -77,3 +77,35 @@ class ExpiresAfter(BaseHeuristic):
     def warning(self, response):
         tmpl = '110 - Automatically cached for %s. Response might be stale'
         return tmpl % self.delta
+
+class HeuristicFreshness(BaseHeuristic):
+    """
+    Apply the heuristic suggested by RFC 7234, 4.2.2
+    when no explicit freshness is specified.
+    """
+
+    def update_headers(self, response):
+        if 'expires' not in response.headers:
+            if 'cache-control' not in response.headers or response.headers['cache-control'] == 'public':
+                # RFC 7231, 6.1
+                if response.status_code in [200, 203, 204, 206, 300, 301, 404, 405, 410, 414, 501]:
+                    if 'last-modified' in response.headers:
+                        last_modified = parsedate(response.headers['last-modified'])
+                        now = datetime.now()
+
+                        age = now - last_modified
+
+                        expires = now + (age / 10)
+
+                        return {'expires': datetime_to_header(expires)}
+        return {}
+
+    def warning(self, response):
+        now = datetime.now()
+        date = parsedate(response.headers['date'])
+        current_age = max(0, now - date)
+
+        if current_age > ONE_DAY_IN_SECONDS:
+            return '113 - Heuristic Expiration'
+        else:
+            return None
