@@ -93,7 +93,7 @@ class HeuristicFreshness(BaseHeuristic):
                         last_modified = parsedate(response.headers['last-modified'])
                         now = datetime.now()
 
-                        age = now - last_modified
+                        age = now - datetime(*last_modified[:6])
 
                         expires = now + (age / 10)
 

@@ -2,7 +2,7 @@ from mock import Mock
 
 from requests import Session, get
 from cachecontrol import CacheControl
-from cachecontrol.heuristics import OneDayCache, ExpiresAfter
+from cachecontrol.heuristics import OneDayCache, ExpiresAfter, HeuristicFreshness
 
 from pprint import pprint
 
@@ -58,3 +58,29 @@ class TestExpiresAfter(object):
 
         r = self.sess.get(the_url)
         assert r.from_cache
+
+from requests.structures import CaseInsensitiveDict
+from email.utils import parsedate
+from datetime import datetime
+
+class DummyResponse:
+    def __init__(self, status_code, headers):
+        self.status_code = status_code
+        self.headers = CaseInsensitiveDict(headers)
+
+class TestHeuristicFreshness(object):
+    def setup(self):
+        self.heuristic = HeuristicFreshness()
+
+    def test_no_expiry_is_inferred_when_no_last_modified_is_present(self):
+        assert self.heuristic.update_headers(DummyResponse(200, {})) == {}
+
+    def test_expires_is_not_replaced_when_present(self):
+        resp = DummyResponse(200, {'Expires': 'Mon, 21 Jul 2014 17:45:39 GMT'})
+        assert self.heuristic.update_headers(resp) == {}
+
+    def test_last_modified_is_used(self):
+        resp = DummyResponse(200, {'Last-Modified': 'Mon, 21 Jul 2014 17:45:39 GMT'})
+        modified = self.heuristic.update_headers(resp)
+        assert ['expires'] == list(modified.keys())
+        assert datetime(*parsedate(modified['expires'])[:6]) > datetime.now()
