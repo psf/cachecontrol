@@ -78,12 +78,13 @@ class ExpiresAfter(BaseHeuristic):
         tmpl = '110 - Automatically cached for %s. Response might be stale'
         return tmpl % self.delta
 
-ONE_DAY_IN_SECONDS = timedelta(days=1)
+_ONE_DAY_IN_SECONDS = timedelta(days=1)
 
-class HeuristicFreshness(BaseHeuristic):
+class LastModifiedHeuristic(BaseHeuristic):
     """
-    Apply the heuristic suggested by RFC 7234, 4.2.2
-    when no explicit freshness is specified.
+    Apply the heuristic suggested by RFC 7234, 4.2.2,
+    using the Last-Modified date, when no explicit
+    freshness is specified.
     """
 
     def update_headers(self, response):
@@ -105,7 +106,7 @@ class HeuristicFreshness(BaseHeuristic):
         date = parsedate(response.headers['date'])
         current_age = max(timedelta(), now - datetime(*date[:6]))
 
-        if current_age > ONE_DAY_IN_SECONDS:
+        if current_age > _ONE_DAY_IN_SECONDS:
             return '113 - Heuristic Expiration'
         else:
             return None

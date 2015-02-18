@@ -2,7 +2,7 @@ from mock import Mock
 
 from requests import Session, get
 from cachecontrol import CacheControl
-from cachecontrol.heuristics import OneDayCache, ExpiresAfter, HeuristicFreshness
+from cachecontrol.heuristics import OneDayCache, ExpiresAfter, LastModifiedHeuristic
 
 from pprint import pprint
 
@@ -72,9 +72,9 @@ class DummyResponse:
 def datetime_to_header(dt):
     return formatdate(calendar.timegm(dt.timetuple()))
 
-class TestHeuristicFreshness(object):
+class TestLastModifiedHeuristic(object):
     def setup(self):
-        self.heuristic = HeuristicFreshness()
+        self.heuristic = LastModifiedHeuristic()
 
     def test_no_expiry_is_inferred_when_no_last_modified_is_present(self):
         assert self.heuristic.update_headers(DummyResponse(200, {})) == {}
