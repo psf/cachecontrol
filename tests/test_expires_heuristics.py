@@ -65,8 +65,8 @@ from email.utils import formatdate, parsedate
 from datetime import datetime, timedelta
 
 class DummyResponse:
-    def __init__(self, status_code, headers):
-        self.status_code = status_code
+    def __init__(self, status, headers):
+        self.status = status
         self.headers = CaseInsensitiveDict(headers)
 
 def datetime_to_header(dt):

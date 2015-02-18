@@ -91,7 +91,7 @@ class LastModifiedHeuristic(BaseHeuristic):
         if 'expires' not in response.headers:
             if 'cache-control' not in response.headers or response.headers['cache-control'] == 'public':
                 # RFC 7231, 6.1
-                if response.status_code in [200, 203, 204, 206, 300, 301, 404, 405, 410, 414, 501]:
+                if response.status in [200, 203, 204, 206, 300, 301, 404, 405, 410, 414, 501]:
                     if 'last-modified' in response.headers:
                         last_modified = parsedate(response.headers['last-modified'])
                         now = datetime.now()
