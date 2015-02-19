@@ -36,9 +36,10 @@ class BaseHeuristic(object):
         return {}
 
     def apply(self, response):
-        warning_header = {'warning': self.warning(response)}
+        warning_header_value = self.warning(response)
         response.headers.update(self.update_headers(response))
-        response.headers.update(warning_header)
+        if warning_header_value is not None:
+            response.headers.update({'Warning': warning_header_value})
         return response
 
 
@@ -77,3 +78,38 @@ class ExpiresAfter(BaseHeuristic):
     def warning(self, response):
         tmpl = '110 - Automatically cached for %s. Response might be stale'
         return tmpl % self.delta
+
+_ONE_DAY_IN_SECONDS = timedelta(days=1)
+
+class LastModifiedHeuristic(BaseHeuristic):
+    """
+    Apply the heuristic suggested by RFC 7234, 4.2.2,
+    using the Last-Modified date, when no explicit
+    freshness is specified.
+    """
+
+    def __init__(self):
+        self.cacheable_by_default_statuses = set([200, 203, 204, 206, 300, 301, 404, 405, 410, 414, 501])
+
+    def update_headers(self, response):
+        if 'expires' not in response.headers:
+            if 'cache-control' not in response.headers or response.headers['cache-control'] == 'public':
+                if response.status in self.cacheable_by_default_statuses:
+                    if 'last-modified' in response.headers:
+                        last_modified = parsedate(response.headers['last-modified'])
+                        now = datetime.now()
+                        age = now - datetime(*last_modified[:6])
+                        expires = now + (age / 10)
+
+                        return {'expires': datetime_to_header(expires)}
+        return {}
+
+    def warning(self, response):
+        now = datetime.now()
+        date = parsedate(response.headers['date'])
+        current_age = max(timedelta(), now - datetime(*date[:6]))
+
+        if current_age > _ONE_DAY_IN_SECONDS:
+            return '113 - Heuristic Expiration'
+        else:
+            return None
