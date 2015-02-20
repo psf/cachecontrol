@@ -2,7 +2,7 @@ from mock import Mock
 
 from requests import Session, get
 from cachecontrol import CacheControl
-from cachecontrol.heuristics import OneDayCache, ExpiresAfter
+from cachecontrol.heuristics import LastModified, ExpiresAfter, OneDayCache
 
 from pprint import pprint
 
@@ -58,3 +58,27 @@ class TestExpiresAfter(object):
 
         r = self.sess.get(the_url)
         assert r.from_cache
+
+
+class TestLastModified(object):
+
+    def setup(self):
+        self.sess = Session()
+        self.cached_sess = CacheControl(
+            self.sess, heuristic=LastModified()
+        )
+
+    def test_last_modified(self, url):
+        the_url = url + 'optional_cacheable_request'
+        r = self.sess.get(the_url)
+
+        assert 'expires' in r.headers
+        assert 'warning' in r.headers
+
+        pprint(dict(r.headers))
+
+        r = self.sess.get(the_url)
+        pprint(dict(r.headers))
+        assert r.from_cache
+
+# test_expires_heuristics.py
