@@ -1,8 +1,11 @@
 import calendar
+import time
 
-from email.utils import formatdate, parsedate
+from email.utils import formatdate, mktime_tz, parsedate, parsedate_tz
 
 from datetime import datetime, timedelta
+
+TIME_FMT = "%a, %d %b %Y %H:%M:%S GMT"
 
 
 def expire_after(delta, date=None):
@@ -77,3 +80,46 @@ class ExpiresAfter(BaseHeuristic):
     def warning(self, response):
         tmpl = '110 - Automatically cached for %s. Response might be stale'
         return tmpl % self.delta
+
+
+class LastModified(BaseHeuristic):
+    """
+    If there is no Expires header already, fall back on Last-Modified
+    using the heuristic from
+    http://tools.ietf.org/html/rfc7234#section-4.2.2
+    to calculate a reasonable value.
+
+    Firefox also does something like this per
+    https://developer.mozilla.org/en-US/docs/Web/HTTP/Caching_FAQ
+    http://lxr.mozilla.org/mozilla-release/source/netwerk/protocol/http/nsHttpResponseHead.cpp#397
+    Unlike mozilla we limit this to 24-hr.
+    """
+    date = None
+
+    def update_headers(self, resp):
+        if 'expires' in resp.headers:
+            return {}
+
+        if 'date' not in resp.headers or 'last-modified' not in resp.headers:
+            return {}
+
+        date = calendar.timegm(parsedate_tz(resp.headers['date']))
+        last_modified = parsedate(resp.headers['last-modified'])
+        if date is None or last_modified is None:
+            return {}
+
+        now = time.time()
+        current_age = max(0, now - date)
+        delta = date - calendar.timegm(last_modified)
+        freshness_lifetime = max(0, min(delta / 10, 24 * 3600))
+        if freshness_lifetime <= current_age:
+            return {}
+
+        self.date = time.strftime(TIME_FMT, last_modified)
+        expires = date + freshness_lifetime
+        return {'expires': time.strftime(TIME_FMT, time.gmtime(expires))}
+
+    def warning(self, resp):
+        return '110 - "Response may be stale, last modified %s"' % self.date
+
+# heuristics.py

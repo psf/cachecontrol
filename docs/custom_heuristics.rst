@@ -111,6 +111,27 @@ object. `ExpiresAfter` will override or add the `Expires` header and
 override or set the `Cache-Control` header to `public`.
 
 
+Last Modified
+-------------
+
+CacheControl bundles an `LastModified` heuristic that emulates
+the behavior of Firefox, following RFC7234. Roughly stated,
+this sets the expiration on a page to 10% of the difference
+between the request timestamp and the last modified timestamp.
+This is capped at 24-hr.
+
+.. code-block:: python
+
+   import requests
+   from cachecontrol import CacheControlAdapter
+   from cachecontrol.heuristics import LastModified
+
+   adapter = CacheControlAdapter(heuristic=LastModified())
+
+   sess = requests.Session()
+   sess.mount('http://', adapter)
+
+
 Site Specific Heuristics
 ------------------------
 
