@@ -95,9 +95,16 @@ class LastModified(BaseHeuristic):
     http://lxr.mozilla.org/mozilla-release/source/netwerk/protocol/http/nsHttpResponseHead.cpp#397
     Unlike mozilla we limit this to 24-hr.
     """
+    cacheable_by_default_statuses = set([200, 203, 204, 206, 300, 301, 404, 405, 410, 414, 501])
 
     def update_headers(self, resp):
         if 'expires' in resp.headers:
+            return {}
+
+        if 'cache-control' in resp.headers and resp.headers['cache-control'] != 'public':
+            return {}
+
+        if resp.status not in self.cacheable_by_default_statuses:
             return {}
 
         if 'date' not in resp.headers or 'last-modified' not in resp.headers:
