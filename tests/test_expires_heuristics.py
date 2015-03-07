@@ -72,7 +72,7 @@ class TestLastModified(object):
         r = self.sess.get(the_url)
 
         assert 'expires' in r.headers
-        assert 'warning' in r.headers
+        assert 'warning' not in r.headers
 
         pprint(dict(r.headers))
 
