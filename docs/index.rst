@@ -7,10 +7,10 @@ Welcome to CacheControl's documentation!
 ========================================
 
 CacheControl is a port of the caching algorithms in httplib2_ for use with
-requests_ session object.
+the requests_ session object.
 
 It was written because httplib2's better support for caching is often
-mitigated by its lack of threadsafety. The same is true of requests in
+mitigated by its lack of thread-safety. The same is true of requests in
 terms of caching.
 
 
@@ -29,7 +29,9 @@ requirements. See :doc:`storage` for more info.
 Quick Start
 ===========
 
-For the impatient, here is how to get started using CacheControl ::
+For the impatient, here is how to get started using CacheControl:
+
+.. code-block:: python
 
   import requests
 
@@ -42,24 +44,24 @@ For the impatient, here is how to get started using CacheControl ::
   response = cached_sess.get('http://google.com')
 
 
-This uses a threadsafe in memory dictionary for storage.
+This uses a thread-safe in-memory dictionary for storage.
 
 
 Tests
 =====
 
-The tests are all in cachecontrol/tests and is runnable by py.test.
+The tests are all in ``cachecontrol/tests`` and are runnable by ``py.test``.
 
 
 Disclaimers
 ===========
 
-CacheControl is relatively new and maybe have bugs. I have made an
+CacheControl is relatively new and might have bugs. I have made an
 effort to faithfully port the tests from httplib2 to CacheControl, but
 there is a decent chance that I've missed something. Please file bugs
 if you find any issues!
 
-With that in mind, CacheControl has been used sucessfully in a
+With that in mind, CacheControl has been used sucessfully in
 production environments, replacing httplib2's usage.
 
 If you give it a try, please let me know of any issues.
