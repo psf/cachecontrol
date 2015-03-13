@@ -1,7 +1,7 @@
 import calendar
 import time
 
-from email.utils import formatdate, mktime_tz, parsedate, parsedate_tz
+from email.utils import formatdate, parsedate, parsedate_tz
 
 from datetime import datetime, timedelta
 
@@ -21,7 +21,8 @@ class BaseHeuristic(object):
 
     def warning(self, response):
         """
-        Return a valid 1xx warning header value describing the cache adjustments.
+        Return a valid 1xx warning header value describing the cache
+        adjustments.
 
         The response is provided too allow warnings like 113
         http://tools.ietf.org/html/rfc7234#section-5.5.4 where we need
@@ -95,23 +96,27 @@ class LastModified(BaseHeuristic):
     http://lxr.mozilla.org/mozilla-release/source/netwerk/protocol/http/nsHttpResponseHead.cpp#397
     Unlike mozilla we limit this to 24-hr.
     """
-    cacheable_by_default_statuses = set([200, 203, 204, 206, 300, 301, 404, 405, 410, 414, 501])
+    cacheable_by_default_statuses = set([
+        200, 203, 204, 206, 300, 301, 404, 405, 410, 414, 501
+    ])
 
     def update_headers(self, resp):
-        if 'expires' in resp.headers:
+        headers = resp.headers
+
+        if 'expires' in headers:
             return {}
 
-        if 'cache-control' in resp.headers and resp.headers['cache-control'] != 'public':
+        if 'cache-control' in headers and headers['cache-control'] != 'public':
             return {}
 
         if resp.status not in self.cacheable_by_default_statuses:
             return {}
 
-        if 'date' not in resp.headers or 'last-modified' not in resp.headers:
+        if 'date' not in headers or 'last-modified' not in headers:
             return {}
 
-        date = calendar.timegm(parsedate_tz(resp.headers['date']))
-        last_modified = parsedate(resp.headers['last-modified'])
+        date = calendar.timegm(parsedate_tz(headers['date']))
+        last_modified = parsedate(headers['last-modified'])
         if date is None or last_modified is None:
             return {}
 
@@ -127,5 +132,3 @@ class LastModified(BaseHeuristic):
 
     def warning(self, resp):
         return None
-
-# heuristics.py
