@@ -32,7 +32,8 @@ class CacheController(object):
         self.cache_etags = cache_etags
         self.serializer = serializer or Serializer()
 
-    def _urlnorm(self, uri):
+    @classmethod
+    def _urlnorm(cls, uri):
         """Normalize the URL to create a safe key for the cache"""
         (scheme, authority, path, query, fragment) = parse_uri(uri)
         if not scheme or not authority:
@@ -51,8 +52,9 @@ class CacheController(object):
 
         return defrag_uri
 
-    def cache_url(self, uri):
-        return self._urlnorm(uri)
+    @classmethod
+    def cache_url(cls, uri):
+        return cls._urlnorm(uri)
 
     def parse_cache_control(self, headers):
         """

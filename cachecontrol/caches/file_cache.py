@@ -4,6 +4,7 @@ import os
 from lockfile import FileLock
 
 from ..cache import BaseCache
+from ..controller import CacheController
 
 
 def _secure_open_write(filename, fmode):
@@ -91,3 +92,12 @@ class FileCache(BaseCache):
         name = self._fn(key)
         if not self.forever:
             os.remove(name)
+
+
+def url_to_file_path(url, filecache):
+    """Return the file cache path based on the URL.
+
+    This does not ensure the file exists!
+    """
+    key = CacheController.cache_url(url)
+    return filecache._fn(key)
