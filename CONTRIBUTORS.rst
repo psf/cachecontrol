@@ -9,3 +9,4 @@ Huge thanks to all those folks who have helped improve CacheControl!
  - Cory Benfield
  - Javier de la Rosa
  - Donald Stufft
+ - Joseph Walton

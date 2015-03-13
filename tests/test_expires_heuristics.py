@@ -59,7 +59,6 @@ class TestExpiresAfter(object):
         r = self.sess.get(the_url)
         assert r.from_cache
 
-
 class TestLastModified(object):
 
     def setup(self):
@@ -73,12 +72,79 @@ class TestLastModified(object):
         r = self.sess.get(the_url)
 
         assert 'expires' in r.headers
-        assert 'warning' in r.headers
+        assert 'warning' not in r.headers
 
         pprint(dict(r.headers))
 
         r = self.sess.get(the_url)
         pprint(dict(r.headers))
         assert r.from_cache
+
+import calendar
+import time
+from requests.structures import CaseInsensitiveDict
+from email.utils import formatdate, parsedate
+from datetime import datetime, timedelta
+
+TIME_FMT = "%a, %d %b %Y %H:%M:%S GMT"
+
+class DummyResponse:
+    def __init__(self, status, headers):
+        self.status = status
+        self.headers = CaseInsensitiveDict(headers)
+
+def datetime_to_header(dt):
+    return formatdate(calendar.timegm(dt.timetuple()))
+
+class TestModifiedUnitTests(object):
+    def setup(self):
+        self.heuristic = LastModified()
+        time_now = time.time()
+        self.year_ago = time.strftime(TIME_FMT, time.gmtime(time_now - (86400 * 365)))
+        self.week_ago = time.strftime(TIME_FMT, time.gmtime(time_now - (86400 * 7)))
+        self.day_ago = time.strftime(TIME_FMT, time.gmtime(time_now - 86400))
+        self.now = time.strftime(TIME_FMT, time.gmtime(time_now))
+        self.day_ahead = time.strftime(TIME_FMT, time.gmtime(time_now + 86400))
+
+    def test_no_expiry_is_inferred_when_no_last_modified_is_present(self):
+        assert self.heuristic.update_headers(DummyResponse(200, {})) == {}
+
+    def test_expires_is_not_replaced_when_present(self):
+        resp = DummyResponse(200, {'Expires': self.day_ahead})
+        assert self.heuristic.update_headers(resp) == {}
+
+    def test_last_modified_is_used(self):
+        resp = DummyResponse(200, {'Date': self.now, 'Last-Modified': self.week_ago})
+        modified = self.heuristic.update_headers(resp)
+        assert ['expires'] == list(modified.keys())
+        assert datetime(*parsedate(modified['expires'])[:6]) > datetime.now()
+
+    def test_last_modified_is_not_used_when_cache_control_present(self):
+        resp = DummyResponse(200, {'Date': self.now, 'Last-Modified': self.week_ago, 'Cache-Control': 'private'})
+        assert self.heuristic.update_headers(resp) == {}
+
+    def test_last_modified_is_not_used_when_status_is_unknown(self):
+        resp = DummyResponse(299, {'Date': self.now, 'Last-Modified': self.week_ago})
+        assert self.heuristic.update_headers(resp) == {}
+
+    def test_last_modified_is_used_when_cache_control_public(self):
+        resp = DummyResponse(200, {'Date': self.now, 'Last-Modified': self.week_ago, 'Cache-Control': 'public'})
+        modified = self.heuristic.update_headers(resp)
+        assert ['expires'] == list(modified.keys())
+        assert datetime(*parsedate(modified['expires'])[:6]) > datetime.now()
+
+    def test_warning_is_not_added_when_response_more_recent_than_24_hours(self):
+        resp = DummyResponse(200, {'Date': self.now, 'Last-Modified': self.week_ago})
+        assert self.heuristic.warning(resp) is None
+
+    def test_warning_is_not_added_when_heuristic_was_not_used(self):
+        resp = DummyResponse(200, {'Date': self.now, 'Expires': self.day_ahead})
+        assert self.heuristic.warning(resp) is None
+
+    def test_expiry_is_no_more_that_twenty_four_hours(self):
+        resp = DummyResponse(200, {'Date': self.now, 'Last-Modified': self.year_ago})
+        modified = self.heuristic.update_headers(resp)
+        assert ['expires'] == list(modified.keys())
+        assert self.day_ahead == modified['expires']
 
 # test_expires_heuristics.py

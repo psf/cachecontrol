@@ -39,9 +39,10 @@ class BaseHeuristic(object):
         return {}
 
     def apply(self, response):
-        warning_header = {'warning': self.warning(response)}
+        warning_header_value = self.warning(response)
         response.headers.update(self.update_headers(response))
-        response.headers.update(warning_header)
+        if warning_header_value is not None:
+            response.headers.update({'Warning': warning_header_value})
         return response
 
 
@@ -94,10 +95,16 @@ class LastModified(BaseHeuristic):
     http://lxr.mozilla.org/mozilla-release/source/netwerk/protocol/http/nsHttpResponseHead.cpp#397
     Unlike mozilla we limit this to 24-hr.
     """
-    date = None
+    cacheable_by_default_statuses = set([200, 203, 204, 206, 300, 301, 404, 405, 410, 414, 501])
 
     def update_headers(self, resp):
         if 'expires' in resp.headers:
+            return {}
+
+        if 'cache-control' in resp.headers and resp.headers['cache-control'] != 'public':
+            return {}
+
+        if resp.status not in self.cacheable_by_default_statuses:
             return {}
 
         if 'date' not in resp.headers or 'last-modified' not in resp.headers:
@@ -115,11 +122,10 @@ class LastModified(BaseHeuristic):
         if freshness_lifetime <= current_age:
             return {}
 
-        self.date = time.strftime(TIME_FMT, last_modified)
         expires = date + freshness_lifetime
         return {'expires': time.strftime(TIME_FMT, time.gmtime(expires))}
 
     def warning(self, resp):
-        return '110 - "Response may be stale, last modified %s"' % self.date
+        return None
 
 # heuristics.py
