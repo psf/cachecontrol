@@ -59,6 +59,8 @@ class FileCache(BaseCache):
         return hashlib.sha224(x.encode()).hexdigest()
 
     def _fn(self, name):
+        # NOTE: This method should not change as some may depend on it.
+        #       See: https://github.com/ionrock/cachecontrol/issues/63
         hashed = self.encode(name)
         parts = list(hashed[:5]) + [hashed]
         return os.path.join(self.directory, *parts)
