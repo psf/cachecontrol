@@ -126,7 +126,8 @@ class TestCacheControlRequest(object):
         )
 
     def req(self, headers):
-        return self.c.cached_request(Mock(url=self.url, headers=headers))
+        mock_request = Mock(url=self.url, headers=headers)
+        return self.c.cached_request(mock_request)
 
     def test_cache_request_no_cache(self):
         resp = self.req({'cache-control': 'no-cache'})
