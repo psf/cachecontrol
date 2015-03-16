@@ -117,6 +117,12 @@ class CacheController(object):
             return resp
 
         headers = CaseInsensitiveDict(resp.headers)
+        if not headers or 'date' not in headers:
+            # With date or etag, the cached response can never be used
+            # and should be deleted.
+            if 'etag' not in headers:
+                self.cache.delete(cache_url)
+            return False
 
         now = time.time()
         date = calendar.timegm(
