@@ -2,6 +2,13 @@
  CacheControl
 ==============
 
+.. image:: https://pypip.in/version/cachecontrol/badge.svg
+    :target: https://pypi.python.org/pypi/cachecontrol/
+    :alt: Latest Version
+
+.. image:: https://travis-ci.org/ionrock/cachecontrol.png?branch=master
+  :target: https://travis-ci.org/ionrock/cachecontrol
+
 CacheControl is a port of the caching algorithms in httplib2_ for use with
 requests_ session object.
 
@@ -29,9 +36,6 @@ If the URL contains any caching based headers, it will cache the
 result in a simple dictionary.
 
 For more info, check out the docs_
-
-.. image:: https://travis-ci.org/ionrock/cachecontrol.png?branch=master
-  :target: https://travis-ci.org/ionrock/cachecontrol
 
 .. _docs: http://cachecontrol.readthedocs.org/en/latest/
 .. _httplib2: http://code.google.com/p/httplib2/
