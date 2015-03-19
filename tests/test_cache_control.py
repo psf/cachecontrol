@@ -129,6 +129,12 @@ class TestCacheControlRequest(object):
         mock_request = Mock(url=self.url, headers=headers)
         return self.c.cached_request(mock_request)
 
+    def test_cache_request_no_headers(self):
+        cached_resp = Mock(headers={'ETag': 'jfd9094r808', 'Content-Length': 100})
+        self.c.cache = DictCache({self.url: cached_resp})
+        resp = self.req({})
+        assert not resp
+
     def test_cache_request_no_cache(self):
         resp = self.req({'cache-control': 'no-cache'})
         assert not resp
