@@ -38,5 +38,5 @@ result in a simple dictionary.
 For more info, check out the docs_
 
 .. _docs: http://cachecontrol.readthedocs.org/en/latest/
-.. _httplib2: http://code.google.com/p/httplib2/
+.. _httplib2: https://github.com/jcgregorio/httplib2
 .. _requests: http://docs.python-requests.org/
