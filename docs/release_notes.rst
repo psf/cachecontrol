@@ -2,12 +2,13 @@
  Release Notes
 ===============
 
-0.12.0
+0.11.2
 ======
 
 This release introduces the `cachecontrol.heuristics.LastModified`
 heuristic. This uses the same behaviour as many browsers to base expiry on the
 `Last-Modified` header when no explicit expiry is provided.
+
 
 0.11.0
 ======
