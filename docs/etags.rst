@@ -10,7 +10,7 @@ appropriate `If-None-Match` header. We'll call this behavior a **Time
 Priority** cache as the ETag support only takes effect when the time has
 expired.
 
-In CacheControl the default behavior when an ETag an sent by the
+In CacheControl the default behavior when an ETag is sent by the
 server is to cache the response. We'll refer to this pattern as a
 **Equal Priority** cache as the decision to cache is either time base or
 due to the presense of an ETag.
