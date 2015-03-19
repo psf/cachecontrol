@@ -41,6 +41,23 @@ class TestSerializer(object):
         # string.
         assert resp.data == 'Hello World'.encode('utf-8')
 
+    def test_read_v1_serialized_with_py2_TypeError(self):
+        # This tests how the code handles in reading data that was pickled
+        # with an old version of cachecontrol running under Python 2
+        req = Mock()
+        py2_pickled_data = b"".join([
+            b"(dp1\nS'response'\np2\n(dp3\nS'body'\np4\nS'Hello World'\n",
+            b"p5\nsS'version'\np6\nS'2'\nsS'status'\np7\nI200\n",
+            b"sS'reason'\np8\nS''\nsS'decode_content'\np9\nI01\n",
+            b"sS'strict'\np10\nS''\nsS'headers'\np11\n(dp12\n",
+            b"S'Content-Type'\np13\nS'text/plain'\np14\n",
+            b"sS'Cache-Control'\np15\nS'public'\np16\n",
+            b"sS'Expires'\np17\nS'87654'\np18\nsss."])
+        resp = self.serializer._loads_v1(req, py2_pickled_data)
+        # We have to decode our urllib3 data back into a unicode
+        # string.
+        assert resp.data == 'Hello World'.encode('utf-8')
+
     def test_read_version_three_streamable(self, url):
         original_resp = requests.get(url, stream=True)
         req = original_resp.request
