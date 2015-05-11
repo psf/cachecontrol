@@ -9,7 +9,6 @@ setup_params = dict(
     version=VERSION,
     author='Eric Larson',
     author_email='eric@ionrock.org',
-    license='MIT',
     url='https://github.com/ionrock/cachecontrol',
     keywords='requests http caching web',
     packages=setuptools.find_packages(),
@@ -18,7 +17,7 @@ setup_params = dict(
     install_requires=[
         'requests',
     ],
-    extras_require = {
+    extras_require={
         'filecache': ['lockfile'],
     },
     classifiers=[
