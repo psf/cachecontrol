@@ -23,7 +23,7 @@ setup_params = dict(
     classifiers=[
         'Development Status :: 4 - Beta',
         'Environment :: Web Environment',
-        'License :: OSI Approved :: MIT License',
+        'License :: OSI Approved :: Apache Software License',
         'Operating System :: OS Independent',
         'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
