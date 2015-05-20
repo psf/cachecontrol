@@ -10,6 +10,8 @@ import pytest
 import requests
 from cachecontrol import CacheControl
 from cachecontrol.caches import FileCache
+from lockfile import LockFile
+from lockfile.mkdirlockfile import MkdirLockFile
 
 
 def randomdata():
@@ -83,3 +85,28 @@ class TestStorageFileCache(object):
             url1 += randomdata()
         assert len(self.cache.encode(url0)) < 200
         assert len(self.cache.encode(url0)) == len(self.cache.encode(url1))
+
+    def test_cant_use_dir_and_lock_class(self, tmpdir):
+        with pytest.raises(ValueError):
+            FileCache(str(tmpdir), use_dir_lock=True, lock_class=object())
+
+    @pytest.mark.parametrize(
+        ("value", "expected"),
+        [
+            (None, LockFile),
+            (True, MkdirLockFile),
+            (False, LockFile),
+        ],
+    )
+    def test_simple_lockfile_arg(self, tmpdir, value, expected):
+        if value is not None:
+            cache = FileCache(str(tmpdir), use_dir_lock=value)
+        else:
+            cache = FileCache(str(tmpdir))
+
+        assert issubclass(cache.lock_class, expected)
+
+    def test_lock_class(self, tmpdir):
+        lock_class = object()
+        cache = FileCache(str(tmpdir), lock_class=lock_class)
+        assert cache.lock_class is lock_class
