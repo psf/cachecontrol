@@ -21,7 +21,7 @@ setup_params = dict(
         'requests',
     ],
     extras_require={
-        'filecache': ['lockfile'],
+        'filecache': ['lockfile>=0.9'],
     },
     classifiers=[
         'Development Status :: 4 - Beta',
