@@ -82,7 +82,7 @@ class TestCacheControllerResponse(object):
         cc.serializer.dumps.assert_called_with(req, resp, body=None)
         cc.cache.set.assert_called_with(self.url, ANY)
 
-    def test_cache_repsonse_no_store(self):
+    def test_cache_response_no_store(self):
         resp = Mock()
         cache = DictCache({self.url: resp})
         cc = CacheController(cache)
