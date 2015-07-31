@@ -5,6 +5,7 @@ from mock import Mock, patch
 from cachecontrol.compat import pickle
 from cachecontrol.serialize import Serializer
 from cachecontrol.serialize import _b64_encode
+from cachecontrol.serialize import _b64_decode_str
 
 
 class TestSerializer(object):
@@ -107,17 +108,17 @@ class TestSerializer(object):
 
 class TestEncoding(object):
 
-    unicode_string = u'\u201cmax-age=31536000\u2033'
+    unicode_string = '\u201cmax-age=31536000\u2033'.encode('utf-8')
     b64_result = '4oCcbWF4LWFnZT0zMTUzNjAwMOKAsw=='
 
     @patch('cachecontrol.serialize._b64_encode_bytes')
     def test_b64_encode_with_bytes(self, encode_bytes):
-        result = _b64_encode(self.unicode_string.encode('utf-8'))
+        _b64_encode(self.unicode_string.encode('utf-8'))
         assert encode_bytes.called
 
     @patch('cachecontrol.serialize._b64_encode_str')
-    def test_b64_encode_with_bytes(self, encode_str):
-        result = _b64_encode(self.unicode_string)
+    def test_b64_encode_with_str(self, encode_str):
+        _b64_encode(self.unicode_string.decode('utf-8'))
         assert encode_str.called
 
     def test_b64_encode_with_unicode_encoded_as_unicode(self):
@@ -129,5 +130,8 @@ class TestEncoding(object):
         This test ensures we recognize the unicode encoded string act
         accordingly.
         """
-        assert _b64_encode(self.unicode_string.encode('utf-8')) == self.b64_result
-        assert _b64_encode(self.unicode_string) == self.b64_result
+        unicode_result = _b64_encode(self.unicode_string.encode('utf-8'))
+        assert _b64_decode_str(unicode_result) == self.unicode_string
+
+        bytes_result = _b64_encode(self.unicode_string)
+        assert _b64_decode_str(bytes_result) == self.unicode_string
