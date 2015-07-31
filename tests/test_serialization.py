@@ -108,7 +108,7 @@ class TestSerializer(object):
 
 class TestEncoding(object):
 
-    unicode_string = '\u201cmax-age=31536000\u2033'.encode('utf-8')
+    unicode_string = b'\u201cmax-age=31536000\u2033'.decode('utf-8')
     b64_result = '4oCcbWF4LWFnZT0zMTUzNjAwMOKAsw=='
 
     @patch('cachecontrol.serialize._b64_encode_bytes')
@@ -118,7 +118,7 @@ class TestEncoding(object):
 
     @patch('cachecontrol.serialize._b64_encode_str')
     def test_b64_encode_with_str(self, encode_str):
-        _b64_encode(self.unicode_string.decode('utf-8'))
+        _b64_encode(self.unicode_string)
         assert encode_str.called
 
     def test_b64_encode_with_unicode_encoded_as_unicode(self):
