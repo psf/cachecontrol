@@ -1,9 +1,10 @@
 import requests
 
-from mock import Mock
+from mock import Mock, patch
 
 from cachecontrol.compat import pickle
 from cachecontrol.serialize import Serializer
+from cachecontrol.serialize import _b64_encode
 
 
 class TestSerializer(object):
@@ -102,3 +103,31 @@ class TestSerializer(object):
                 body=data
             )
         )
+
+
+class TestEncoding(object):
+
+    unicode_string = u'\u201cmax-age=31536000\u2033'
+    b64_result = '4oCcbWF4LWFnZT0zMTUzNjAwMOKAsw=='
+
+    @patch('cachecontrol.serialize._b64_encode_bytes')
+    def test_b64_encode_with_bytes(self, encode_bytes):
+        result = _b64_encode(self.unicode_string.encode('utf-8'))
+        assert encode_bytes.called
+
+    @patch('cachecontrol.serialize._b64_encode_str')
+    def test_b64_encode_with_bytes(self, encode_str):
+        result = _b64_encode(self.unicode_string)
+        assert encode_str.called
+
+    def test_b64_encode_with_unicode_encoded_as_unicode(self):
+        """Some servers will respond with unicode encoded strings. The
+        test below uses unicode open and close quotes around the max
+        age setting, which raises an exception if we treat it as a
+        string.
+
+        This test ensures we recognize the unicode encoded string act
+        accordingly.
+        """
+        assert _b64_encode(self.unicode_string.encode('utf-8')) == self.b64_result
+        assert _b64_encode(self.unicode_string) == self.b64_result
