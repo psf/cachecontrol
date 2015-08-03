@@ -11,7 +11,7 @@ caching system can use heuristics to determine an appropriate amount
 of time to cache a response.
 
 By default, in CacheControl the decision to cache must be explicit by
-default via the cacheing headers. When there is a need to cache
+default via the caching headers. When there is a need to cache
 responses that wouldn't normally be cached, a user can provide a
 heuristic to adjust the response in order to make it cacheable.
 
@@ -27,21 +27,24 @@ A cache heuristic allows specifying a caching strategy by adjusting
 response headers before the response is considered for caching.
 
 For example, if we wanted to implement a caching strategy where every
-request should be cached for a year, we can implement the strategy in
+request should be cached for a week, we can implement the strategy in
 a `cachecontrol.heuristics.Heuristic`. ::
 
   import calendar
   from cachecontrol.heuristics import BaseHeuristic
+  from datetime import datetime, timedelta
   from email.utils import parsedate, formatdate
 
 
-  class OneYearHeuristic(BaseHeuristic):
+  class OneWeekHeuristic(BaseHeuristic):
 
       def update_headers(self, response):
           date = parsedate(response.headers['date'])
-          expires = datetime(*date[:6]) + timedelta(years=1)
-          headers['expires'] = formatdate(calendar.timegm(expires.timetuple()))
-          headers['cache-control'] = 'public'
+          expires = datetime(*date[:6]) + timedelta(weeks=1)
+          return {
+              'expires' : formatdate(calendar.timegm(expires.timetuple())),
+              'cache-control' : 'public',
+          }
 
       def warning(self, response):
           msg = 'Automatically cached! Response is Stale.'
@@ -65,7 +68,7 @@ constructor. ::
   from cachecontrol import CacheControl
 
 
-  sess = CacheControl(Session(), heuristic=OneYearHeuristic())
+  sess = CacheControl(Session(), heuristic=OneWeekHeuristic())
   sess.get('http://google.com')
   r = sess.get('http://google.com')
   assert r.from_cache
