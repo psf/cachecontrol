@@ -1,6 +1,7 @@
 """
 The httplib2 algorithms ported for use with requests.
 """
+import logging
 import re
 import calendar
 import time
@@ -11,6 +12,8 @@ from requests.structures import CaseInsensitiveDict
 from .cache import DictCache
 from .serialize import Serializer
 
+
+logger = logging.getLogger(__name__)
 
 URI = re.compile(r"^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\?([^#]*))?(#(.*))?")
 
@@ -85,16 +88,16 @@ class CacheController(object):
         Return a cached response if it exists in the cache, otherwise
         return False.
         """
+        global logger
         cache_url = self.cache_url(request.url)
         cc = self.parse_cache_control(request.headers)
 
-        # non-caching states
-        no_cache = True if 'no-cache' in cc else False
+        # Bail out for non-caching states
+        if 'no-cache' in cc:
+            logger.debug('Request header has "no-cache", cache bypassed')
+            return False
         if 'max-age' in cc and cc['max-age'] == 0:
-            no_cache = True
-
-        # Bail out if no-cache was set
-        if no_cache:
+            logger.debug('Request header has "max_age" as 0, cache bypassed')
             return False
 
         # It is in the cache, so lets see if it is going to be
