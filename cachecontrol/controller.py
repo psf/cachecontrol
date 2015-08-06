@@ -88,11 +88,11 @@ class CacheController(object):
         Return a cached response if it exists in the cache, otherwise
         return False.
         """
-        global logger
         cache_url = self.cache_url(request.url)
+        logger.debug('Looking up "%s" in the cache', cache_url)
         cc = self.parse_cache_control(request.headers)
 
-        # Bail out for non-caching states
+        # Bail out if the request insists on fresh data
         if 'no-cache' in cc:
             logger.debug('Request header has "no-cache", cache bypassed')
             return False
@@ -100,12 +100,16 @@ class CacheController(object):
             logger.debug('Request header has "max_age" as 0, cache bypassed')
             return False
 
-        # It is in the cache, so lets see if it is going to be
-        # fresh enough
-        resp = self.serializer.loads(request, self.cache.get(cache_url))
+        # Request allows serving from the cache, let's see if we find something
+        cache_data = self.cache.get(cache_url)
+        if cache_data is None:
+            logger.debug('No cache entry available')
+            return False
 
-        # Check to see if we have a cached object
+        # Check whether it can be deserialized
+        resp = self.serializer.loads(request, cache_contents)
         if not resp:
+            logger.warning('Cache entry deserialization failed, entry ignored')
             return False
 
         # If we have a cached 301, return it immediately. We don't
@@ -117,14 +121,17 @@ class CacheController(object):
         # Client can try to refresh the value by repeating the request
         # with cache busting headers as usual (ie no-cache).
         if resp.status == 301:
+            logger.debug('Returning cached "301 Moved Permanently" response (ignoring date and etag information)')
             return resp
 
         headers = CaseInsensitiveDict(resp.headers)
         if not headers or 'date' not in headers:
-            # With date or etag, the cached response can never be used
-            # and should be deleted.
             if 'etag' not in headers:
+                # Without date or etag, the cached response can never be used
+                # and should be deleted.
+                logger.debug('Purging cached response because has neither date nor etag')
                 self.cache.delete(cache_url)
+            logger.debug('Ignoring cached response because it has no date')
             return False
 
         now = time.time()
@@ -144,10 +151,12 @@ class CacheController(object):
 
         # Check the max-age pragma in the cache control header
         if 'max-age' in resp_cc and resp_cc['max-age'].isdigit():
+            logger.debug("Checking cache entry's freshness against its max-age header")
             freshness_lifetime = int(resp_cc['max-age'])
 
         # If there isn't a max-age, check for an expires header
         elif 'expires' in headers:
+            logger.debug("Checking cache entry's freshness against its expires header")
             expires = parsedate_tz(headers['expires'])
             if expires is not None:
                 expire_time = calendar.timegm(expires) - date
@@ -155,12 +164,14 @@ class CacheController(object):
 
         # determine if we are setting freshness limit in the req
         if 'max-age' in cc:
+            logger.debug("Checking cache entry's freshness against request's(!) max-age header")
             try:
                 freshness_lifetime = int(cc['max-age'])
             except ValueError:
                 freshness_lifetime = 0
 
         if 'min-fresh' in cc:
+            logger.debug("Checking cache entry's freshness against request's(!) min-fresh header")
             try:
                 min_fresh = int(cc['min-fresh'])
             except ValueError:
@@ -168,14 +179,14 @@ class CacheController(object):
             # adjust our current age by our min fresh
             current_age += min_fresh
 
-        # see how fresh we actually are
-        fresh = (freshness_lifetime > current_age)
-
-        if fresh:
+        # return entry if it is fresh enough
+        if freshness_lifetime > current_age:
+            logger.debug('Returning cached response')
             return resp
 
         # we're not fresh. If we don't have an Etag, clear it out
         if 'etag' not in headers:
+            logger.debug('Stale cache entry has no etag, purging')
             self.cache.delete(cache_url)
 
         # return the original handler
@@ -214,10 +225,18 @@ class CacheController(object):
         cc = self.parse_cache_control(response_headers)
 
         cache_url = self.cache_url(request.url)
+        logger.debug('Updating cache with response from "%s"', cache_url)
 
         # Delete it from the cache if we happen to have it stored there
-        no_store = cc.get('no-store') or cc_req.get('no-store')
+        no_store = False
+        if cc.get('no-store'):
+            no_store = True
+            logger.debug('Response header has "no-store"')
+        if cc_req.get('no-store'):
+            no_store = True
+            logger.debug('Request header has "no-store"')
         if no_store and self.cache.get(cache_url):
+            logger.debug('Purging existing cache entry to honor "no-store"')
             self.cache.delete(cache_url)
 
         # If we've been given an etag, then keep the response
