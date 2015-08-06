@@ -107,7 +107,7 @@ class CacheController(object):
             return False
 
         # Check whether it can be deserialized
-        resp = self.serializer.loads(request, cache_contents)
+        resp = self.serializer.loads(request, cache_data)
         if not resp:
             logger.warning('Cache entry deserialization failed, entry ignored')
             return False
