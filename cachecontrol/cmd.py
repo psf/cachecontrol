@@ -1,8 +1,18 @@
+import logging
+
 import requests
+
 from cachecontrol.adapter import CacheControlAdapter
 from cachecontrol.cache import DictCache
+from cachecontrol.controller import logger
 
 from argparse import ArgumentParser
+
+
+def setup_logging():
+    logger.setLevel(logging.DEBUG)
+    handler = logging.StreamHandler()
+    logger.addHandler(handler)
 
 
 def get_session():
@@ -31,7 +41,11 @@ def main(args=None):
     sess = get_session()
 
     if args.url:
+        # Make a request to get a response
         resp = sess.get(args.url)
+
+        # Turn on logging
+        setup_logging()
 
         # try setting the cache
         sess.cache_controller.cache_response(resp.request, resp.raw)
