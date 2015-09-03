@@ -96,6 +96,7 @@ class CacheController(object):
         if 'no-cache' in cc:
             logger.debug('Request header has "no-cache", cache bypassed')
             return False
+
         if 'max-age' in cc and cc['max-age'] == 0:
             logger.debug('Request header has "max_age" as 0, cache bypassed')
             return False
@@ -121,7 +122,9 @@ class CacheController(object):
         # Client can try to refresh the value by repeating the request
         # with cache busting headers as usual (ie no-cache).
         if resp.status == 301:
-            logger.debug('Returning cached "301 Moved Permanently" response (ignoring date and etag information)')
+            msg = ('Returning cached "301 Moved Permanently" response '
+                   '(ignoring date and etag information)')
+            logger.debug(msg)
             return resp
 
         headers = CaseInsensitiveDict(resp.headers)
@@ -129,9 +132,9 @@ class CacheController(object):
             if 'etag' not in headers:
                 # Without date or etag, the cached response can never be used
                 # and should be deleted.
-                logger.debug('Purging cached response because has neither date nor etag')
+                logger.debug('Purging cached response: no date or etag')
                 self.cache.delete(cache_url)
-            logger.debug('Ignoring cached response because it has no date')
+            logger.debug('Ignoring cached response: no date')
             return False
 
         now = time.time()
@@ -139,6 +142,7 @@ class CacheController(object):
             parsedate_tz(headers['date'])
         )
         current_age = max(0, now - date)
+        logger.debug('Current age based on date: %i', current_age)
 
         # TODO: There is an assumption that the result will be a
         #       urllib3 response object. This may not be best since we
@@ -151,42 +155,50 @@ class CacheController(object):
 
         # Check the max-age pragma in the cache control header
         if 'max-age' in resp_cc and resp_cc['max-age'].isdigit():
-            logger.debug("Checking cache entry's freshness against its max-age header")
             freshness_lifetime = int(resp_cc['max-age'])
+            logger.debug('Freshness lifetime from max-age: %i',
+                         freshness_lifetime)
 
         # If there isn't a max-age, check for an expires header
         elif 'expires' in headers:
-            logger.debug("Checking cache entry's freshness against its expires header")
             expires = parsedate_tz(headers['expires'])
             if expires is not None:
                 expire_time = calendar.timegm(expires) - date
                 freshness_lifetime = max(0, expire_time)
+                logger.debug("Freshness lifetime from expires: %i",
+                             freshness_lifetime)
 
-        # determine if we are setting freshness limit in the req
+        # Determine if we are setting freshness limit in the
+        # request. Note, this overrides what was in the response.
         if 'max-age' in cc:
-            logger.debug("Checking cache entry's freshness against request's(!) max-age header")
             try:
                 freshness_lifetime = int(cc['max-age'])
+                logger.debug('Freshness lifetime from request max-age: %i',
+                             freshness_lifetime)
             except ValueError:
                 freshness_lifetime = 0
 
         if 'min-fresh' in cc:
-            logger.debug("Checking cache entry's freshness against request's(!) min-fresh header")
             try:
                 min_fresh = int(cc['min-fresh'])
             except ValueError:
                 min_fresh = 0
             # adjust our current age by our min fresh
             current_age += min_fresh
+            logger.debug('Adjusted current age from min-fresh: %i',
+                         current_age)
 
-        # return entry if it is fresh enough
+        # Return entry if it is fresh enough
         if freshness_lifetime > current_age:
-            logger.debug('Returning cached response')
+            logger.debug('The response is "fresh", returning cached response')
+            logger.debug('%i > %i', freshness_lifetime, current_age)
             return resp
 
         # we're not fresh. If we don't have an Etag, clear it out
         if 'etag' not in headers:
-            logger.debug('Stale cache entry has no etag, purging')
+            logger.debug(
+                'The cached response is "stale" with no etag, purging'
+            )
             self.cache.delete(cache_url)
 
         # return the original handler
@@ -216,7 +228,13 @@ class CacheController(object):
         """
         # From httplib2: Don't cache 206's since we aren't going to
         #                handle byte range requests
-        if response.status not in [200, 203, 300, 301]:
+        cacheable_status_codes = [200, 203, 300, 301]
+        if response.status not in cacheable_status_codes:
+            logger.debug(
+                'Status code %s not in %s',
+                response.status,
+                cacheable_status_codes
+            )
             return
 
         response_headers = CaseInsensitiveDict(response.headers)
@@ -241,6 +259,7 @@ class CacheController(object):
 
         # If we've been given an etag, then keep the response
         if self.cache_etags and 'etag' in response_headers:
+            logger.debug('Caching due to etag')
             self.cache.set(
                 cache_url,
                 self.serializer.dumps(request, response, body=body),
@@ -249,6 +268,7 @@ class CacheController(object):
         # Add to the cache any 301s. We do this before looking that
         # the Date headers.
         elif response.status == 301:
+            logger.debug('Caching permanant redirect')
             self.cache.set(
                 cache_url,
                 self.serializer.dumps(request, response)
@@ -261,6 +281,7 @@ class CacheController(object):
             # cache when there is a max-age > 0
             if cc and cc.get('max-age'):
                 if int(cc['max-age']) > 0:
+                    logger.debug('Caching b/c date exists and max-age > 0')
                     self.cache.set(
                         cache_url,
                         self.serializer.dumps(request, response, body=body),
@@ -270,6 +291,7 @@ class CacheController(object):
             # in the meantime.
             elif 'expires' in response_headers:
                 if response_headers['expires']:
+                    logger.debug('Caching b/c of expires header')
                     self.cache.set(
                         cache_url,
                         self.serializer.dumps(request, response, body=body),
