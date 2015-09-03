@@ -32,7 +32,7 @@ def get_session():
 
 def get_args():
     parser = ArgumentParser()
-    parser.add_argument('--url', '-u', help='A URL to try and cache')
+    parser.add_argument('url', help='The URL to try and cache')
     return parser.parse_args()
 
 
@@ -40,21 +40,20 @@ def main(args=None):
     args = get_args()
     sess = get_session()
 
-    if args.url:
-        # Make a request to get a response
-        resp = sess.get(args.url)
+    # Make a request to get a response
+    resp = sess.get(args.url)
 
-        # Turn on logging
-        setup_logging()
+    # Turn on logging
+    setup_logging()
 
-        # try setting the cache
-        sess.cache_controller.cache_response(resp.request, resp.raw)
+    # try setting the cache
+    sess.cache_controller.cache_response(resp.request, resp.raw)
 
-        # Now try to get it
-        if sess.cache_controller.cached_request(resp.request):
-            print('Cached!')
-        else:
-            print('Not cached :(')
+    # Now try to get it
+    if sess.cache_controller.cached_request(resp.request):
+        print('Cached!')
+    else:
+        print('Not cached :(')
 
 
 
