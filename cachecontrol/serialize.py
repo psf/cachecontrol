@@ -40,11 +40,9 @@ class Serializer(object):
 
             # NOTE: 99% sure this is dead code. I'm only leaving it
             #       here b/c I don't have a test yet to prove
-            #       it. Basically, before using
-            #       `cachecontrol.filewrapper.CallbackFileWrapper`,
-            #       this made an effort to reset the file handle. The
-            #       `CallbackFileWrapper` short circuits this code by
-            #       setting the body as the content is consumed, the
+            #       it. Basically, this made an effort to reset the file handle
+            #       CacheControlAdfapter.build_response was rewritten to delay
+            #       cache entry until the stream was fully read, the
             #       result being a `body` argument is *always* passed
             #       into cache_response, and in turn,
             #       `Serializer.dump`.
