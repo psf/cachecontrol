@@ -1,3 +1,4 @@
+import types
 import functools
 
 from requests.adapters import HTTPAdapter
