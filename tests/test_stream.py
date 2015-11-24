@@ -7,7 +7,6 @@ from cachecontrol import CacheControl
 
 
 class TestStream(object):
-
     def setup(self):
         self.sess = CacheControl(requests.Session())
 
