@@ -89,6 +89,14 @@ class SimpleApp(object):
         start_response('300 Multiple Choices', headers)
         return ['See: /permalink'.encode('utf-8')]
 
+    def stream(self, env, start_response):
+        headers = [
+            ('Cache-Control', 'max-age=5000'),
+            ('Content-Type', 'text/plain'),
+        ]
+        start_response('200 OK', headers)
+        return (pformat(env).encode("utf8") for i in range(10))
+
     def __call__(self, env, start_response):
         func = self.dispatch(env)
 
