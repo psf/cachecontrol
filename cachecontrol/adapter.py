@@ -99,13 +99,13 @@ class CacheControlAdapter(HTTPAdapter):
                     )
                 )
                 if response.chunked:
-                    original_update_chunk_length = response._update_chunk_length
+                    super_update_chunk_length = response._update_chunk_length
+
                     def _update_chunk_length(self):
-                        original_update_chunk_length()
+                        super_update_chunk_length()
                         if self.chunk_left == 0:
                             self._fp._close()
                     response._update_chunk_length = types.MethodType(_update_chunk_length, response)
-
 
         resp = super(CacheControlAdapter, self).build_response(
             request, response
