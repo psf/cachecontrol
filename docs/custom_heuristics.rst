@@ -40,8 +40,10 @@ a `cachecontrol.heuristics.Heuristic`. ::
       def update_headers(self, response):
           date = parsedate(response.headers['date'])
           expires = datetime(*date[:6]) + timedelta(years=1)
+          headers = {}
           headers['expires'] = formatdate(calendar.timegm(expires.timetuple()))
           headers['cache-control'] = 'public'
+          return headers
 
       def warning(self, response):
           msg = 'Automatically cached! Response is Stale.'
