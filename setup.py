@@ -25,7 +25,7 @@ setup_params = dict(
     },
     entry_points={
         'console_scripts': [
-            'doesitcache = cachecontrol.cmd:main',
+            'doesitcache = cachecontrol._cmd:main',
         ]
     },
     classifiers=[
