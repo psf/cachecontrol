@@ -54,3 +54,10 @@ class TestSessionActions(object):
 
         sess.close()
         assert cache.close.called
+
+
+def test_request_not_cached_when_content_is_not_read(url):
+    sess = CacheControl(Session())
+    sess.get(url)
+    cache_data = sess.get_adapter(url).controller.cache.data
+    assert len(cache_data) == 0
