@@ -84,6 +84,7 @@ class TestCacheControllerResponse(object):
 
     def test_cache_response_cache_max_age_with_invalid_value_not_cached(self, cc):
         now = time.strftime(TIME_FMT, time.gmtime())
+        # Not a valid header; this would be from a misconfigured server
         resp = self.resp({'cache-control': 'max-age=3600; public',
                           'date': now})
         cc.cache_response(self.req(), resp)
@@ -206,6 +207,7 @@ class TestCacheControlRequest(object):
 
     def test_cached_request_with_bad_max_age_headers_not_returned(self):
         now = time.strftime(TIME_FMT, time.gmtime())
+        # Not a valid header; this would be from a misconfigured server
         resp = Mock(headers={'cache-control': 'max-age=xxx',
                              'date': now})
 
