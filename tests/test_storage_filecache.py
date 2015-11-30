@@ -8,6 +8,7 @@ from random import randint, sample
 
 import pytest
 import requests
+from mock import ANY, Mock
 from cachecontrol import CacheControl
 from cachecontrol.caches import FileCache
 from lockfile import LockFile
@@ -110,3 +111,20 @@ class TestStorageFileCache(object):
         lock_class = object()
         cache = FileCache(str(tmpdir), lock_class=lock_class)
         assert cache.lock_class is lock_class
+
+    def test_default_lock_timeout_is_passed_to_lock(self, tmpdir):
+        lock = Mock(__enter__=Mock(), __exit__=Mock())
+        lock_class = Mock(return_value=lock)
+
+        self.cache = FileCache(str(tmpdir), lock_class=lock_class)
+        self.cache.set('key', b'value')
+        lock_class.assert_called_once_with(ANY, timeout=30)
+
+    def test_lock_timeout_of_none_is_passed_to_lock(self, tmpdir):
+        lock = Mock(__enter__=Mock(), __exit__=Mock())
+        lock_class = Mock(return_value=lock)
+
+        self.cache = FileCache(str(tmpdir), lock_class=lock_class,
+                               lock_timeout=None)
+        self.cache.set('key', b'value')
+        lock_class.assert_called_once_with(ANY, timeout=None)
