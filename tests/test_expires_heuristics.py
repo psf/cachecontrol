@@ -11,8 +11,29 @@ from requests.structures import CaseInsensitiveDict
 from cachecontrol import CacheControl
 from cachecontrol.heuristics import LastModified, ExpiresAfter, OneDayCache
 from cachecontrol.heuristics import TIME_FMT
+from cachecontrol.heuristics import BaseHeuristic
 
 from pprint import pprint
+
+
+class TestHeuristicWithoutWarning(object):
+    def setup(self):
+
+        class NoopHeuristic(BaseHeuristic):
+            warning = Mock()
+
+            def update_headers(self, resp):
+                return {}
+
+
+        self.heuristic = NoopHeuristic()
+        self.sess = CacheControl(Session(), heuristic=self.heuristic)
+
+    def test_no_header_change_means_no_warning_header(self, url):
+        the_url = url + 'optional_cacheable_request'
+        resp = self.sess.get(the_url)
+
+        assert not self.heuristic.warning.called
 
 
 class TestUseExpiresHeuristic(object):
