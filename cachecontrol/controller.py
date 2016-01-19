@@ -239,6 +239,16 @@ class CacheController(object):
 
         response_headers = CaseInsensitiveDict(response.headers)
 
+        # If we've been given a body, our response has a Content-Length, that
+        # Content-Length is valid then we can check to see if the body we've
+        # been given matches the expected size, and if it doesn't we'll just
+        # skip trying to cache it.
+        if (body is not None and
+                "content-length" in response_headers and
+                response_headers["content-length"].isdigit() and
+                int(response_headers["content-length"]) != len(body)):
+            return
+
         cc_req = self.parse_cache_control(request.headers)
         cc = self.parse_cache_control(response_headers)
 

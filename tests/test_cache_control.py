@@ -67,6 +67,17 @@ class TestCacheControllerResponse(object):
 
         assert not cc.cache.set.called
 
+    def test_no_cache_with_wrong_sized_body(self, cc):
+        # When the body is the wrong size, then we don't want to cache it
+        # because it is obviously broken.
+        resp = self.resp({
+            "cache-control": "max-age=3600",
+            "Content-Length": "5",
+        })
+        cc.cache_response(self.req(), resp, body=b"0" * 10)
+
+        assert not cc.cache.set.called
+
     def test_cache_response_no_cache_control(self, cc):
         resp = self.resp()
         cc.cache_response(self.req(), resp)
