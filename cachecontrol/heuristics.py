@@ -46,6 +46,24 @@ class BaseHeuristic(object):
             response.headers.update({'Warning': warning_header_value})
         return response
 
+    def should_cache(self, request, response, body):
+        """
+        This method allows a Heuristic to control the caching logic. It can
+        return:
+
+        * True, in which case the item will be unconditionally cached.
+        * False, in which case the item will be unconditionally not cached.
+        * None, in which case the item will be conditionally cached based on
+          the standard logic.
+
+        By default, this returns None to continue to use the standard logic.
+        """
+        return None
+
+
+class Heuristic(BaseHeuristic):
+    pass
+
 
 class OneDayCache(BaseHeuristic):
     """

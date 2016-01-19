@@ -25,6 +25,7 @@ class CacheControlAdapter(HTTPAdapter):
             self.cache,
             cache_etags=cache_etags,
             serializer=serializer,
+            heuristic=self.heuristic,
         )
 
     def send(self, request, **kw):

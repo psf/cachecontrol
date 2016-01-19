@@ -10,6 +10,7 @@ from email.utils import parsedate_tz
 from requests.structures import CaseInsensitiveDict
 
 from .cache import DictCache
+from .heuristics import Heuristic
 from .serialize import Serializer
 
 
@@ -30,10 +31,12 @@ def parse_uri(uri):
 class CacheController(object):
     """An interface to see if request should cached or not.
     """
-    def __init__(self, cache=None, cache_etags=True, serializer=None):
+    def __init__(self, cache=None, cache_etags=True, serializer=None,
+                 heuristic=None):
         self.cache = cache or DictCache()
         self.cache_etags = cache_etags
         self.serializer = serializer or Serializer()
+        self.heuristic = heuristic or Heuristic()
 
     @classmethod
     def _urlnorm(cls, uri):
@@ -249,11 +252,25 @@ class CacheController(object):
                 int(response_headers["content-length"]) != len(body)):
             return
 
-        cc_req = self.parse_cache_control(request.headers)
-        cc = self.parse_cache_control(response_headers)
-
         cache_url = self.cache_url(request.url)
         logger.debug('Updating cache with response from "%s"', cache_url)
+
+        # Heuristics can override our caching logic here, either they will
+        # return a True value, in which case we will unconditionally cache the
+        # response, a False value, in which case we will unconditionally not
+        # cache the response, or they will return None in which case we will
+        # do our standard caching logic.
+        should_cache = self.heuristic.should_cache(request, response, body)
+        if should_cache:
+            self.cache.set(
+                cache_url,
+                self.serializer.dumps(request, response, body=body),
+            )
+        elif should_cache is not None:
+            return
+
+        cc_req = self.parse_cache_control(request.headers)
+        cc = self.parse_cache_control(response_headers)
 
         # Delete it from the cache if we happen to have it stored there
         no_store = False

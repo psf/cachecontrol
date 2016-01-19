@@ -78,6 +78,33 @@ class TestCacheControllerResponse(object):
 
         assert not cc.cache.set.called
 
+    def test_no_cache_with_heuristic(self, cc):
+        class FakeHeuristic(object):
+            def should_cache(self, request, response, body):
+                return False
+
+        cc.heuristic = FakeHeuristic()
+        now = time.strftime(TIME_FMT, time.gmtime())
+        resp = self.resp({'cache-control': 'max-age=3600',
+                          'date': now})
+        req = self.req()
+        cc.cache_response(req, resp)
+
+        assert not cc.cache.set.called
+
+    def test_cache_with_heuristic(self, cc):
+        class FakeHeuristic(object):
+            def should_cache(self, request, response, body):
+                return True
+
+        cc.heuristic = FakeHeuristic()
+        req = self.req()
+        resp = self.resp({'cache-control': 'max-age=3600'})
+        cc.cache_response(req, resp)
+
+        cc.serializer.dumps.assert_called_with(req, resp, body=None)
+        cc.cache.set.assert_called_with(self.url, ANY)
+
     def test_cache_response_no_cache_control(self, cc):
         resp = self.resp()
         cc.cache_response(self.req(), resp)
