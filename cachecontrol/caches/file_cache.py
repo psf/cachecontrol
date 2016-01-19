@@ -1,8 +1,24 @@
 import hashlib
 import os
 
-from lockfile import LockFile
-from lockfile.mkdirlockfile import MkdirLockFile
+try:
+    from fasteners import InterProcessLock
+    HAS_FASTENERS = True
+except ImportError:
+    class InterProcessLock(object):
+        pass
+
+    HAS_FASTENERS = False
+
+try:
+    from lockfile import LockFile, LockBase as PYLockFileBase
+    from lockfile.mkdirlockfile import MkdirLockFile
+    HAS_PYLOCKFILE = True
+except ImportError:
+    class PYLockFileBase(object):
+        pass
+
+    HAS_PYLOCKFILE = False
 
 from ..cache import BaseCache
 from ..controller import CacheController
@@ -56,17 +72,22 @@ class FileCache(BaseCache):
             raise ValueError("Cannot use use_dir_lock and lock_class together")
 
         if use_dir_lock:
+            if not HAS_PYLOCKFILE:
+                raise ValueError("Cannot use use_dir_lock without pylockfile.")
             lock_class = MkdirLockFile
 
-        if lock_class is None:
+        if lock_class is None and HAS_FASTENERS:
+            lock_class = InterProcessLock
+        elif lock_class is None and HAS_PYLOCKFILE:
             lock_class = LockFile
+        else:
+            raise RuntimeError("Cannot find a file locking library.")
 
         self.directory = directory
         self.forever = forever
         self.filemode = filemode
         self.dirmode = dirmode
         self.lock_class = lock_class
-
 
     @staticmethod
     def encode(x):
@@ -79,13 +100,21 @@ class FileCache(BaseCache):
         parts = list(hashed[:5]) + [hashed]
         return os.path.join(self.directory, *parts)
 
+    def _lockname(self, name):
+        if isinstance(self.lock_class, PYLockFileBase):
+            return self.name
+        else:
+            return self.name + ".lock"
+
     def get(self, key):
         name = self._fn(key)
-        if not os.path.exists(name):
-            return None
 
-        with open(name, 'rb') as fh:
-            return fh.read()
+        with self.lock_class(self._lockname(name)):
+            if not os.path.exists(name):
+                return None
+
+            with open(name, 'rb') as fh:
+                return fh.read()
 
     def set(self, key, value):
         name = self._fn(key)
@@ -96,9 +125,9 @@ class FileCache(BaseCache):
         except (IOError, OSError):
             pass
 
-        with self.lock_class(name) as lock:
+        with self.lock_class(self._lockname(name)):
             # Write our actual file
-            with _secure_open_write(lock.path, self.filemode) as fh:
+            with _secure_open_write(name, self.filemode) as fh:
                 fh.write(value)
 
     def delete(self, key):
