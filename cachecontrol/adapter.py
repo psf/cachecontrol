@@ -1,10 +1,10 @@
 import functools
 
 from requests.adapters import HTTPAdapter
+from requests.packages.urllib3 import HTTPResponse
 
 from .controller import CacheController
 from .cache import DictCache
-from .filewrapper import CallbackFileWrapper
 
 
 class CacheControlAdapter(HTTPAdapter):
@@ -19,6 +19,7 @@ class CacheControlAdapter(HTTPAdapter):
         super(CacheControlAdapter, self).__init__(*args, **kw)
         self.cache = cache or DictCache()
         self.heuristic = heuristic
+        self._hooks = {}
 
         controller_factory = controller_class or CacheController
         self.controller = controller_factory(
@@ -43,9 +44,14 @@ class CacheControlAdapter(HTTPAdapter):
                 self.controller.conditional_headers(request)
             )
 
-        resp = super(CacheControlAdapter, self).send(request, **kw)
+        self._hooks[request] = functools.partial(self.cache_response, request)
+        request.register_hook('response', self._hooks[request])
+        return super(CacheControlAdapter, self).send(request, **kw)
 
-        return resp
+    def cache_response(self, request, response, **kw):
+        if request in self._hooks:
+            request.deregister_hook('response', self._hooks.pop(request))
+        self.controller.cache_response(request, response.raw, response.content)
 
     def build_response(self, request, response, from_cache=False):
         """
@@ -87,20 +93,12 @@ class CacheControlAdapter(HTTPAdapter):
                 if self.heuristic:
                     response = self.heuristic.apply(response)
 
-                # Wrap the response file with a wrapper that will cache the
-                #   response when the stream has been consumed.
-                response._fp = CallbackFileWrapper(
-                    response._fp,
-                    functools.partial(
-                        self.controller.cache_response,
-                        request,
-                        response,
-                    )
-                )
-
         resp = super(CacheControlAdapter, self).build_response(
             request, response
         )
+
+        if from_cache:
+            self._remove_processed_encoding_headers(response)
 
         # See if we should invalidate the cache.
         if request.method in self.invalidating_methods and resp.ok:
@@ -111,6 +109,18 @@ class CacheControlAdapter(HTTPAdapter):
         resp.from_cache = from_cache
 
         return resp
+
+    def _remove_processed_encoding_headers(self, response):
+        self._remove_header(response, 'Transfer-Encoding', ['chunked'])
+        self._remove_header(response, 'Content-Encoding',
+                            HTTPResponse.CONTENT_DECODERS)
+
+    def _remove_header(self, response, key, values):
+        if key not in response.headers:
+            return
+        response.headers[key] = ', '.join(
+            [enc for enc in response.headers.getlist(key) if enc not in values]
+        )
 
     def close(self):
         self.cache.close()

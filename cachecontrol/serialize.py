@@ -36,7 +36,10 @@ class Serializer(object):
         response_headers = CaseInsensitiveDict(response.headers)
 
         if body is None:
-            body = response.read(decode_content=False)
+            try:
+                body = response.read(decode_content=False)
+            except ValueError:
+                body = b''
 
             # NOTE: 99% sure this is dead code. I'm only leaving it
             #       here b/c I don't have a test yet to prove
