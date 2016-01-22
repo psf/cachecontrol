@@ -1,10 +1,12 @@
 import functools
 
+import io
+import types
+
 from requests.adapters import HTTPAdapter
 
 from .controller import CacheController
 from .cache import DictCache
-from .filewrapper import CallbackFileWrapper
 
 
 class CacheControlAdapter(HTTPAdapter):
@@ -87,16 +89,20 @@ class CacheControlAdapter(HTTPAdapter):
                 if self.heuristic:
                     response = self.heuristic.apply(response)
 
-                # Wrap the response file with a wrapper that will cache the
-                #   response when the stream has been consumed.
-                response._fp = CallbackFileWrapper(
-                    response._fp,
-                    functools.partial(
-                        self.controller.cache_response,
-                        request,
-                        response,
-                    )
-                )
+                # Monkey-patch the response object with a new.stream() generator
+                # function which wraps the original stream(), collects the
+                # stream data, and enters that data into the cache when the
+                # generator finishes.
+                old_stream = response.stream
+                buf = io.BytesIO()
+                def new_stream(response_self, *args, **kwargs):
+                    for data in old_stream(*args, **kwargs):
+                        buf.write(data) # collect stream data
+                        yield data
+                    # Enter collected stream data into cache
+                    self.controller.cache_response(
+                        request, response, buf.getvalue())
+                response.stream = types.MethodType(new_stream, response)
 
         resp = super(CacheControlAdapter, self).build_response(
             request, response
