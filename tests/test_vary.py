@@ -5,17 +5,24 @@ from cachecontrol import CacheControl
 from cachecontrol.cache import DictCache
 from cachecontrol.compat import urljoin
 
+from pprint import pprint
+
 
 class TestVary(object):
 
     @pytest.fixture()
-    def sess(self, server):
-        self.url = urljoin(server.application_url, '/vary_accept')
+    def sess(self, url):
+        self.url = urljoin(url, '/vary_accept')
         self.cache = DictCache()
         sess = CacheControl(requests.Session(), cache=self.cache)
         return sess
 
     def cached_equal(self, cached, resp):
+        # remove any transfer-encoding headers as they don't apply to
+        # a cached value
+        if 'chunked' in resp.raw.headers.get('transfer-encoding', ''):
+            resp.raw.headers.pop('transfer-encoding')
+
         checks = [
             cached._fp.getvalue() == resp.content,
             cached.headers == resp.raw.headers,
@@ -25,6 +32,10 @@ class TestVary(object):
             cached.strict == resp.raw.strict,
             cached.decode_content == resp.raw.decode_content,
         ]
+
+        print(checks)
+        pprint(dict(cached.headers))
+        pprint(dict(resp.raw.headers))
         return all(checks)
 
     def test_vary_example(self, sess):

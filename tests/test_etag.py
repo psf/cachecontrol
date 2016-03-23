@@ -26,9 +26,9 @@ class TestETag(object):
     """
 
     @pytest.fixture()
-    def sess(self, server):
-        self.etag_url = urljoin(server.application_url, '/etag')
-        self.update_etag_url = urljoin(server.application_url, '/update_etag')
+    def sess(self, url):
+        self.etag_url = urljoin(url, '/etag')
+        self.update_etag_url = urljoin(url, '/update_etag')
         self.cache = DictCache()
         sess = CacheControl(
             requests.Session(),
@@ -89,9 +89,9 @@ class TestDisabledETags(object):
     response has an ETag.
     """
     @pytest.fixture()
-    def sess(self, server):
-        self.etag_url = urljoin(server.application_url, '/etag')
-        self.update_etag_url = urljoin(server.application_url, '/update_etag')
+    def sess(self, server, url):
+        self.etag_url = urljoin(url, '/etag')
+        self.update_etag_url = urljoin(url, '/update_etag')
         self.cache = DictCache()
         sess = CacheControl(requests.Session(),
                             cache=self.cache,
@@ -126,9 +126,9 @@ class TestReleaseConnection(object):
     method is not called we consume the response (which should be
     empty according to the HTTP spec) and release the connection.
     """
-    def test_not_modified_releases_connection(self, server):
+    def test_not_modified_releases_connection(self, server, url):
         sess = CacheControl(requests.Session())
-        etag_url = urljoin(server.application_url, '/etag')
+        etag_url = urljoin(url, '/etag')
         sess.get(etag_url)
 
         resp = Mock(status=304, headers={})

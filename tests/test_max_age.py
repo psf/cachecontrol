@@ -18,8 +18,8 @@ class NullSerializer(object):
 class TestMaxAge(object):
 
     @pytest.fixture()
-    def sess(self, server):
-        self.url = server.application_url
+    def sess(self, url):
+        self.url = url
         self.cache = DictCache()
         sess = Session()
         sess.mount(

@@ -4,7 +4,7 @@ tox
 pytest-cov
 pytest
 mock
-webtest
+cherrypy
 sphinx
 redis
 lockfile

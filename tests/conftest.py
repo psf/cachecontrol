@@ -1,8 +1,11 @@
 from pprint import pformat
 
+import os
+import socket
+
 import pytest
 
-from webtest.http import StopableWSGIServer
+import cherrypy
 
 
 class SimpleApp(object):
@@ -33,13 +36,15 @@ class SimpleApp(object):
         return [pformat(env).encode("utf8")]
 
     def vary_accept(self, env, start_response):
+        response = pformat(env).encode("utf8")
+
         headers = [
             ('Cache-Control', 'max-age=5000'),
             ('Content-Type', 'text/plain'),
             ('Vary', 'Accept-Encoding, Accept'),
         ]
         start_response('200 OK', headers)
-        return [pformat(env).encode("utf8")]
+        return [response]
 
     def update_etag_string(self):
         self.etag_count += 1
@@ -91,11 +96,13 @@ class SimpleApp(object):
 
     def stream(self, env, start_response):
         headers = [
-            ('Cache-Control', 'max-age=5000'),
             ('Content-Type', 'text/plain'),
+            ('Cache-Control', 'max-age=5000'),
         ]
         start_response('200 OK', headers)
-        return (pformat(env).encode("utf8") for i in range(10))
+
+        for i in range(10):
+            yield pformat(i).encode("utf8")
 
     def __call__(self, env, start_response):
         func = self.dispatch(env)
@@ -118,12 +125,38 @@ def server():
 
 @pytest.fixture()
 def url(server):
-    return server.application_url
+    return 'http://%s:%s/' % server.bind_addr
+
+
+def get_free_port():
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.bind(('', 0))
+    ip, port = s.getsockname()
+    s.close()
+    ip = os.environ.get('WEBTEST_SERVER_BIND', '127.0.0.1')
+    return ip, port
 
 
 def pytest_namespace():
-    return dict(server=StopableWSGIServer.create(SimpleApp()))
+    cherrypy.tree.graft(SimpleApp(), '/')
+
+    ip, port = get_free_port()
+
+    cherrypy.config.update({
+        'server.socket_host': ip,
+        'server.socket_port': port
+    })
+
+    #turn off logging
+    logger = cherrypy.log.access_log
+    logger.removeHandler(logger.handlers[0])
+
+    cherrypy.server.start()
+    return dict(server=cherrypy.server)
 
 
 def pytest_unconfigure(config):
-    pytest.server.shutdown()
+    try:
+        cherrypy.server.stop()
+    except:
+        pass

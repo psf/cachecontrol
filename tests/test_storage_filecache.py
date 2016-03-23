@@ -25,8 +25,8 @@ def randomdata():
 class TestStorageFileCache(object):
 
     @pytest.fixture()
-    def sess(self, server, tmpdir):
-        self.url = server.application_url
+    def sess(self, url, tmpdir):
+        self.url = url
         self.cache = FileCache(str(tmpdir))
         sess = CacheControl(requests.Session(), cache=self.cache)
         return sess
