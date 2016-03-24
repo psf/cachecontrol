@@ -93,7 +93,16 @@ class TestCacheControllerResponse(object):
         cc.serializer.dumps.assert_called_with(req, resp, body=None)
         cc.cache.set.assert_called_with(self.url, ANY)
 
-    def test_cache_repsonse_no_store(self):
+    def test_cache_response_cache_max_age_with_invalid_value_not_cached(self, cc):
+        now = time.strftime(TIME_FMT, time.gmtime())
+        # Not a valid header; this would be from a misconfigured server
+        resp = self.resp({'cache-control': 'max-age=3600; public',
+                          'date': now})
+        cc.cache_response(self.req(), resp)
+
+        assert not cc.cache.set.called
+
+    def test_cache_response_no_store(self):
         resp = Mock()
         cache = DictCache({self.url: resp})
         cc = CacheController(cache)
@@ -206,3 +215,13 @@ class TestCacheControlRequest(object):
         self.c.cache = cache
         r = self.req({})
         assert not r
+
+    def test_cached_request_with_bad_max_age_headers_not_returned(self):
+        now = time.strftime(TIME_FMT, time.gmtime())
+        # Not a valid header; this would be from a misconfigured server
+        resp = Mock(headers={'cache-control': 'max-age=xxx',
+                             'date': now})
+
+        self.c.cache = DictCache({self.url: resp})
+
+        assert not self.req({})
