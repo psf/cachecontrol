@@ -2,8 +2,8 @@
  CacheControl
 ==============
 
-.. image:: https://pypip.in/version/cachecontrol/badge.svg
-    :target: https://pypi.python.org/pypi/cachecontrol/
+.. image:: https://img.shields.io/pypi/v/cachecontrol.svg
+    :target: https://pypi.python.org/pypi/cachecontrol
     :alt: Latest Version
 
 .. image:: https://travis-ci.org/ionrock/cachecontrol.png?branch=master
