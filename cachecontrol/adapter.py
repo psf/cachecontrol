@@ -56,6 +56,10 @@ class CacheControlAdapter(HTTPAdapter):
         cached response
         """
         if not from_cache and request.method == 'GET':
+            # Check for any heuristics that might update headers
+            # before trying to cache.
+            if self.heuristic:
+                response = self.heuristic.apply(response)
 
             # apply any expiration heuristics
             if response.status == 304:
@@ -83,11 +87,6 @@ class CacheControlAdapter(HTTPAdapter):
             elif response.status == 301:
                 self.controller.cache_response(request, response)
             else:
-                # Check for any heuristics that might update headers
-                # before trying to cache.
-                if self.heuristic:
-                    response = self.heuristic.apply(response)
-
                 # Wrap the response file with a wrapper that will cache the
                 #   response when the stream has been consumed.
                 response._fp = CallbackFileWrapper(
