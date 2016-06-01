@@ -59,6 +59,9 @@ class SimpleApp(object):
         start_response('200 OK', headers)
         return [pformat(env).encode("utf8")]
 
+    def conditional_get(self, env, start_response):
+        return start_response('304 Not Modified', [])
+
     def etag(self, env, start_response):
         headers = [
             ('Etag', self.etag_string),
