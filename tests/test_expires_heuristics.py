@@ -36,6 +36,26 @@ class TestHeuristicWithoutWarning(object):
         assert not self.heuristic.warning.called
 
 
+class TestHeuristicWith3xxResponse(object):
+    def setup(self):
+
+        class DummyHeuristic(BaseHeuristic):
+            def update_headers(self, resp):
+                return {'x-dummy-header': 'foobar'}
+
+        self.sess = CacheControl(Session(), heuristic=DummyHeuristic())
+
+    def test_heuristic_applies_to_301(self, url):
+        the_url = url + 'permanent_redirect'
+        resp = self.sess.get(the_url)
+        assert 'x-dummy-header' in resp.headers
+
+    def test_heuristic_applies_to_304(self, url):
+        the_url = url + 'conditional_get'
+        resp = self.sess.get(the_url)
+        assert 'x-dummy-header' in resp.headers
+
+
 class TestUseExpiresHeuristic(object):
 
     def test_expires_heuristic_arg(self):
