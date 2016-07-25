@@ -37,7 +37,7 @@ Here is an example using the `FileCache`: ::
 
   import requests
   from cachecontrol import CacheControl
-  from cachecontrol.caches import FileCache
+  from cachecontrol.caches.file_cache import FileCache
 
   sess = CacheControl(requests.Session(),
                       cache=FileCache('.web_cache'))
@@ -80,7 +80,7 @@ Here is an example using a `RedisCache`: ::
   import redis
   import requests
   from cachecontrol import CacheControl
-  from cachecontrol.caches import RedisCache
+  from cachecontrol.caches.redis_cache import RedisCache
 
 
   pool = redis.ConnectionPool(host='localhost', port=6379, db=0)
