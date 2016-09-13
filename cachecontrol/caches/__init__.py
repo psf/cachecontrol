@@ -1,7 +1,7 @@
 from textwrap import dedent
 
 try:
-    from .file_cache import FileCache
+    from .file_cache import FileCache  # noqa
 except ImportError:
     notice = dedent('''
     NOTE: In order to use the FileCache you must have
@@ -12,7 +12,7 @@ except ImportError:
 
 
 try:
-    import redis
-    from .redis_cache import RedisCache
+    import redis  # noqa
+    from .redis_cache import RedisCache  # noqa
 except ImportError:
     pass
