@@ -3,7 +3,7 @@ import pytest
 
 
 from cachecontrol import CacheControl
-from cachecontrol.caches.file_cache import FileCache
+from cachecontrol.caches import FileCache
 from cachecontrol.filewrapper import CallbackFileWrapper
 from requests import Session
 
