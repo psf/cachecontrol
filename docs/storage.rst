@@ -69,7 +69,14 @@ RedisCache
 
 The `RedisCache` uses a Redis database to store values. The values are
 stored as strings in redis, which means the get, set and delete
-actions are used.
+actions are used. It requires the `redis`_ library to be installed.
+
+.. note::
+
+  Note that you can install this dependency automatically with pip
+  by requesting the *redis* extra: ::
+
+    pip install cachecontrol[redis]
 
 The `RedisCache` also provides a clear method to delete all keys in a
 database. Obviously, this should be used with caution as it is naive
@@ -94,3 +101,4 @@ a better method for utilizing redis as a cache.
 .. _httplib2: http://code.google.com/p/httplib2/
 .. _lockfile: https://github.com/smontanaro/pylockfile
 .. _requests 2.1: http://docs.python-requests.org/en/latest/community/updates/#id2
+.. _redis: https://github.com/andymccurdy/redis-py

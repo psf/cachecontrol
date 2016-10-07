@@ -22,6 +22,7 @@ setup_params = dict(
     ],
     extras_require={
         'filecache': ['lockfile>=0.9'],
+        'redis': ['redis>=2.10.5'],
     },
     entry_points={
         'console_scripts': [
