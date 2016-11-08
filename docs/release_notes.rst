@@ -2,6 +2,15 @@
  Release Notes
 ===============
 
+0.12.0
+======
+
+Rather than using compressed JSON for caching values, we are now using
+MessagePack (http://msgpack.org/). MessagePack has the advantage that
+that serialization and deserialization is faster, especially for
+caching large binary payloads.
+
+
 0.11.2
 ======
 

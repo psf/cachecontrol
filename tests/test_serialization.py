@@ -1,11 +1,10 @@
+import msgpack
 import requests
 
-from mock import Mock, patch
+from mock import Mock
 
 from cachecontrol.compat import pickle
 from cachecontrol.serialize import Serializer
-from cachecontrol.serialize import _b64_encode
-from cachecontrol.serialize import _b64_decode_str
 
 
 class TestSerializer(object):
@@ -30,17 +29,29 @@ class TestSerializer(object):
             },
         }
 
-    def test_load_by_version_one(self):
+    def test_load_by_version_v0(self):
         data = b'cc=0,somedata'
         req = Mock()
         resp = self.serializer.loads(req, data)
         assert resp is None
 
-    def test_read_version_two(self):
+    def test_read_version_v1(self):
         req = Mock()
         resp = self.serializer._loads_v1(req, pickle.dumps(self.response_data))
-        # We have to decode our urllib3 data back into a unicode
-        # string.
+        # We have to decode our urllib3 data back into a unicode string.
+        assert resp.data == 'Hello World'.encode('utf-8')
+
+    def test_read_version_v2(self):
+        req = Mock()
+        compressed_base64_json = b"x\x9c%O\xb9\n\x83@\x10\xfd\x97\xa9-\x92%E\x14R\xe4 +\x16\t\xe6\x10\xbb\xb0\xc7\xe0\x81\xb8\xb2\xbb*A\xfc\xf7\x8c\xa6|\xe7\xbc\x99\xc0\xa2\xebL\xeb\x10\xa2\t\xa4\xd1_\x88\xe0\xc93'\xf9\xbe\xc8X\xf8\x95<=@\x00\x1a\x95\xd1\xf8Q\xa6\xf5\xd8z\x88\xbc\xed1\x80\x12\x85F\xeb\x96h\xca\xc2^\xf3\xac\xd7\xe7\xed\x1b\xf3SC5\x04w\xfa\x1c\x8e\x92_;Y\x1c\x96\x9a\x94]k\xc1\xdf~u\xc7\xc9 \x8fDG\xa0\xe2\xac\x92\xbc\xa9\xc9\xf1\xc8\xcbQ\xe4I\xa3\xc6U\xb9_\x14\xbb\xbdh\xc2\x1c\xd0R\xe1LK$\xd9\x9c\x17\xbe\xa7\xc3l\xb3Y\x80\xad\x94\xff\x0b\x03\xed\xa9V\x17[2\x83\xb0\xf4\xd14\xcf?E\x03Im"
+        resp = self.serializer._loads_v2(req, compressed_base64_json)
+        # We have to decode our urllib3 data back into a unicode string.
+        assert resp.data == 'Hello World'.encode('utf-8')
+
+    def test_read_version_v3(self):
+        req = Mock()
+        resp = self.serializer._loads_v3(req, msgpack.dumps(self.response_data))
+        # We have to decode our urllib3 data back into a unicode string.
         assert resp.data == 'Hello World'.encode('utf-8')
 
     def test_read_v1_serialized_with_py2_TypeError(self):
@@ -65,7 +76,7 @@ class TestSerializer(object):
         req = Mock()
         assert self.serializer._loads_v2(req, b'') is None
 
-    def test_read_version_three_streamable(self, url):
+    def test_read_latest_version_streamable(self, url):
         original_resp = requests.get(url, stream=True)
         req = original_resp.request
 
@@ -78,7 +89,7 @@ class TestSerializer(object):
 
         assert resp.read()
 
-    def test_read_version_three(self, url):
+    def test_read_latest_version(self, url):
         original_resp = requests.get(url)
         data = original_resp.content
         req = original_resp.request
@@ -110,33 +121,3 @@ class TestSerializer(object):
             )
         )
 
-
-class TestEncoding(object):
-
-    unicode_string = b'\u201cmax-age=31536000\u2033'.decode('utf-8')
-    b64_result = '4oCcbWF4LWFnZT0zMTUzNjAwMOKAsw=='
-
-    @patch('cachecontrol.serialize._b64_encode_bytes')
-    def test_b64_encode_with_bytes(self, encode_bytes):
-        _b64_encode(self.unicode_string.encode('utf-8'))
-        assert encode_bytes.called
-
-    @patch('cachecontrol.serialize._b64_encode_str')
-    def test_b64_encode_with_str(self, encode_str):
-        _b64_encode(self.unicode_string)
-        assert encode_str.called
-
-    def test_b64_encode_with_unicode_encoded_as_unicode(self):
-        """Some servers will respond with unicode encoded strings. The
-        test below uses unicode open and close quotes around the max
-        age setting, which raises an exception if we treat it as a
-        string.
-
-        This test ensures we recognize the unicode encoded string act
-        accordingly.
-        """
-        unicode_result = _b64_encode(self.unicode_string.encode('utf-8'))
-        assert _b64_decode_str(unicode_result) == self.unicode_string
-
-        bytes_result = _b64_encode(self.unicode_string)
-        assert _b64_decode_str(bytes_result) == self.unicode_string
