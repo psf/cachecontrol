@@ -60,6 +60,11 @@ class TestSerializer(object):
         # string.
         assert resp.data == 'Hello World'.encode('utf-8')
 
+    def test_read_v2_corrupted_cache(self):
+        # This should prevent a regression of bug #134
+        req = Mock()
+        assert self.serializer._loads_v2(req, b'') is None
+
     def test_read_version_three_streamable(self, url):
         original_resp = requests.get(url, stream=True)
         req = original_resp.request
