@@ -15,6 +15,8 @@ class NullSerializer(object):
         return response
 
     def loads(self, request, data):
+        if data and getattr(data, 'chunked', False):
+            data.chunked = False
         return data
 
 
