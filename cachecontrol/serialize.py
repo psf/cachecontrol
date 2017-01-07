@@ -174,7 +174,7 @@ class Serializer(object):
     def _loads_v2(self, request, data):
         try:
             cached = json.loads(zlib.decompress(data).decode("utf8"))
-        except ValueError:
+        except (ValueError, zlib.error):
             return
 
         # We need to decode the items that we've base64 encoded
