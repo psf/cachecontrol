@@ -104,7 +104,10 @@ class FileCache(BaseCache):
     def delete(self, key):
         name = self._fn(key)
         if not self.forever:
-            os.remove(name)
+            try:
+                os.remove(name)
+            except FileNotFoundError:
+                pass
 
 
 def url_to_file_path(url, filecache):
