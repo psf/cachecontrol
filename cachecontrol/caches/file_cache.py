@@ -1,8 +1,6 @@
 import hashlib
 import os
-
-from lockfile import LockFile
-from lockfile.mkdirlockfile import MkdirLockFile
+from textwrap import dedent
 
 from ..cache import BaseCache
 from ..controller import CacheController
@@ -55,18 +53,28 @@ class FileCache(BaseCache):
         if use_dir_lock is not None and lock_class is not None:
             raise ValueError("Cannot use use_dir_lock and lock_class together")
 
-        if use_dir_lock:
-            lock_class = MkdirLockFile
+        try:
+            from lockfile import LockFile
+            from lockfile.mkdirlockfile import MkdirLockFile
+        except ImportError:
+            notice = dedent("""
+            NOTE: In order to use the FileCache you must have
+            lockfile installed. You can install it via pip:
+              pip install lockfile
+            """)
+            raise ImportError(notice)
+        else:
+            if use_dir_lock:
+                lock_class = MkdirLockFile
 
-        if lock_class is None:
-            lock_class = LockFile
+            elif lock_class is None:
+                lock_class = LockFile
 
         self.directory = directory
         self.forever = forever
         self.filemode = filemode
         self.dirmode = dirmode
         self.lock_class = lock_class
-
 
     @staticmethod
     def encode(x):
