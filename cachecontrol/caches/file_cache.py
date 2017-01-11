@@ -1,6 +1,5 @@
 import hashlib
 import os
-import warnings
 from textwrap import dedent
 
 from ..cache import BaseCache
