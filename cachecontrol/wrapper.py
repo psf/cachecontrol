@@ -8,7 +8,8 @@ def CacheControl(sess,
                  serializer=None,
                  heuristic=None,
                  controller_class=None,
-                 adapter_class=None):
+                 adapter_class=None,
+                 cacheable_methods=None):
 
     cache = cache or DictCache()
     adapter_class = adapter_class or CacheControlAdapter
@@ -17,7 +18,8 @@ def CacheControl(sess,
         cache_etags=cache_etags,
         serializer=serializer,
         heuristic=heuristic,
-        controller_class=controller_class
+        controller_class=controller_class,
+        cacheable_methods=cacheable_methods
     )
     sess.mount('http://', adapter)
     sess.mount('https://', adapter)
