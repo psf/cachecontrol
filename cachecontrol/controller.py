@@ -31,14 +31,15 @@ class CacheController(object):
     """An interface to see if request should cached or not.
     """
     def __init__(self, cache=None, cache_etags=True, serializer=None,
-                 status_codes=None):
+                 status_codes=None, sort_query=False):
         self.cache = cache or DictCache()
         self.cache_etags = cache_etags
         self.serializer = serializer or Serializer()
         self.cacheable_status_codes = status_codes or (200, 203, 300, 301)
+        self.sort_query = sort_query
 
     @classmethod
-    def _urlnorm(cls, uri):
+    def _urlnorm(cls, uri, sort_query=False):
         """Normalize the URL to create a safe key for the cache"""
         (scheme, authority, path, query, fragment) = parse_uri(uri)
         if not scheme or not authority:
@@ -50,6 +51,14 @@ class CacheController(object):
         if not path:
             path = "/"
 
+        # Sorting the query might induce behavior changes in the response.
+        # Use with care. However, assuming param randomization, a query with
+        # four params has a 96% chance of missing the cache on the second
+        # request if a response has already been recorded. The chance of a
+        # hit grows to 50% after a dozen requests.
+        if query and sort_query:
+            query = '&'.join(sorted(query.split('&')))
+
         # Could do syntax based normalization of the URI before
         # computing the digest. See Section 6.2.2 of Std 66.
         request_uri = query and "?".join([path, query]) or path
@@ -58,8 +67,8 @@ class CacheController(object):
         return defrag_uri
 
     @classmethod
-    def cache_url(cls, uri):
-        return cls._urlnorm(uri)
+    def cache_url(cls, uri, sort_query=False):
+        return cls._urlnorm(uri, sort_query=sort_query)
 
     def parse_cache_control(self, headers):
         """
@@ -90,7 +99,7 @@ class CacheController(object):
         Return a cached response if it exists in the cache, otherwise
         return False.
         """
-        cache_url = self.cache_url(request.url)
+        cache_url = self.cache_url(request.url, sort_query=self.sort_query)
         logger.debug('Looking up "%s" in the cache', cache_url)
         cc = self.parse_cache_control(request.headers)
 
@@ -207,7 +216,7 @@ class CacheController(object):
         return False
 
     def conditional_headers(self, request):
-        cache_url = self.cache_url(request.url)
+        cache_url = self.cache_url(request.url, sort_query=self.sort_query)
         resp = self.serializer.loads(request, self.cache.get(cache_url))
         new_headers = {}
 
@@ -255,7 +264,7 @@ class CacheController(object):
         cc_req = self.parse_cache_control(request.headers)
         cc = self.parse_cache_control(response_headers)
 
-        cache_url = self.cache_url(request.url)
+        cache_url = self.cache_url(request.url, sort_query=self.sort_query)
         logger.debug('Updating cache with response from "%s"', cache_url)
 
         # Delete it from the cache if we happen to have it stored there
@@ -317,7 +326,7 @@ class CacheController(object):
         This should only ever be called when we've sent an ETag and
         gotten a 304 as the response.
         """
-        cache_url = self.cache_url(request.url)
+        cache_url = self.cache_url(request.url, sort_query=self.sort_query)
 
         cached_response = self.serializer.loads(
             request,
