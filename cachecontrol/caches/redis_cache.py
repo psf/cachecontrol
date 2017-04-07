@@ -39,4 +39,5 @@ class RedisCache(BaseCache):
             self.conn.delete(key)
 
     def close(self):
-        self.conn.disconnect()
+        """Redis uses connection pooling, no need to close the connection."""
+        pass
