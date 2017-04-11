@@ -12,20 +12,20 @@ class TestSerializer(object):
     def setup(self):
         self.serializer = Serializer()
         self.response_data = {
-            'response': {
+            u'response': {
                 # Encode the body as bytes b/c it will eventually be
                 # converted back into a BytesIO object.
-                'body': 'Hello World'.encode('utf-8'),
-                'headers': {
-                    'Content-Type': 'text/plain',
-                    'Expires': '87654',
-                    'Cache-Control': 'public',
+                u'body': 'Hello World'.encode('utf-8'),
+                u'headers': {
+                    u'Content-Type': u'text/plain',
+                    u'Expires': u'87654',
+                    u'Cache-Control': u'public',
                 },
-                'status': 200,
-                'version': '2',
-                'reason': '',
-                'strict': '',
-                'decode_content': True,
+                u'status': 200,
+                u'version': 11,
+                u'reason': u'',
+                u'strict': True,
+                u'decode_content': True,
             },
         }
 
@@ -48,9 +48,15 @@ class TestSerializer(object):
         # We have to decode our urllib3 data back into a unicode string.
         assert resp.data == 'Hello World'.encode('utf-8')
 
-    def test_read_version_v3(self):
+    def test_load_by_version_v3(self):
+        data = b'cc=3,somedata'
         req = Mock()
-        resp = self.serializer._loads_v3(req, msgpack.dumps(self.response_data))
+        resp = self.serializer.loads(req, data)
+        assert resp is None
+
+    def test_read_version_v4(self):
+        req = Mock()
+        resp = self.serializer._loads_v4(req, msgpack.dumps(self.response_data))
         # We have to decode our urllib3 data back into a unicode string.
         assert resp.data == 'Hello World'.encode('utf-8')
 
@@ -120,4 +126,3 @@ class TestSerializer(object):
                 body=data
             )
         )
-
