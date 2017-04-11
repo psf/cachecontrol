@@ -17,20 +17,17 @@ class CacheControlAdapter(HTTPAdapter):
                  serializer=None,
                  heuristic=None,
                  cacheable_methods=None,
-                 sort_query=False,
                  *args, **kw):
         super(CacheControlAdapter, self).__init__(*args, **kw)
         self.cache = cache or DictCache()
         self.heuristic = heuristic
         self.cacheable_methods = cacheable_methods or ('GET',)
-        self.sort_query = sort_query
 
         controller_factory = controller_class or CacheController
         self.controller = controller_factory(
             self.cache,
             cache_etags=cache_etags,
             serializer=serializer,
-            sort_query=sort_query
         )
 
     def send(self, request, cacheable_methods=None, **kw):
@@ -120,8 +117,7 @@ class CacheControlAdapter(HTTPAdapter):
 
         # See if we should invalidate the cache.
         if request.method in self.invalidating_methods and resp.ok:
-            cache_url = self.controller.cache_url(request.url,
-                                                  sort_query=self.sort_query)
+            cache_url = self.controller.cache_url(request.url)
             self.cache.delete(cache_url)
 
         # Give the request a from_cache attr to let people use it

@@ -124,10 +124,10 @@ class FileCache(BaseCache):
                 pass
 
 
-def url_to_file_path(url, filecache, sort_query=False):
+def url_to_file_path(url, filecache):
     """Return the file cache path based on the URL.
 
     This does not ensure the file exists!
     """
-    key = CacheController.cache_url(url, sort_query=sort_query)
+    key = CacheController.cache_url(url)
     return filecache._fn(key)
