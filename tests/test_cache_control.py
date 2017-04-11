@@ -4,6 +4,8 @@ Unit tests that verify our caching methods work correctly.
 import pytest
 from mock import ANY, Mock
 import time
+from random import shuffle
+import string
 
 from cachecontrol import CacheController
 from cachecontrol.cache import DictCache
@@ -225,3 +227,30 @@ class TestCacheControlRequest(object):
         self.c.cache = DictCache({self.url: resp})
 
         assert not self.req({})
+
+def test_cache_url_sorting():
+    letter_n_numbers = list(enumerate(string.ascii_lowercase[3:], start=4))
+    suff = '&' + '&'.join('%s=%s' % (k, v) for v, k in letter_n_numbers)
+
+    def get_param(url):
+        """Mock losing order when processing params"""
+        shuffle(letter_n_numbers)
+        params = {k: v for v, k in letter_n_numbers}
+        url = url.replace(suff, '')
+        query = '&' + '&'.join('%s=%s' % item for item in params.items())
+        return url + query
+
+    no_query = 'http://example.com'
+    unsorted_query = 'http://example.com?b=2&c=3&a=1' + suff
+    sorted_query = 'http://example.com?a=1&b=2&c=3' + suff
+
+    cache_url = CacheController.cache_url
+    assert cache_url(no_query, sort_query=True) == cache_url(no_query)
+    assert cache_url(unsorted_query) != cache_url(sorted_query)
+    assert cache_url(unsorted_query, True) == cache_url(sorted_query)
+    randomized = get_param(unsorted_query)
+    assert randomized != unsorted_query
+    assert cache_url(randomized) != cache_url(sorted_query)
+    assert cache_url(randomized, True) == cache_url(sorted_query)
+    randomized_again = get_param(unsorted_query)
+    assert cache_url(randomized, True) == cache_url(randomized_again, True)
