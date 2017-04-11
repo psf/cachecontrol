@@ -53,17 +53,6 @@ If you are caching requests that use a large number of query string
 parameters, consider sorting them to ensure that the request is
 properly cached.
 
-.. note::
-
-  Assuming random parameter order, a request with four parameters
-  has a >95% chance of missing the cache on the second time, because
-  it grows with the number of permutations (1/24 for four
-  parameters, 1/125 for five, etc.). However, this problem doesn't
-  arise while the order stays the same. So if the same dict is used
-  as params many times it'll likely hit the cache. FileCache suffers
-  more from this when used on different Python runs, as this makes
-  order more random.
-
 Requests supports passing both dictionaries and lists of tuples as the
 param argument in a request. For example: ::
 
@@ -71,24 +60,3 @@ param argument in a request. For example: ::
 
 By ordering your params, you can be sure the cache key will be
 consistent across requests and you are caching effectively.
-
-For convenience, the sorting of query parameters can be done in
-cachecontrol itself. For example: ::
-
-  # Unsorted
-  sess = cachecontrol.CacheControl(requests.Session(), sort_query=False,
-                                   heuristic=ExpiresAfter(days=1))
-  params = [('a', 'b'), ('c', 'd')]
-  resp = sess.get('http://www.reddit.com', params=params)
-  print(resp.from_cache) # False (first fetch)
-  resp = sess.get('http://www.reddit.com', params=reversed(params))
-  print(resp.from_cache) # False (!)
-
-  sess = cachecontrol.CacheControl(requests.Session(), sort_query=True,
-                                   heuristic=ExpiresAfter(days=1))
-  params = [('a', 'b'), ('c', 'd')]
-  resp = sess.get('http://www.reddit.com', params=params)
-  print(resp.from_cache) # False (first fetch)
-  resp = sess.get('http://www.reddit.com', params=reversed(params))
-  print(resp.from_cache) # True :)
-
