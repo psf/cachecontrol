@@ -54,10 +54,3 @@ class TestSessionActions(object):
 
         sess.close()
         assert cache.close.called
-
-def test_cache_control_sets_sort_query():
-    for bool_ in (True, False):
-        sess = CacheControl(Session(), mock.Mock(spec=DictCache),
-                            sort_query=bool_)
-        assert sess.adapters['http://'].sort_query == bool_
-        assert sess.adapters['http://'].controller.sort_query == bool_
