@@ -62,9 +62,16 @@ class CallbackFileWrapper(object):
         # and allows the garbage collector to do it's thing normally.
         self.__callback = None
 
+        # Closing the BytesIO stream releases memory. Important when caching
+        # big files.
+        self.__buf.close()
+
     def read(self, amt=None):
         data = self.__fp.read(amt)
-        self.__buf.write(data)
+        if data:
+            # We may be dealing with b'', a sign that things are over:
+            # it's passed e.g. after we've already closed self.__buf.
+            self.__buf.write(data)
         if self.__is_fp_closed():
             self._close()
 
