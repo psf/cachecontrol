@@ -18,7 +18,7 @@ setup_params = dict(
     description='httplib2 caching for requests',
     long_description=long_description,
     install_requires=[
-        'requests',
+        'requests==2.12.4',
         'msgpack-python',
     ],
     extras_require={
