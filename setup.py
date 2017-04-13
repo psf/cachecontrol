@@ -2,7 +2,7 @@ import setuptools
 
 long_description = open('README.rst').read()
 
-VERSION = '0.12.2'
+VERSION = '0.12.4'
 
 setup_params = dict(
     name='CacheControl',
@@ -18,7 +18,7 @@ setup_params = dict(
     description='httplib2 caching for requests',
     long_description=long_description,
     install_requires=[
-        'requests',
+        'requests==2.12.4',
         'msgpack-python',
     ],
     extras_require={
