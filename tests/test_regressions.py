@@ -17,6 +17,7 @@ class Test39(object):
         s.get('http://httpbin.org/cache/60')
         r = s.get('http://httpbin.org/cache/60')
         assert r.from_cache
+        s.close()
 
 
 def test_getattr_during_gc():
