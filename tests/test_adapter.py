@@ -24,7 +24,9 @@ def use_adapter():
 def sess(url, request):
     sess = request.param()
     sess.get(url)
-    return sess
+    yield sess
+    # closing session object
+    sess.close()
 
 
 class TestSessionActions(object):

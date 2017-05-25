@@ -37,7 +37,9 @@ class TestETag(object):
             cache=self.cache,
             serializer=NullSerializer(),
         )
-        return sess
+        yield sess
+        # closing session object
+        sess.close()
 
     def test_etags_get_example(self, sess, server):
         """RFC 2616 14.26

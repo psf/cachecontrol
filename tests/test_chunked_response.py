@@ -11,7 +11,10 @@ from cachecontrol import CacheControl
 
 @pytest.fixture()
 def sess():
-    return CacheControl(requests.Session())
+    sess = CacheControl(requests.Session())
+    yield sess
+    # closing session object
+    sess.close()
 
 
 class TestChunkedResponses(object):

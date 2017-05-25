@@ -29,7 +29,9 @@ class TestStorageFileCache(object):
         self.url = url
         self.cache = FileCache(str(tmpdir))
         sess = CacheControl(requests.Session(), cache=self.cache)
-        return sess
+        yield sess
+        # closing session object
+        sess.close()
 
     def test_filecache_from_cache(self, sess):
         response = sess.get(self.url)
@@ -105,8 +107,22 @@ class TestStorageFileCache(object):
             cache = FileCache(str(tmpdir))
 
         assert issubclass(cache.lock_class, expected)
+        cache.close()
 
     def test_lock_class(self, tmpdir):
         lock_class = object()
         cache = FileCache(str(tmpdir), lock_class=lock_class)
         assert cache.lock_class is lock_class
+        cache.close()
+        
+    def test_filecache_with_delete_request(self, tmpdir, sess):
+        # verifies issue #156
+        url = self.url + ''.join(sample(string.ascii_lowercase, randint(2, 4)))
+        sess.delete(url)
+        assert True  # test verifies no exceptions were raised
+
+    def test_filecache_with_put_request(self, tmpdir, sess):
+        # verifies issue #156
+        url = self.url + ''.join(sample(string.ascii_lowercase, randint(2, 4)))
+        sess.put(url)
+        assert True  # test verifies no exceptions were raised
