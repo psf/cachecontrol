@@ -116,13 +116,13 @@ class TestStorageFileCache(object):
         cache.close()
         
     def test_filecache_with_delete_request(self, tmpdir, sess):
-        # verifies issue #156
+        # verifies issue #155
         url = self.url + ''.join(sample(string.ascii_lowercase, randint(2, 4)))
         sess.delete(url)
         assert True  # test verifies no exceptions were raised
 
     def test_filecache_with_put_request(self, tmpdir, sess):
-        # verifies issue #156
+        # verifies issue #155
         url = self.url + ''.join(sample(string.ascii_lowercase, randint(2, 4)))
         sess.put(url)
         assert True  # test verifies no exceptions were raised
