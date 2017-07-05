@@ -1,5 +1,11 @@
-import msgpack
+import pytest
 import requests
+
+try:
+    import msgpack
+    _with_msgpack = 1
+except:
+    _with_msgpack = 0
 
 from mock import Mock
 
@@ -54,7 +60,9 @@ class TestSerializer(object):
         resp = self.serializer.loads(req, data)
         assert resp is None
 
+    @pytest.mark.skipif(_with_msgpack == 0, reason="no msgpack")
     def test_read_version_v4(self):
+        print('\nTesting v4\n')
         req = Mock()
         resp = self.serializer._loads_v4(req, msgpack.dumps(self.response_data))
         # We have to decode our urllib3 data back into a unicode string.

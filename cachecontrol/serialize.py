@@ -3,7 +3,13 @@ import io
 import json
 import zlib
 
-import msgpack
+try:
+    import msgpack
+    _with_msgpack = 1
+except:
+    _with_msgpack = 0
+    pass
+
 from requests.structures import CaseInsensitiveDict
 
 from .compat import HTTPResponse, pickle, text_type
@@ -16,6 +22,17 @@ def _b64_decode_bytes(b):
 def _b64_decode_str(s):
     return _b64_decode_bytes(s).decode("utf8")
 
+def _b64_encode_bytes(b):
+    return base64.b64encode(b).decode("ascii")
+
+def _b64_encode_str(s):
+    return _b64_encode_bytes(s.encode("utf8"))
+
+def _b64_encode(s):
+    if isinstance(s,text_type):
+        return _b64_encode_str(s)
+    return _b64_encode_bytes(s)
+    
 
 class Serializer(object):
 
@@ -44,20 +61,36 @@ class Serializer(object):
         #       have it set to differentiate between them, however Python 2
         #       doesn't know the difference. Forcing these to unicode will be
         #       enough to have msgpack know the difference.
-        data = {
-            u"response": {
-                u"body": body,
-                u"headers": dict(
-                    (text_type(k), text_type(v))
-                    for k, v in response.headers.items()
-                ),
-                u"status": response.status,
-                u"version": response.version,
-                u"reason": text_type(response.reason),
-                u"strict": response.strict,
-                u"decode_content": response.decode_content,
-            },
-        }
+        if not _with_msgpack:
+            data = {
+                "response": {
+                    "body": _b64_encode_bytes(body),
+                    "headers": dict(
+                        (_b64_encode(k), _b64_encode(v))
+                        for k, v in response.headers.items()
+                    ),
+                    "status": response.status,
+                    "version": response.version,
+                    "reason": _b64_encode_str(response.reason),
+                    "strict": response.strict,
+                    "decode_content": response.decode_content,
+                },
+            }
+        else:
+            data = {
+                u"response": {
+                    u"body": body,
+                    u"headers": dict(
+                        (text_type(k), text_type(v))
+                        for k, v in response.headers.items()
+                    ),
+                    u"status": response.status,
+                    u"version": response.version,
+                    u"reason": text_type(response.reason),
+                    u"strict": response.strict,
+                    u"decode_content": response.decode_content,
+                },
+            }
 
         # Construct our vary headers
         data[u"vary"] = {}
@@ -70,7 +103,25 @@ class Serializer(object):
                     header_value = text_type(header_value)
                 data[u"vary"][header] = header_value
 
+        # encode vary headers in case of we don't have msgpack and return compressed data
+        if not _with_msgpack:
+            data["vary"] = dict(
+                (_b64_encode(k), _b64_encode(v) if v is not None else v)
+                for k, v in data["vary"].items()
+            )
+            return b",".join([
+                b"cc=2",
+                zlib.compress(
+                    json.dumps(
+                        data, separators=(",", ":"), sort_keys=True,
+                    ).encode("utf-8"),
+                ),
+            ])
+            
+
         return b",".join([b"cc=4", msgpack.dumps(data, use_bin_type=True)])
+
+                    
 
     def loads(self, request, data):
         # Short circuit if we've been given an empty set of data
@@ -186,6 +237,9 @@ class Serializer(object):
         return
 
     def _loads_v4(self, request, data):
+        # if we don't have msgpack, we can't read v4
+        if not _with_msgpack:
+            return
         try:
             cached = msgpack.loads(data, encoding='utf-8')
         except ValueError:
