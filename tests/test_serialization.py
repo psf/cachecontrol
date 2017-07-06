@@ -3,9 +3,9 @@ import requests
 
 try:
     import msgpack
-    _with_msgpack = 1
-except:
-    _with_msgpack = 0
+    _with_msgpack = True
+except ImportError:
+    _with_msgpack = False
 
 from mock import Mock
 
@@ -60,7 +60,7 @@ class TestSerializer(object):
         resp = self.serializer.loads(req, data)
         assert resp is None
 
-    @pytest.mark.skipif(_with_msgpack == 0, reason="no msgpack")
+    @pytest.mark.skipif(_with_msgpack == False, reason="no msgpack")
     def test_read_version_v4(self):
         print('\nTesting v4\n')
         req = Mock()
