@@ -16,7 +16,8 @@ def total_seconds(td):
 
 class RedisCache(BaseCache):
 
-    def __init__(self, conn):
+    def __init__(self, conn, shared=False):
+        super(RedisCache, self).__init__(shared)
         self.conn = conn
 
     def get(self, key):

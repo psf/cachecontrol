@@ -284,9 +284,22 @@ class CacheController(object):
         if 'no-store' in cc_req:
             no_store = True
             logger.debug('Request header has "no-store"')
+
         if no_store and self.cache.get(cache_url):
             logger.debug('Purging existing cache entry to honor "no-store"')
             self.cache.delete(cache_url)
+
+
+        # Check to see if the cache shared or not
+        is_shared_cache = False
+        try:
+            is_shared_cache = self.cache.shared
+        except AttributeError:
+            pass
+
+        if 'private' in cc and is_shared_cache is True:
+            logger.debug('Request header has "private" and the cache is shared')
+            return
 
         # If we've been given an etag, then keep the response
         if self.cache_etags and 'etag' in response_headers:
