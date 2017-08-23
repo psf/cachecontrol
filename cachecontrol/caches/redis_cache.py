@@ -26,7 +26,7 @@ class RedisCache(BaseCache):
         if not expires:
             self.conn.set(key, value)
         else:
-            self.conn.setex(key, value, expires)
+            self.conn.setex(key, expires, value)
 
     def delete(self, key):
         self.conn.delete(key)
