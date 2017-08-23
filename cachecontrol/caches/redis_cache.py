@@ -2,7 +2,7 @@ from __future__ import division
 
 from datetime import datetime
 from cachecontrol.cache import BaseCache
-
+import zlib
 
 def total_seconds(td):
     """Python 2.6 compatability"""
@@ -20,9 +20,33 @@ class RedisCache(BaseCache):
         self.conn = conn
 
     def get(self, key):
-        return self.conn.get(key)
+        value = self.conn.get(key)
 
-    def set(self, key, value, expires=None):
+        if value is None:
+            return None
+
+        # to handle testing issues where a Mock object cannot be handled
+        if type(value) is not 'str':
+            return value
+
+        value = zlib.decompress(value.encode('utf-8'))
+
+        return value.decode('utf-8')
+
+    def set(self, key, set_value, expires=None):
+
+        # mutability damage limiter
+
+        value = set_value
+
+        # to handle testing issues where a Mock object cannot be handled
+
+        if value is not None and type(value) is 'str':
+
+            value = value.encode('utf-8')
+            value = zlib.compress(value, zlib.Z_BEST_COMPRESSION)
+            value = str(value)
+
         if not expires:
             self.conn.set(key, value)
         else:
