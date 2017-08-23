@@ -164,9 +164,14 @@ class CacheController(object):
             return False
 
         now = time.time()
-        date = calendar.timegm(
-            parsedate_tz(headers['date'])
-        )
+
+        if 'date' in headers:
+            date = calendar.timegm(
+                parsedate_tz(headers['date'])
+            )
+        else:
+            date = 0
+
         current_age = max(0, now - date)
         logger.debug('Current age based on date: %i', current_age)
 
@@ -260,6 +265,16 @@ class CacheController(object):
 
         response_headers = CaseInsensitiveDict(response.headers)
 
+        # what time is it now and from the header
+
+        now = time.time()
+        if 'date' in response_headers:
+            date = calendar.timegm(
+                parsedate_tz(response_headers['date'])
+            )
+        else:
+            date = 0
+
         # If we've been given a body, our response has a Content-Length, that
         # Content-Length is valid then we can check to see if the body we've
         # been given matches the expected size, and if it doesn't we'll just
@@ -315,16 +330,25 @@ class CacheController(object):
                 self.cache.set(
                     cache_url,
                     self.serializer.dumps(request, response, body=body),
+                    expires=cc['max-age'],
                 )
 
             # If the request can expire, it means we should cache it
             # in the meantime.
             elif 'expires' in response_headers:
                 if response_headers['expires']:
-                    logger.debug('Caching b/c of expires header')
+
+                    expires = parsedate_tz(response_headers['expires'])
+                    if expires is not None:
+                        expire_time = calendar.timegm(expires) - date
+                    else:
+                        expire_time = None
+
+                    logger.debug('Caching b/c of expires header. expires in {0} seconds'.format(expire_time))
                     self.cache.set(
                         cache_url,
                         self.serializer.dumps(request, response, body=body),
+                        expires=expire_time,
                     )
 
     def update_cached_response(self, request, response):

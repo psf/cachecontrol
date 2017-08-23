@@ -101,7 +101,7 @@ class FileCache(BaseCache):
         with open(name, 'rb') as fh:
             return fh.read()
 
-    def set(self, key, value):
+    def set(self, key, value, expires=None):
         name = self._fn(key)
 
         # Make sure the directory exists

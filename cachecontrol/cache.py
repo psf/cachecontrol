@@ -10,7 +10,7 @@ class BaseCache(object):
     def get(self, key):
         raise NotImplemented()
 
-    def set(self, key, value):
+    def set(self, key, value, expires=None):
         raise NotImplemented()
 
     def delete(self, key):
@@ -29,7 +29,7 @@ class DictCache(BaseCache):
     def get(self, key):
         return self.data.get(key, None)
 
-    def set(self, key, value):
+    def set(self, key, value, expires=None):
         with self.lock:
             self.data.update({key: value})
 
