@@ -1,5 +1,6 @@
 import hashlib
 import os
+import zlib
 from textwrap import dedent
 
 from ..cache import BaseCache
@@ -98,17 +99,46 @@ class FileCache(BaseCache):
         if not os.path.exists(name):
             return None
 
+        contents = None
         with open(name, 'rb') as fh:
-            return fh.read()
+            value = fh.read()
 
-    def set(self, key, value):
+        if value is None:
+            return None
+        # to handle testing issues where a Mock object cannot be handled
+        if type(value) is not 'str':
+            return value
+
+        value = value.encode('utf-8')
+        value = zlib.decompress(value)
+        return value.decode('utf-8')
+
+
+    def set(self, key, set_value):
         name = self._fn(key)
+
+        # limits mutability issues
+        value = set_value
 
         # Make sure the directory exists
         try:
             os.makedirs(os.path.dirname(name), self.dirmode)
         except (IOError, OSError):
             pass
+
+        if value is None:
+            with self.lock:
+                self.data.update({key: None})
+            return
+
+        # to handle testing issues where a Mock object cannot be handled
+        if type(value) is not 'str':
+            pass
+        else:
+            # compress our string contents doing the best zlib can do
+            value = value.encode('utf-8')
+            value = zlib.compress(value, zlib.Z_BEST_COMPRESSION)
+            value = str(value)
 
         with self.lock_class(name) as lock:
             # Write our actual file
