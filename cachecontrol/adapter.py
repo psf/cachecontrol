@@ -31,6 +31,21 @@ class CacheControlAdapter(HTTPAdapter):
             serializer=serializer,
         )
 
+    def __getstate__(self):
+        state = super(CacheControlAdapter, self).__getstate__()
+        state['cache'] = self.cache
+        state['heuristic'] = self.heuristic
+        state['cacheable_methods'] = self.cacheable_methods
+        state['controller'] = self.controller
+        return state
+
+    def __setstate__(self, state):
+        super(CacheControlAdapter, self).__setstate__(state)
+        self.cache = state['cache']
+        self.heuristic = state['heuristic']
+        self.cacheable_methods = state['cacheable_methods']
+        self.controller = state['controller']
+
     def send(self, request, cacheable_methods=None, **kw):
         """
         Send a request. Use the request information to see if it
