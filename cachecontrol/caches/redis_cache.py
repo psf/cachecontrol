@@ -26,7 +26,10 @@ class RedisCache(BaseCache):
         if not expires:
             self.conn.set(key, value)
         else:
-            self.conn.setex(key, expires, value)
+            # the keyword arguments are to account for a Redis v StrictRedis issue
+            # with pyredis being a mess. this is compatible with both.
+
+            self.conn.setex(key, expires=expires, value=value)
 
     def delete(self, key):
         self.conn.delete(key)

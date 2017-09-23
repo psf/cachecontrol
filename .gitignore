@@ -1,3 +1,5 @@
+.cache
+web_cache
 .DS_Store
 *.pyc
 *.pyo
