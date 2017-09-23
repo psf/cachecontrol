@@ -29,8 +29,21 @@ class RedisCache(BaseCache):
             # the keyword arguments are to account for a Redis v StrictRedis issue
             # with pyredis being a mess. this is compatible with both.
 
-            self.conn.setex(key, expires=expires, value=value)
+            redis_class = self.conn.__class__
+            if redis_class == 'redis.client.StrictRedis':
+                # StrictRedis
+                self.conn.setex(key, expires, value)
+            elif redis_class == 'redis.client.Redis':
+                # Redis
+                self.conn.setex(key, value, expires)
+            else:
+                # unknown redis client type. give it a shot.
 
+                try:
+                    self.conn.setex(key, expires, value)
+                except Exception as e:
+                    # complete failure. give up and don't set a date.
+                    self.conn.set(key, value)
     def delete(self, key):
         self.conn.delete(key)
 
