@@ -9,3 +9,4 @@ sphinx
 redis
 lockfile
 bumpversion
+twine

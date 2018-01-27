@@ -44,8 +44,8 @@ test:
 coverage:
 	$(VENV)/bin/py.test --cov cachecontrol
 
-release: clean
-	$(VENV)/bin/python setup.py sdist register -r $(CHEESE) upload -r $(CHEESE)
+release: dist
+	$(VENV)/bin/twine upload dist/CacheControl-*.tar.gz
 
 dist: clean
 	python setup.py sdist
