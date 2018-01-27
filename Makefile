@@ -36,7 +36,7 @@ clean-test:
 	rm -fr htmlcov/
 
 test-all:
-	tox
+	$(VENV)/bin/tox
 
 test:
 	$(VENV)/bin/py.test
