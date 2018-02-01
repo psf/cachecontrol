@@ -37,7 +37,7 @@ Here is how the adapter works: ::
   import cachecontrol
 
   sess = requests.Session()
-  sess.mount('http://', CacheControlAdapter())
+  sess.mount('http://', cachecontrol.CacheControlAdapter())
 
   resp = sess.get('http://google.com')
 
