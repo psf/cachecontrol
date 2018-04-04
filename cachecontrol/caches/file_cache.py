@@ -9,7 +9,7 @@ try:
     FileNotFoundError
 except NameError:
     # py2.X
-    FileNotFoundError = OSError
+    FileNotFoundError = (IOError, OSError)
 
 
 def _secure_open_write(filename, fmode):
@@ -95,11 +95,11 @@ class FileCache(BaseCache):
 
     def get(self, key):
         name = self._fn(key)
-        if not os.path.exists(name):
+        try:
+            with open(name, 'rb') as fh:
+                return fh.read()
+        except FileNotFoundError:
             return None
-
-        with open(name, 'rb') as fh:
-            return fh.read()
 
     def set(self, key, value):
         name = self._fn(key)
