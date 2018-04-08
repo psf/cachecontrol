@@ -287,6 +287,8 @@ class CacheController(object):
         if no_store and self.cache.get(cache_url):
             logger.debug('Purging existing cache entry to honor "no-store"')
             self.cache.delete(cache_url)
+        if no_store:
+            return
 
         # If we've been given an etag, then keep the response
         if self.cache_etags and 'etag' in response_headers:
