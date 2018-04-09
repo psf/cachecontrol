@@ -115,21 +115,11 @@ class TestCacheControllerResponse(object):
         cc.cache_response(self.req(), resp)
         assert not cc.cache.get(cache_url)
 
-    def test_cache_response_no_store_with_etag(self):
-        resp = Mock()
-        cache = DictCache({self.url: resp})
-        cc = CacheController(cache)
-
-        cache_url = cc.cache_url(self.url)
-
+    def test_cache_response_no_store_with_etag(self, cc):
         resp = self.resp({'cache-control': 'no-store', 'ETag': 'jfd9094r808'})
-        assert cc.cache.get(cache_url)
-
-        # skip serializer as it can't handle mocks
-        cc.serializer = Mock()
-        cc.serializer.loads.return_value = resp
         cc.cache_response(self.req(), resp)
-        assert not cc.cache.get(cache_url)
+
+        assert not cc.cache.set.called
 
     def test_update_cached_response_with_valid_headers(self):
         cached_resp = Mock(headers={'ETag': 'jfd9094r808', 'Content-Length': 100})
