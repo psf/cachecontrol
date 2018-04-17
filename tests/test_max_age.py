@@ -12,7 +12,7 @@ class NullSerializer(object):
         return response
 
     def loads(self, request, data):
-        if data and getattr(data, 'chunked', False):
+        if data and getattr(data, "chunked", False):
             data.chunked = False
         return data
 
@@ -25,8 +25,7 @@ class TestMaxAge(object):
         self.cache = DictCache()
         sess = Session()
         sess.mount(
-            'http://',
-            CacheControlAdapter(self.cache, serializer=NullSerializer()),
+            "http://", CacheControlAdapter(self.cache, serializer=NullSerializer())
         )
         return sess
 
@@ -35,12 +34,12 @@ class TestMaxAge(object):
         Making sure when the client uses max-age=0 we don't get a
         cached copy even though we're still fresh.
         """
-        print('first request')
+        print("first request")
         r = sess.get(self.url)
         assert self.cache.get(self.url) == r.raw
 
-        print('second request')
-        r = sess.get(self.url, headers={'Cache-Control': 'max-age=0'})
+        print("second request")
+        r = sess.get(self.url, headers={"Cache-Control": "max-age=0"})
 
         # don't remove from the cache
         assert self.cache.get(self.url)
@@ -55,12 +54,12 @@ class TestMaxAge(object):
         assert self.cache.get(self.url) == r.raw
 
         # request that we don't want a new one unless
-        r = sess.get(self.url, headers={'Cache-Control': 'max-age=3600'})
+        r = sess.get(self.url, headers={"Cache-Control": "max-age=3600"})
         assert r.from_cache is True
 
         # now lets grab one that forces a new request b/c the cache
         # has expired. To do that we'll inject a new time value.
         resp = self.cache.get(self.url)
-        resp.headers['date'] = 'Tue, 15 Nov 1994 08:12:31 GMT'
+        resp.headers["date"] = "Tue, 15 Nov 1994 08:12:31 GMT"
         r = sess.get(self.url)
         assert not r.from_cache

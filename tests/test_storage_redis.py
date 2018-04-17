@@ -11,5 +11,5 @@ class TestRedisCache(object):
         self.cache = RedisCache(self.conn)
 
     def test_set_expiration(self):
-        self.cache.set('foo', 'bar', expires=datetime(2014, 2, 2))
+        self.cache.set("foo", "bar", expires=datetime(2014, 2, 2))
         assert self.conn.setex.called
