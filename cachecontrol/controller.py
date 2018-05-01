@@ -84,6 +84,9 @@ class CacheController(object):
         retval = {}
 
         for cc_directive in cc_headers.split(','):
+            if not cc_directive.strip():
+                continue
+            
             parts = cc_directive.split('=', 1)
             directive = parts[0].strip()
 
