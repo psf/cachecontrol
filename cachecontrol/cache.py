@@ -7,6 +7,9 @@ from threading import Lock
 
 class BaseCache(object):
 
+    def __init__(self, shared=False):
+        self.shared = shared
+
     def get(self, key):
         raise NotImplementedError()
 
@@ -22,7 +25,8 @@ class BaseCache(object):
 
 class DictCache(BaseCache):
 
-    def __init__(self, init_dict=None):
+    def __init__(self, init_dict=None, shared=False):
+        super(DictCache, self).__init__(shared)
         self.lock = Lock()
         self.data = init_dict or {}
 

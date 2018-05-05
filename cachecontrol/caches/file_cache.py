@@ -54,7 +54,10 @@ def _secure_open_write(filename, fmode):
 
 class FileCache(BaseCache):
     def __init__(self, directory, forever=False, filemode=0o0600,
-                 dirmode=0o0700, use_dir_lock=None, lock_class=None):
+                 dirmode=0o0700, use_dir_lock=None, lock_class=None,
+                 shared=False):
+
+        super(FileCache, self).__init__(shared)
 
         if use_dir_lock is not None and lock_class is not None:
             raise ValueError("Cannot use use_dir_lock and lock_class together")

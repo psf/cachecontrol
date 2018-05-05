@@ -2,7 +2,7 @@
 Unit tests that verify our caching methods work correctly.
 """
 import pytest
-from mock import ANY, Mock
+from mock import ANY, Mock, patch
 import time
 
 from cachecontrol import CacheController
@@ -114,6 +114,44 @@ class TestCacheControllerResponse(object):
 
         cc.cache_response(self.req(), resp)
         assert not cc.cache.get(cache_url)
+
+    def test_cache_response_private_with_shared_cache(self):
+        '''
+        When a cache store is shared, a private directive should turn off caching.
+
+        In this example, the etag is set, which should trigger a
+        cache, but since the private directive is set and the cache is
+        considered shared, we should not cache.
+        '''
+        resp = Mock()
+        cache = DictCache(shared=True)
+        cc = CacheController(cache)
+
+        cache_url = cc.cache_url(self.url)
+
+        resp = self.resp({'cache-control': 'max-age=3600, private'})
+
+        cc.cache_response(self.req(), resp)
+        assert not cc.cache.get(cache_url)
+
+    def test_cache_response_private_with_legacy_cache(self):
+        # Not all cache objects will have the "shared" attribute.
+        resp = Mock()
+        cache = Mock()
+        cache.shared.side_effect = AttributeError
+        cc = CacheController(cache)
+        cc.serializer = Mock()
+
+        cache_url = cc.cache_url(self.url)
+
+        now = time.strftime(TIME_FMT, time.gmtime())
+        resp = self.resp({
+            'cache-control': 'max-age=3600, private',
+            'date': now,
+        })
+
+        cc.cache_response(self.req(), resp)
+        assert cc.cache.set.called
 
     def test_update_cached_response_with_valid_headers(self):
         cached_resp = Mock(headers={'ETag': 'jfd9094r808', 'Content-Length': 100})
