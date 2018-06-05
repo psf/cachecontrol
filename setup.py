@@ -19,7 +19,7 @@ setup_params = dict(
     long_description=long_description,
     install_requires=[
         'requests',
-        'msgpack-python',
+        'msgpack',
     ],
     extras_require={
         'filecache': ['lockfile>=0.9'],
