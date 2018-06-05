@@ -64,7 +64,7 @@ class Serializer(object):
         if u"vary" in response_headers:
             varied_headers = response_headers[u'vary'].split(',')
             for header in varied_headers:
-                header = header.strip()
+                header = text_type(header).strip()
                 header_value = request.headers.get(header, None)
                 if header_value is not None:
                     header_value = text_type(header_value)
