@@ -19,7 +19,7 @@ def randomdata():
     key = ''.join(sample(string.ascii_lowercase, randint(2, 4)))
     val = ''.join(sample(string.ascii_lowercase + string.digits,
                          randint(2, 10)))
-    return '&{0}={1}'.format(key, val)
+    return '&{}={}'.format(key, val)
 
 
 class TestStorageFileCache(object):
