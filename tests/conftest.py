@@ -155,7 +155,7 @@ def pytest_namespace():
     logger.removeHandler(logger.handlers[0])
 
     cherrypy.server.start()
-    return dict(server=cherrypy.server)
+    return {'server': cherrypy.server}
 
 
 def pytest_unconfigure(config):
