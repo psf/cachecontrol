@@ -115,6 +115,12 @@ class TestCacheControllerResponse(object):
         cc.cache_response(self.req(), resp)
         assert not cc.cache.get(cache_url)
 
+    def test_cache_response_no_store_with_etag(self, cc):
+        resp = self.resp({'cache-control': 'no-store', 'ETag': 'jfd9094r808'})
+        cc.cache_response(self.req(), resp)
+
+        assert not cc.cache.set.called
+
     def test_update_cached_response_with_valid_headers(self):
         cached_resp = Mock(headers={'ETag': 'jfd9094r808', 'Content-Length': 100})
 
