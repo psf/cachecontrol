@@ -8,15 +8,15 @@ from cachecontrol.wrapper import CacheControl
 
 
 def use_wrapper():
-    print('Using helper')
+    print("Using helper")
     sess = CacheControl(Session())
     return sess
 
 
 def use_adapter():
-    print('Using adapter')
+    print("Using adapter")
     sess = Session()
-    sess.mount('http://', CacheControlAdapter())
+    sess.mount("http://", CacheControlAdapter())
     return sess
 
 
@@ -25,6 +25,7 @@ def sess(url, request):
     sess = request.param()
     sess.get(url)
     yield sess
+
     # closing session object
     sess.close()
 
@@ -36,11 +37,11 @@ class TestSessionActions(object):
         assert r2.from_cache is True
 
     def test_get_with_no_cache_does_not_cache(self, url, sess):
-        r2 = sess.get(url, headers={'Cache-Control': 'no-cache'})
+        r2 = sess.get(url, headers={"Cache-Control": "no-cache"})
         assert not r2.from_cache
 
     def test_put_invalidates_cache(self, url, sess):
-        r2 = sess.put(url, data={'foo': 'bar'})
+        r2 = sess.put(url, data={"foo": "bar"})
         sess.get(url)
         assert not r2.from_cache
 
@@ -52,7 +53,7 @@ class TestSessionActions(object):
     def test_close(self):
         cache = mock.Mock(spec=DictCache)
         sess = Session()
-        sess.mount('http://', CacheControlAdapter(cache))
+        sess.mount("http://", CacheControlAdapter(cache))
 
         sess.close()
         assert cache.close.called

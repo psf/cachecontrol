@@ -15,7 +15,7 @@ class NullSerializer(object):
         return response
 
     def loads(self, request, data):
-        if data and getattr(data, 'chunked', False):
+        if data and getattr(data, "chunked", False):
             data.chunked = False
         return data
 
@@ -29,15 +29,14 @@ class TestETag(object):
 
     @pytest.fixture()
     def sess(self, url):
-        self.etag_url = urljoin(url, '/etag')
-        self.update_etag_url = urljoin(url, '/update_etag')
+        self.etag_url = urljoin(url, "/etag")
+        self.update_etag_url = urljoin(url, "/update_etag")
         self.cache = DictCache()
         sess = CacheControl(
-            requests.Session(),
-            cache=self.cache,
-            serializer=NullSerializer(),
+            requests.Session(), cache=self.cache, serializer=NullSerializer()
         )
         yield sess
+
         # closing session object
         sess.close()
 
@@ -92,15 +91,18 @@ class TestDisabledETags(object):
     """Test our use of ETags when the response is stale and the
     response has an ETag.
     """
+
     @pytest.fixture()
     def sess(self, server, url):
-        self.etag_url = urljoin(url, '/etag')
-        self.update_etag_url = urljoin(url, '/update_etag')
+        self.etag_url = urljoin(url, "/etag")
+        self.update_etag_url = urljoin(url, "/update_etag")
         self.cache = DictCache()
-        sess = CacheControl(requests.Session(),
-                            cache=self.cache,
-                            cache_etags=False,
-                            serializer=NullSerializer())
+        sess = CacheControl(
+            requests.Session(),
+            cache=self.cache,
+            cache_etags=False,
+            serializer=NullSerializer(),
+        )
         return sess
 
     def test_expired_etags_if_none_match_response(self, sess):
@@ -113,12 +115,12 @@ class TestDisabledETags(object):
         # expire our request by changing the date. Our test endpoint
         # doesn't provide time base caching headers, so we add them
         # here in order to expire the request.
-        r.headers['Date'] = 'Tue, 26 Nov 2012 00:50:49 GMT'
+        r.headers["Date"] = "Tue, 26 Nov 2012 00:50:49 GMT"
         self.cache.set(self.etag_url, r.raw)
 
         r = sess.get(self.etag_url)
         assert r.from_cache
-        assert 'if-none-match' in r.request.headers
+        assert "if-none-match" in r.request.headers
         assert r.status_code == 200
 
 
@@ -130,16 +132,17 @@ class TestReleaseConnection(object):
     method is not called we consume the response (which should be
     empty according to the HTTP spec) and release the connection.
     """
+
     def test_not_modified_releases_connection(self, server, url):
         sess = CacheControl(requests.Session())
-        etag_url = urljoin(url, '/etag')
+        etag_url = urljoin(url, "/etag")
         sess.get(etag_url)
 
         resp = Mock(status=304, headers={})
 
         # This is how the urllib3 response is created in
         # requests.adapters
-        response_mod = 'requests.adapters.HTTPResponse.from_httplib'
+        response_mod = "requests.adapters.HTTPResponse.from_httplib"
 
         with patch(response_mod, Mock(return_value=resp)):
             sess.get(etag_url)

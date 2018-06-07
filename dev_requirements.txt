@@ -10,3 +10,4 @@ redis
 lockfile
 bumpversion
 twine
+black

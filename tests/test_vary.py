@@ -12,7 +12,7 @@ class TestVary(object):
 
     @pytest.fixture()
     def sess(self, url):
-        self.url = urljoin(url, '/vary_accept')
+        self.url = urljoin(url, "/vary_accept")
         self.cache = DictCache()
         sess = CacheControl(requests.Session(), cache=self.cache)
         return sess
@@ -20,8 +20,8 @@ class TestVary(object):
     def cached_equal(self, cached, resp):
         # remove any transfer-encoding headers as they don't apply to
         # a cached value
-        if 'chunked' in resp.raw.headers.get('transfer-encoding', ''):
-            resp.raw.headers.pop('transfer-encoding')
+        if "chunked" in resp.raw.headers.get("transfer-encoding", ""):
+            resp.raw.headers.pop("transfer-encoding")
 
         checks = [
             cached._fp.getvalue() == resp.content,
@@ -66,7 +66,7 @@ class TestVary(object):
         assert resp.from_cache
 
         # make a similar request, changing the accept header
-        resp = sess.get(self.url, headers={'Accept': 'text/plain, text/html'})
+        resp = sess.get(self.url, headers={"Accept": "text/plain, text/html"})
         assert not self.cached_equal(c, resp)
         assert not resp.from_cache
 
@@ -78,5 +78,5 @@ class TestVary(object):
         # The reason for this is that when we don't specify the header
         # in the request, it is considered the same in terms of
         # whether or not to use the cached value.
-        assert 'vary' in r.headers
-        assert len(r.headers['vary'].replace(' ', '').split(',')) == 2
+        assert "vary" in r.headers
+        assert len(r.headers["vary"].replace(" ", "").split(",")) == 2
