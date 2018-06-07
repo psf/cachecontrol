@@ -100,9 +100,8 @@ class LastModified(BaseHeuristic):
     http://lxr.mozilla.org/mozilla-release/source/netwerk/protocol/http/nsHttpResponseHead.cpp#397
     Unlike mozilla we limit this to 24-hr.
     """
-    cacheable_by_default_statuses = set([
-        200, 203, 204, 206, 300, 301, 404, 405, 410, 414, 501
-    ])
+    cacheable_by_default_statuses = {200, 203, 204, 206, 300, 301, 404, 405,
+                                     410, 414, 501}
 
     def update_headers(self, resp):
         headers = resp.headers
