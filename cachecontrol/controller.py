@@ -247,6 +247,7 @@ class CacheController(object):
 
     def cache_response(self, request, response, body=None,
                        status_codes=None):
+
         """
         Algorithm for caching requests.
 
@@ -306,9 +307,22 @@ class CacheController(object):
         # If we've been given an etag, then keep the response
         if self.cache_etags and 'etag' in response_headers:
             logger.debug('Caching due to etag')
+
+            if response_headers.get('expires'):
+                expires = parsedate_tz(response_headers['expires'])
+                if expires is not None:
+                    expire_time = calendar.timegm(expires) - date
+                else:
+                    expire_time = 0
+
+                expire_time = max(expire_time, 14*86400)
+
+                logger.debug('etag object cached for {0} seconds'.format(expire_time))
+
             self.cache.set(
                 cache_url,
                 self.serializer.dumps(request, response, body=body),
+                expires=expire_time
             )
 
         # Add to the cache any 301s. We do this before looking that
