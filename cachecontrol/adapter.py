@@ -10,7 +10,7 @@ from .filewrapper import CallbackFileWrapper
 
 
 class CacheControlAdapter(HTTPAdapter):
-    invalidating_methods = set(['PUT', 'DELETE'])
+    invalidating_methods = {'PUT', 'DELETE'}
 
     def __init__(self, cache=None,
                  cache_etags=True,

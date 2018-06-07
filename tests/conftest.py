@@ -48,7 +48,7 @@ class SimpleApp(object):
 
     def update_etag_string(self):
         self.etag_count += 1
-        self.etag_string = '"ETAG-{0}"'.format(self.etag_count)
+        self.etag_string = '"ETAG-{}"'.format(self.etag_count)
 
     def update_etag(self, env, start_response):
         self.update_etag_string()
@@ -155,7 +155,7 @@ def pytest_namespace():
     logger.removeHandler(logger.handlers[0])
 
     cherrypy.server.start()
-    return dict(server=cherrypy.server)
+    return {'server': cherrypy.server}
 
 
 def pytest_unconfigure(config):

@@ -9,7 +9,7 @@ from cachecontrol import CacheControl
 
 HOST = 'localhost'
 PORT = 8050
-URL = 'http://{0}:{1}/'.format(HOST, PORT)
+URL = 'http://{}:{}/'.format(HOST, PORT)
 
 
 class Server(object):

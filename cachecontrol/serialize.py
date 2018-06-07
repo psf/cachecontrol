@@ -95,7 +95,7 @@ class Serializer(object):
 
         # Dispatch to the actual load method for the given version
         try:
-            return getattr(self, "_loads_v{0}".format(ver))(request, data)
+            return getattr(self, "_loads_v{}".format(ver))(request, data)
         except AttributeError:
             # This is a version we don't have a loads function for, so we'll
             # just treat it as a miss and return None
