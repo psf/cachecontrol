@@ -107,7 +107,7 @@ class SimpleApp(object):
 
 @pytest.fixture(scope="session")
 def server():
-    return pytest.server
+    return cherrypy.server
 
 
 @pytest.fixture()
@@ -124,7 +124,7 @@ def get_free_port():
     return ip, port
 
 
-def pytest_namespace():
+def pytest_configure(config):
     cherrypy.tree.graft(SimpleApp(), "/")
 
     ip, port = get_free_port()
@@ -136,7 +136,6 @@ def pytest_namespace():
     logger.removeHandler(logger.handlers[0])
 
     cherrypy.server.start()
-    return {"server": cherrypy.server}
 
 
 def pytest_unconfigure(config):
