@@ -64,6 +64,7 @@ class SimpleApp(object):
         headers = [("Etag", self.etag_string)]
         if env.get("HTTP_IF_NONE_MATCH") == self.etag_string:
             start_response("304 Not Modified", headers)
+            return []
         else:
             start_response("200 OK", headers)
         return [pformat(env).encode("utf8")]
