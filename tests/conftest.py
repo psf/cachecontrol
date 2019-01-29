@@ -64,6 +64,7 @@ class SimpleApp(object):
         headers = [("Etag", self.etag_string)]
         if env.get("HTTP_IF_NONE_MATCH") == self.etag_string:
             start_response("304 Not Modified", headers)
+            return []
         else:
             start_response("200 OK", headers)
         return [pformat(env).encode("utf8")]
@@ -107,7 +108,7 @@ class SimpleApp(object):
 
 @pytest.fixture(scope="session")
 def server():
-    return pytest.server
+    return cherrypy.server
 
 
 @pytest.fixture()
@@ -124,7 +125,7 @@ def get_free_port():
     return ip, port
 
 
-def pytest_namespace():
+def pytest_configure(config):
     cherrypy.tree.graft(SimpleApp(), "/")
 
     ip, port = get_free_port()
@@ -136,7 +137,6 @@ def pytest_namespace():
     logger.removeHandler(logger.handlers[0])
 
     cherrypy.server.start()
-    return {"server": cherrypy.server}
 
 
 def pytest_unconfigure(config):
