@@ -112,6 +112,14 @@ class TestCacheControllerResponse(object):
 
         assert not cc.cache.set.called
 
+    def test_no_cache_with_vary_star(self, cc):
+        # Vary: * indicates that the response can never be served
+        # from the cache, so storing it can be avoided.
+        resp = self.resp({"vary": "*"})
+        cc.cache_response(self.req(), resp)
+
+        assert not cc.cache.set.called
+
     def test_update_cached_response_with_valid_headers(self):
         cached_resp = Mock(headers={"ETag": "jfd9094r808", "Content-Length": 100})
 
