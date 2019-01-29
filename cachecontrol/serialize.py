@@ -181,7 +181,7 @@ class Serializer(object):
 
     def _loads_v4(self, request, data):
         try:
-            cached = msgpack.loads(data, encoding="utf-8")
+            cached = msgpack.loads(data, raw=False)
         except ValueError:
             return
 

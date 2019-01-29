@@ -17,7 +17,7 @@ setup_params = dict(
     include_package_data=True,
     description="httplib2 caching for requests",
     long_description=long_description,
-    install_requires=["requests", "msgpack"],
+    install_requires=["requests", "msgpack>=0.5.2"],
     extras_require={"filecache": ["lockfile>=0.9"], "redis": ["redis>=2.10.5"]},
     entry_points={"console_scripts": ["doesitcache = cachecontrol._cmd:main"]},
     python_requires=">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*",
