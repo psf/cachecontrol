@@ -97,8 +97,15 @@ Here is an example using a `RedisCache`: ::
 This is primarily a proof of concept, so please file bugs if there is
 a better method for utilizing redis as a cache.
 
+Third-Party Cache Providers
+===========================
+
+* cachecontrol-django_ uses Django's caching mechanism.
+
+
 
 .. _httplib2: http://code.google.com/p/httplib2/
 .. _lockfile: https://github.com/smontanaro/pylockfile
 .. _requests 2.1: http://docs.python-requests.org/en/latest/community/updates/#id2
 .. _redis: https://github.com/andymccurdy/redis-py
+.. _cachecontrol-django: https://github.com/glassesdirect/cachecontrol-django
