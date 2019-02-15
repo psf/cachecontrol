@@ -100,7 +100,7 @@ a better method for utilizing redis as a cache.
 Third-Party Cache Providers
 ===========================
 
- * cachecontrol-django_ uses Django's caching mechanism.
+* cachecontrol-django_ uses Django's caching mechanism.
 
 
 
