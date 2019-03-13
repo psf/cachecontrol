@@ -13,7 +13,7 @@ CacheControl is a port of the caching algorithms in httplib2_ for use with
 requests_ session object.
 
 It was written because httplib2's better support for caching is often
-mitigated by its lack of threadsafety. The same is true of requests in
+mitigated by its lack of thread safety. The same is true of requests in
 terms of caching.
 
 
