@@ -83,7 +83,7 @@ class TestCacheControllerResponse(object):
         req = self.req()
         cc.cache_response(req, resp)
         cc.serializer.dumps.assert_called_with(req, resp, body=None)
-        cc.cache.set.assert_called_with(self.url, ANY)
+        cc.cache.set.assert_called_with(self.url, ANY, expires=3600)
 
     def test_cache_response_cache_max_age_with_invalid_value_not_cached(self, cc):
         now = time.strftime(TIME_FMT, time.gmtime())

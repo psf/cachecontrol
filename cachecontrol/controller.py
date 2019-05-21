@@ -31,6 +31,9 @@ class CacheController(object):
     """An interface to see if request should cached or not.
     """
 
+    # 2 weeks max cache for backends that support TTL.  Set to falsey for no maximum.
+    CACHE_TTL_MAX = 14*86400
+
     def __init__(
         self, cache=None, cache_etags=True, serializer=None, status_codes=None
     ):
@@ -306,7 +309,9 @@ class CacheController(object):
         if self.cache_etags and "etag" in response_headers:
             logger.debug("Caching due to etag")
             self.cache.set(
-                cache_url, self.serializer.dumps(request, response, body=body)
+                cache_url,
+                self.serializer.dumps(request, response, body=body),
+                expires=self.get_cache_expiry(response_headers, cc),
             )
 
         # Add to the cache any 301s. We do this before looking that
@@ -323,7 +328,9 @@ class CacheController(object):
             if "max-age" in cc and cc["max-age"] > 0:
                 logger.debug("Caching b/c date exists and max-age > 0")
                 self.cache.set(
-                    cache_url, self.serializer.dumps(request, response, body=body)
+                    cache_url,
+                    self.serializer.dumps(request, response, body=body),
+                    expires=self.get_cache_expiry(response_headers, cc),
                 )
 
             # If the request can expire, it means we should cache it
@@ -332,8 +339,25 @@ class CacheController(object):
                 if response_headers["expires"]:
                     logger.debug("Caching b/c of expires header")
                     self.cache.set(
-                        cache_url, self.serializer.dumps(request, response, body=body)
+                        cache_url,
+                        self.serializer.dumps(request, response, body=body),
+                        expires=self.get_cache_expiry(response_headers, cc),
                     )
+
+    def get_cache_expiry(self, headers, cc):
+        """Derives a TTL from the response headers to pass to the caching backends that
+        support it.
+        """
+        ex = cc.get("max-age", 0)
+        if not ex and "expires" in headers:
+            try:
+                date = calendar.timegm(parsedate_tz(headers["date"]))
+                ex = calendar.timegm(parsedate_tz(headers["expires"])) - date
+            except (TypeError, KeyError):
+                pass
+        if self.CACHE_TTL_MAX:
+            return min(ex, self.CACHE_TTL_MAX)
+        return ex
 
     def update_cached_response(self, request, response):
         """On a 304 we will get a new set of headers that we want to
