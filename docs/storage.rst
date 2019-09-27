@@ -101,6 +101,7 @@ Third-Party Cache Providers
 ===========================
 
 * cachecontrol-django_ uses Django's caching mechanism.
+* cachecontrol-uwsgi_ uses uWSGI's caching framework.
 
 
 
@@ -109,3 +110,4 @@ Third-Party Cache Providers
 .. _requests 2.1: http://docs.python-requests.org/en/latest/community/updates/#id2
 .. _redis: https://github.com/andymccurdy/redis-py
 .. _cachecontrol-django: https://github.com/glassesdirect/cachecontrol-django
+.. _cachecontrol-uwsgi: https://github.com/etene/cachecontrol-uwsgi
