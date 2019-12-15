@@ -46,10 +46,10 @@ coverage:
 	$(VENV)/bin/py.test --cov cachecontrol
 
 release: dist
-	$(VENV)/bin/twine upload dist/CacheControl-*.tar.gz
+	$(VENV)/bin/twine upload dist/*
 
 dist: clean
-	python setup.py sdist
+	python setup.py sdist bdist_wheel
 	ls -l dist
 
 bump:

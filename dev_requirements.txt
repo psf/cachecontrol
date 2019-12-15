@@ -11,3 +11,4 @@ lockfile
 bumpversion
 twine
 black
+wheel
