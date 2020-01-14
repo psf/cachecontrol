@@ -13,7 +13,7 @@ class RedisCache(BaseCache):
         return self.conn.get(key)
 
     def set(self, key, value, expires=None):
-        self.conn.set(key, value, ex=expires)
+        self.conn.set(key, value, ex=expires or None)
 
     def delete(self, key):
         self.conn.delete(key)
