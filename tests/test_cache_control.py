@@ -152,7 +152,7 @@ class TestCacheControlRequest(object):
         return self.c.cached_request(mock_request)
 
     def test_cache_request_no_headers(self):
-        cached_resp = Mock(headers={"ETag": "jfd9094r808", "Content-Length": 100})
+        cached_resp = Mock(headers={"ETag": "jfd9094r808", "Content-Length": 100}, status=200)
         self.c.cache = DictCache({self.url: cached_resp})
         resp = self.req({})
         assert not resp
@@ -179,7 +179,7 @@ class TestCacheControlRequest(object):
 
     def test_cache_request_fresh_max_age(self):
         now = time.strftime(TIME_FMT, time.gmtime())
-        resp = Mock(headers={"cache-control": "max-age=3600", "date": now})
+        resp = Mock(headers={"cache-control": "max-age=3600", "date": now}, status=200)
 
         cache = DictCache({self.url: resp})
         self.c.cache = cache
@@ -189,7 +189,7 @@ class TestCacheControlRequest(object):
     def test_cache_request_unfresh_max_age(self):
         earlier = time.time() - 3700  # epoch - 1h01m40s
         now = time.strftime(TIME_FMT, time.gmtime(earlier))
-        resp = Mock(headers={"cache-control": "max-age=3600", "date": now})
+        resp = Mock(headers={"cache-control": "max-age=3600", "date": now}, status=200)
         self.c.cache = DictCache({self.url: resp})
         r = self.req({})
         assert not r
@@ -198,7 +198,7 @@ class TestCacheControlRequest(object):
         later = time.time() + 86400  # GMT + 1 day
         expires = time.strftime(TIME_FMT, time.gmtime(later))
         now = time.strftime(TIME_FMT, time.gmtime())
-        resp = Mock(headers={"expires": expires, "date": now})
+        resp = Mock(headers={"expires": expires, "date": now}, status=200)
         cache = DictCache({self.url: resp})
         self.c.cache = cache
         r = self.req({})
@@ -208,7 +208,7 @@ class TestCacheControlRequest(object):
         sooner = time.time() - 86400  # GMT - 1 day
         expires = time.strftime(TIME_FMT, time.gmtime(sooner))
         now = time.strftime(TIME_FMT, time.gmtime())
-        resp = Mock(headers={"expires": expires, "date": now})
+        resp = Mock(headers={"expires": expires, "date": now}, status=200)
         cache = DictCache({self.url: resp})
         self.c.cache = cache
         r = self.req({})
@@ -217,7 +217,7 @@ class TestCacheControlRequest(object):
     def test_cached_request_with_bad_max_age_headers_not_returned(self):
         now = time.strftime(TIME_FMT, time.gmtime())
         # Not a valid header; this would be from a misconfigured server
-        resp = Mock(headers={"cache-control": "max-age=xxx", "date": now})
+        resp = Mock(headers={"cache-control": "max-age=xxx", "date": now}, status=200)
 
         self.c.cache = DictCache({self.url: resp})
 
