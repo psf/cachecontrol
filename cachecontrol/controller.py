@@ -284,7 +284,7 @@ class CacheController(object):
         cc = self.parse_cache_control(response_headers)
 
         cache_url = self.cache_url(request.url)
-        logger.debug('Updating cache %r with response from "%s"', self.cache, cache_url)
+        logger.debug('Updating cache with response from "%s"', cache_url)
 
         # Delete it from the cache if we happen to have it stored there
         no_store = False
