@@ -309,14 +309,14 @@ class CacheController(object):
         if self.cache_etags and "etag" in response_headers:
             logger.debug("Caching due to etag")
             self.cache.set(
-                cache_url, self.serializer.dumps(request, response, body=body)
+                cache_url, self.serializer.dumps(request, response, body)
             )
 
         # Add to the cache any permanent redirects. We do this before looking
         # that the Date headers.
         elif int(response.status) in PERMANENT_REDIRECT_STATUSES:
             logger.debug("Caching permanent redirect")
-            self.cache.set(cache_url, self.serializer.dumps(request, response))
+            self.cache.set(cache_url, self.serializer.dumps(request, response, b''))
 
         # Add to the cache if the response headers demand it. If there
         # is no date header then we can't do anything about expiring
@@ -326,7 +326,7 @@ class CacheController(object):
             if "max-age" in cc and cc["max-age"] > 0:
                 logger.debug("Caching b/c date exists and max-age > 0")
                 self.cache.set(
-                    cache_url, self.serializer.dumps(request, response, body=body)
+                    cache_url, self.serializer.dumps(request, response, body)
                 )
 
             # If the request can expire, it means we should cache it
@@ -335,7 +335,7 @@ class CacheController(object):
                 if response_headers["expires"]:
                     logger.debug("Caching b/c of expires header")
                     self.cache.set(
-                        cache_url, self.serializer.dumps(request, response, body=body)
+                        cache_url, self.serializer.dumps(request, response, body)
                     )
 
     def update_cached_response(self, request, response):
@@ -374,6 +374,7 @@ class CacheController(object):
         cached_response.status = 200
 
         # update our cache
-        self.cache.set(cache_url, self.serializer.dumps(request, cached_response))
+        body = cached_response.read(decode_content=False)
+        self.cache.set(cache_url, self.serializer.dumps(request, cached_response, body))
 
         return cached_response
