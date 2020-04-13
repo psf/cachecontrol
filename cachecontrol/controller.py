@@ -284,7 +284,7 @@ class CacheController(object):
         cc = self.parse_cache_control(response_headers)
 
         cache_url = self.cache_url(request.url)
-        logger.debug('Updating cache with response from "%s"', cache_url)
+        logger.debug('Updating cache %r with response from "%s"', self.cache, cache_url)
 
         # Delete it from the cache if we happen to have it stored there
         no_store = False
@@ -325,7 +325,10 @@ class CacheController(object):
         # Add to the cache if the response headers demand it. If there
         # is no date header then we can't do anything about expiring
         # the cache.
-        elif "date" in response_headers:
+        elif "date" not in response_headers:
+            logger.debug("No date header, expiration cannot be set.")
+            return
+        else:
             # cache when there is a max-age > 0
             if "max-age" in cc and cc["max-age"] > 0:
                 logger.debug("Caching b/c date exists and max-age > 0")
@@ -341,6 +344,8 @@ class CacheController(object):
                     self.cache.set(
                         cache_url, self.serializer.dumps(request, response, body)
                     )
+            else:
+                logger.debug("No combination of headers to cache.")
 
     def update_cached_response(self, request, response):
         """On a 304 we will get a new set of headers that we want to

@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import hashlib
+import logging
 import os
 from textwrap import dedent
 
@@ -14,6 +15,9 @@ try:
 except NameError:
     # py2.X
     FileNotFoundError = (IOError, OSError)
+
+
+logger = logging.getLogger(__name__)
 
 
 def _secure_open_write(filename, fmode):
@@ -111,6 +115,7 @@ class FileCache(BaseCache):
 
     def get(self, key):
         name = self._fn(key)
+        logger.debug("Looking up '%s' in '%s'", key, name)
         try:
             with open(name, "rb") as fh:
                 return fh.read()
@@ -120,12 +125,14 @@ class FileCache(BaseCache):
 
     def set(self, key, value):
         name = self._fn(key)
+        logger.debug("Caching '%s' in '%s'", key, name)
 
         # Make sure the directory exists
+        parentdir = os.path.dirname(name)
         try:
-            os.makedirs(os.path.dirname(name), self.dirmode)
+            os.makedirs(parentdir, self.dirmode)
         except (IOError, OSError):
-            pass
+            logging.debug("Error trying to create directory '%s'", parentdir, exc_info=True)
 
         with self.lock_class(name) as lock:
             # Write our actual file
