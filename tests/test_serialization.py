@@ -89,7 +89,7 @@ class TestSerializer(object):
         original_resp = requests.get(url, stream=True)
         req = original_resp.request
 
-        resp = self.serializer.loads(req, self.serializer.dumps(req, original_resp.raw))
+        resp = self.serializer.loads(req, self.serializer.dumps(req, original_resp.raw, original_resp.content))
 
         assert resp.read()
 
@@ -99,7 +99,7 @@ class TestSerializer(object):
         req = original_resp.request
 
         resp = self.serializer.loads(
-            req, self.serializer.dumps(req, original_resp.raw, body=data)
+            req, self.serializer.dumps(req, original_resp.raw, data)
         )
 
         assert resp.read() == data
@@ -114,5 +114,5 @@ class TestSerializer(object):
         original_resp.raw.headers["vary"] = "Foo"
 
         assert self.serializer.loads(
-            req, self.serializer.dumps(req, original_resp.raw, body=data)
+            req, self.serializer.dumps(req, original_resp.raw, data)
         )

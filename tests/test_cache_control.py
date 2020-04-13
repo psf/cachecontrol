@@ -67,7 +67,7 @@ class TestCacheControllerResponse(object):
         # When the body is the wrong size, then we don't want to cache it
         # because it is obviously broken.
         resp = self.resp({"cache-control": "max-age=3600", "Content-Length": "5"})
-        cc.cache_response(self.req(), resp, body=b"0" * 10)
+        cc.cache_response(self.req(), resp, b"0" * 10)
 
         assert not cc.cache.set.called
 
@@ -82,7 +82,7 @@ class TestCacheControllerResponse(object):
         resp = self.resp({"cache-control": "max-age=3600", "date": now})
         req = self.req()
         cc.cache_response(req, resp)
-        cc.serializer.dumps.assert_called_with(req, resp, body=None)
+        cc.serializer.dumps.assert_called_with(req, resp, None)
         cc.cache.set.assert_called_with(self.url, ANY)
 
     def test_cache_response_cache_max_age_with_invalid_value_not_cached(self, cc):
