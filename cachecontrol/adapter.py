@@ -22,14 +22,12 @@ class CacheControlAdapter(HTTPAdapter):
         cache_etags=True,
         controller_class=None,
         serializer=None,
-        heuristic=None,
         cacheable_methods=None,
         *args,
         **kw
     ):
         super(CacheControlAdapter, self).__init__(*args, **kw)
         self.cache = DictCache() if cache is None else cache
-        self.heuristic = heuristic
         self.cacheable_methods = cacheable_methods or ("GET",)
 
         controller_factory = controller_class or CacheController
@@ -69,12 +67,6 @@ class CacheControlAdapter(HTTPAdapter):
         """
         cacheable = cacheable_methods or self.cacheable_methods
         if not from_cache and request.method in cacheable:
-            # Check for any heuristics that might update headers
-            # before trying to cache.
-            if self.heuristic:
-                response = self.heuristic.apply(response)
-
-            # apply any expiration heuristics
             if response.status == 304:
                 # We must have sent an ETag request. This could mean
                 # that we've been expired already or that we simply

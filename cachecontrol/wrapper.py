@@ -11,7 +11,6 @@ def CacheControl(
     cache=None,
     cache_etags=True,
     serializer=None,
-    heuristic=None,
     controller_class=None,
     adapter_class=None,
     cacheable_methods=None,
@@ -23,7 +22,6 @@ def CacheControl(
         cache,
         cache_etags=cache_etags,
         serializer=serializer,
-        heuristic=heuristic,
         controller_class=controller_class,
         cacheable_methods=cacheable_methods,
     )
