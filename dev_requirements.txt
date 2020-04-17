@@ -10,6 +10,7 @@ cherrypy
 isort
 lockfile
 mock
+pre-commit
 pytest
 pytest-cov
 redis
