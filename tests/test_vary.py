@@ -9,7 +9,6 @@ from cachecontrol.compat import urljoin
 
 
 class TestVary(object):
-
     @pytest.fixture()
     def sess(self, url):
         self.url = urljoin(url, "/vary_accept")

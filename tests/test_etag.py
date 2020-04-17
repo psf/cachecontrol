@@ -8,7 +8,6 @@ from cachecontrol.compat import urljoin
 
 
 class NullSerializer(object):
-
     def dumps(self, request, response, body=None):
         return response
 

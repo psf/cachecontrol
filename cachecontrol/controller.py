@@ -159,7 +159,7 @@ class CacheController(object):
         # with cache busting headers as usual (ie no-cache).
         if int(resp.status) in PERMANENT_REDIRECT_STATUSES:
             msg = (
-                'Returning cached permanent redirect response '
+                "Returning cached permanent redirect response "
                 "(ignoring date and etag information)"
             )
             logger.debug(msg)
@@ -307,15 +307,13 @@ class CacheController(object):
         # If we've been given an etag, then keep the response
         if self.cache_etags and "etag" in response_headers:
             logger.debug("Caching due to etag")
-            self.cache.set(
-                cache_url, self.serializer.dumps(request, response, body)
-            )
+            self.cache.set(cache_url, self.serializer.dumps(request, response, body))
 
         # Add to the cache any permanent redirects. We do this before looking
         # that the Date headers.
         elif int(response.status) in PERMANENT_REDIRECT_STATUSES:
             logger.debug("Caching permanent redirect")
-            self.cache.set(cache_url, self.serializer.dumps(request, response, b''))
+            self.cache.set(cache_url, self.serializer.dumps(request, response, b""))
 
         # Add to the cache if the response headers demand it. If there
         # is no date header then we can't do anything about expiring

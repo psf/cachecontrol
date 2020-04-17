@@ -8,7 +8,6 @@ from cachecontrol.cache import DictCache
 
 
 class NullSerializer(object):
-
     def dumps(self, request, response, body=None):
         return response
 
@@ -19,7 +18,6 @@ class NullSerializer(object):
 
 
 class TestMaxAge(object):
-
     @pytest.fixture()
     def sess(self, url):
         self.url = url

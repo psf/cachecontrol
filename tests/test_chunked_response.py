@@ -20,7 +20,6 @@ def sess():
 
 
 class TestChunkedResponses(object):
-
     def test_cache_chunked_response(self, url, sess):
         """
         Verify that an otherwise cacheable response is cached when the

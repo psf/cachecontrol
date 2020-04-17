@@ -14,12 +14,12 @@ URL = "http://{}:{}/".format(HOST, PORT)
 
 
 class Server(object):
-
     def __call__(self, env, sr):
         body = "Hello World!"
         status = "200 OK"
         headers = [
-            ("Cache-Control", "max-age=%i" % (60 * 10)), ("Content-Type", "text/plain")
+            ("Cache-Control", "max-age=%i" % (60 * 10)),
+            ("Content-Type", "text/plain"),
         ]
         sr(status, headers)
         return body

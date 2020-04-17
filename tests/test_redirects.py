@@ -7,7 +7,6 @@ from cachecontrol import CacheControl
 
 
 class TestPermanentRedirects(object):
-
     def setup(self):
         self.sess = CacheControl(requests.Session())
 
@@ -29,7 +28,6 @@ class TestPermanentRedirects(object):
 
 
 class TestMultipleChoicesRedirects(object):
-
     def setup(self):
         self.sess = CacheControl(requests.Session())
 

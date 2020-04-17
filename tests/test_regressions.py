@@ -9,7 +9,6 @@ from cachecontrol.filewrapper import CallbackFileWrapper
 
 
 class Test39(object):
-
     @pytest.mark.skipif(
         sys.version.startswith("2"), reason="Only run this for python 3.x"
     )
