@@ -9,7 +9,6 @@ from .cache import DictCache
 def CacheControl(
     sess,
     cache=None,
-    cache_etags=True,
     serializer=None,
     controller_class=None,
     adapter_class=None,
@@ -20,7 +19,6 @@ def CacheControl(
     adapter_class = adapter_class or CacheControlAdapter
     adapter = adapter_class(
         cache,
-        cache_etags=cache_etags,
         serializer=serializer,
         controller_class=controller_class,
         cacheable_methods=cacheable_methods,

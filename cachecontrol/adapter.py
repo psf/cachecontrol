@@ -19,7 +19,6 @@ class CacheControlAdapter(HTTPAdapter):
     def __init__(
         self,
         cache=None,
-        cache_etags=True,
         controller_class=None,
         serializer=None,
         cacheable_methods=None,
@@ -32,7 +31,7 @@ class CacheControlAdapter(HTTPAdapter):
 
         controller_factory = controller_class or CacheController
         self.controller = controller_factory(
-            self.cache, cache_etags=cache_etags, serializer=serializer
+            self.cache, serializer=serializer
         )
 
     def send(self, request, cacheable_methods=None, **kw):

@@ -19,7 +19,7 @@ def setup_logging():
 
 
 def get_session():
-    adapter = CacheControlAdapter(DictCache(), cache_etags=True, serializer=None)
+    adapter = CacheControlAdapter(DictCache(), serializer=None)
     sess = requests.Session()
     sess.mount("http://", adapter)
     sess.mount("https://", adapter)
