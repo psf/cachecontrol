@@ -7,7 +7,7 @@ import requests
 
 from cachecontrol import CacheControl
 from cachecontrol.cache import DictCache
-from cachecontrol.compat import urljoin
+from six.moves.urllib.parse import urljoin
 
 
 class TestVary(object):

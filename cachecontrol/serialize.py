@@ -10,7 +10,10 @@ import zlib
 import msgpack
 from requests.structures import CaseInsensitiveDict
 
-from .compat import HTTPResponse, pickle, text_type
+from six import text_type
+from six.moves import cPickle as pickle
+
+from .compat import HTTPResponse
 
 
 def _b64_decode_bytes(b):
