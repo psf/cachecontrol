@@ -3,9 +3,10 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from __future__ import print_function
-import pytest
 
+import pytest
 from requests import Session
+
 from cachecontrol.adapter import CacheControlAdapter
 from cachecontrol.cache import DictCache
 

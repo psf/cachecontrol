@@ -5,9 +5,9 @@
 """
 The httplib2 algorithms ported for use with requests.
 """
+import calendar
 import logging
 import re
-import calendar
 import time
 from email.utils import parsedate_tz
 
@@ -15,7 +15,6 @@ from requests.structures import CaseInsensitiveDict
 
 from .cache import DictCache
 from .serialize import Serializer
-
 
 logger = logging.getLogger(__name__)
 

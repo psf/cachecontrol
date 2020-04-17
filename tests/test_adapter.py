@@ -4,8 +4,8 @@
 
 import mock
 import pytest
-
 from requests import Session
+
 from cachecontrol.adapter import CacheControlAdapter
 from cachecontrol.cache import DictCache
 from cachecontrol.wrapper import CacheControl

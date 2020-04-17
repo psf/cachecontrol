@@ -4,15 +4,16 @@
 
 -e .
 
-tox
-pytest-cov
-pytest
-mock
-cherrypy
-sphinx
-redis
-lockfile
-bumpversion
-twine
 black
+bumpversion
+cherrypy
+isort
+lockfile
+mock
+pytest
+pytest-cov
+redis
+sphinx
+tox
+twine
 wheel

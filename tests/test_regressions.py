@@ -3,13 +3,13 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import sys
-import pytest
 
+import pytest
+from requests import Session
 
 from cachecontrol import CacheControl
 from cachecontrol.caches import FileCache
 from cachecontrol.filewrapper import CallbackFileWrapper
-from requests import Session
 
 
 class Test39(object):

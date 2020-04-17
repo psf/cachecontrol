@@ -2,14 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import types
 import functools
+import types
 import zlib
 
 from requests.adapters import HTTPAdapter
 
-from .controller import CacheController, PERMANENT_REDIRECT_STATUSES
 from .cache import DictCache
+from .controller import PERMANENT_REDIRECT_STATUSES, CacheController
 from .filewrapper import CallbackFileWrapper
 
 
