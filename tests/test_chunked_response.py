@@ -1,3 +1,4 @@
+# encoding: utf-8
 """
 Test for supporting streamed responses (Transfer-Encoding: chunked)
 """
