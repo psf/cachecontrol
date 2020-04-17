@@ -2,16 +2,17 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-.DS_Store
+*.egg-info/*
 *.pyc
 *.pyo
-*.egg-info/*
-dist
+*~
+.DS_Store
+.Python
+.tox
 bin
+build/
+dist
+docs/_build
+include
 lib
 lib64
-include
-.Python
-docs/_build
-build/
-.tox
