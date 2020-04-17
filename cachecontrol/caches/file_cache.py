@@ -62,7 +62,6 @@ def _secure_open_write(filename, fmode):
 
 
 class FileCache(BaseCache):
-
     def __init__(
         self,
         directory,
@@ -132,7 +131,9 @@ class FileCache(BaseCache):
         try:
             os.makedirs(parentdir, self.dirmode)
         except (IOError, OSError):
-            logging.debug("Error trying to create directory '%s'", parentdir, exc_info=True)
+            logging.debug(
+                "Error trying to create directory '%s'", parentdir, exc_info=True
+            )
 
         with self.lock_class(name) as lock:
             # Write our actual file

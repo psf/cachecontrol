@@ -11,7 +11,6 @@ import pytest
 
 
 class SimpleApp(object):
-
     def __init__(self):
         self.etag_count = 0
         self.update_etag_string()

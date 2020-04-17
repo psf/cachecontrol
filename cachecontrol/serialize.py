@@ -25,7 +25,6 @@ _default_body_read = object()
 
 
 class Serializer(object):
-
     def dumps(self, request, response, body):
         response_headers = CaseInsensitiveDict(response.headers)
 

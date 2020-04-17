@@ -10,7 +10,6 @@ from cachecontrol.caches import RedisCache
 
 
 class TestRedisCache(object):
-
     def setup(self):
         self.conn = Mock()
         self.cache = RedisCache(self.conn)

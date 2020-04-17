@@ -13,14 +13,17 @@ from requests import Session, get
 from requests.structures import CaseInsensitiveDict
 
 from cachecontrol import CacheControl
-from cachecontrol.heuristics import (TIME_FMT, BaseHeuristic, ExpiresAfter,
-                                     LastModified, OneDayCache)
+from cachecontrol.heuristics import (
+    TIME_FMT,
+    BaseHeuristic,
+    ExpiresAfter,
+    LastModified,
+    OneDayCache,
+)
 
 
 class TestHeuristicWithoutWarning(object):
-
     def setup(self):
-
         class NoopHeuristic(BaseHeuristic):
             warning = Mock()
 
@@ -38,11 +41,8 @@ class TestHeuristicWithoutWarning(object):
 
 
 class TestHeuristicWith3xxResponse(object):
-
     def setup(self):
-
         class DummyHeuristic(BaseHeuristic):
-
             def update_headers(self, resp):
                 return {"x-dummy-header": "foobar"}
 
@@ -60,7 +60,6 @@ class TestHeuristicWith3xxResponse(object):
 
 
 class TestUseExpiresHeuristic(object):
-
     def test_expires_heuristic_arg(self):
         sess = Session()
         cached_sess = CacheControl(sess, heuristic=Mock())
@@ -68,7 +67,6 @@ class TestUseExpiresHeuristic(object):
 
 
 class TestOneDayCache(object):
-
     def setup(self):
         self.sess = Session()
         self.cached_sess = CacheControl(self.sess, heuristic=OneDayCache())
@@ -88,7 +86,6 @@ class TestOneDayCache(object):
 
 
 class TestExpiresAfter(object):
-
     def setup(self):
         self.sess = Session()
         self.cache_sess = CacheControl(self.sess, heuristic=ExpiresAfter(days=1))
@@ -109,7 +106,6 @@ class TestExpiresAfter(object):
 
 
 class TestLastModified(object):
-
     def setup(self):
         self.sess = Session()
         self.cached_sess = CacheControl(self.sess, heuristic=LastModified())
@@ -129,7 +125,6 @@ class TestLastModified(object):
 
 
 class DummyResponse:
-
     def __init__(self, status, headers):
         self.status = status
         self.headers = CaseInsensitiveDict(headers)
@@ -140,7 +135,6 @@ def datetime_to_header(dt):
 
 
 class TestModifiedUnitTests(object):
-
     def last_modified(self, period):
         return time.strftime(TIME_FMT, time.gmtime(self.time_now - period))
 

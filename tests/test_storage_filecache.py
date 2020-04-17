@@ -26,7 +26,6 @@ def randomdata():
 
 
 class TestStorageFileCache(object):
-
     @pytest.fixture()
     def sess(self, url, tmpdir):
         self.url = url
