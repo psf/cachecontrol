@@ -9,9 +9,16 @@ import time
 
 import pytest
 from mock import ANY, Mock
+from requests.models import PreparedRequest
 
 from cachecontrol import CacheController
 from cachecontrol.cache import DictCache
+
+try:
+    from requests.packages.urllib3.response import HTTPResponse
+except ImportError:
+    from urllib3.response import HTTPResponse
+
 
 TIME_FMT = "%a, %d %b %Y %H:%M:%S GMT"
 
@@ -28,14 +35,12 @@ class TestCacheControllerResponse(object):
     url = "http://url.com/"
 
     def req(self, headers=None):
-        headers = headers or {}
-        return Mock(full_url=self.url, url=self.url, headers=headers)  # < 1.x support
+        new_req = PreparedRequest()
+        new_req.prepare(method="GET", url=self.url, headers=headers)
+        return new_req
 
-    def resp(self, headers=None):
-        headers = headers or {}
-        return Mock(
-            status=200, headers=headers, request=self.req(), read=lambda **k: b"testing"
-        )
+    def resp(self, headers=None, status=200):
+        return HTTPResponse(body="testing", headers=headers, status=status)
 
     @pytest.fixture()
     def cc(self):
@@ -50,7 +55,7 @@ class TestCacheControllerResponse(object):
         no_cache_codes = [201, 400, 500]
         for code in no_cache_codes:
             resp.status = code
-            cc.cache_response(Mock(), resp)
+            cc.cache_response(self.req(), resp)
             assert not cc.cache.set.called
 
         # this should work b/c the resp is 20x
@@ -58,13 +63,6 @@ class TestCacheControllerResponse(object):
         cc.cache_response(self.req(), resp)
         assert cc.serializer.dumps.called
         assert cc.cache.set.called
-
-    def test_no_cache_with_no_date(self, cc):
-        # No date header which makes our max-age pointless
-        resp = self.resp({"cache-control": "max-age=3600"})
-        cc.cache_response(self.req(), resp)
-
-        assert not cc.cache.set.called
 
     def test_no_cache_with_wrong_sized_body(self, cc):
         # When the body is the wrong size, then we don't want to cache it
@@ -97,17 +95,19 @@ class TestCacheControllerResponse(object):
         assert not cc.cache.set.called
 
     def test_cache_response_no_store(self):
-        resp = Mock()
-        cache = DictCache({self.url: resp})
+        cached_resp = self.resp({"ETag": "cached-resp"})
+        cache = DictCache({self.url: cached_resp})
         cc = CacheController(cache)
 
         cache_url = cc.cache_url(self.url)
 
-        resp = self.resp({"cache-control": "no-store"})
+        resp = self.resp({"cache-control": "no-store", "ETag": "no-store-resp"})
         assert cc.cache.get(cache_url)
 
         cc.cache_response(self.req(), resp)
-        assert not cc.cache.get(cache_url)
+
+        lookup_response = cc.cache.get(cache_url)
+        assert lookup_response.headers["ETag"] == "cached-resp"
 
     def test_cache_response_no_store_with_etag(self, cc):
         resp = self.resp({"cache-control": "no-store", "ETag": "jfd9094r808"})
@@ -124,11 +124,20 @@ class TestCacheControllerResponse(object):
         assert not cc.cache.set.called
 
     def test_update_cached_response_with_valid_headers(self):
-        cached_resp = Mock(headers={"ETag": "jfd9094r808", "Content-Length": 100})
+        cached_resp = self.resp(
+            headers={"ETag": "jfd9094r808", "Content-Length": "100"}
+        )
 
         # Set our content length to 200. That would be a mistake in
         # the server, but we'll handle it gracefully... for now.
-        resp = Mock(headers={"ETag": "28371947465", "Content-Length": 200})
+        resp = self.resp(
+            headers={
+                "ETag": "28371947465",
+                "Content-Length": "200",
+                "Cache-Control": "max-age=86400",
+            },
+            status=304,
+        )
         cache = DictCache({self.url: cached_resp})
 
         cc = CacheController(cache)
@@ -141,7 +150,7 @@ class TestCacheControllerResponse(object):
         result = cc.update_cached_response(Mock(), resp)
 
         assert result.headers["ETag"] == resp.headers["ETag"]
-        assert result.headers["Content-Length"] == 100
+        assert result.headers["Content-Length"] == "100"
 
 
 class TestCacheControlRequest(object):
@@ -150,13 +159,17 @@ class TestCacheControlRequest(object):
     def setup(self):
         self.c = CacheController(DictCache(), serializer=NullSerializer())
 
+    def resp(self, headers, status=200):
+        return HTTPResponse(headers=headers, status=status)
+
     def req(self, headers):
-        mock_request = Mock(url=self.url, headers=headers)
-        return self.c.cached_request(mock_request)
+        new_req = PreparedRequest()
+        new_req.prepare(method="GET", url=self.url, headers=headers)
+        return self.c.cached_request(new_req)
 
     def test_cache_request_no_headers(self):
-        cached_resp = Mock(
-            headers={"ETag": "jfd9094r808", "Content-Length": 100}, status=200
+        cached_resp = self.resp(
+            headers={"ETag": "jfd9094r808", "Content-Length": "100"}, status=200
         )
         self.c.cache = DictCache({self.url: cached_resp})
         resp = self.req({})
@@ -184,7 +197,9 @@ class TestCacheControlRequest(object):
 
     def test_cache_request_fresh_max_age(self):
         now = time.strftime(TIME_FMT, time.gmtime())
-        resp = Mock(headers={"cache-control": "max-age=3600", "date": now}, status=200)
+        resp = self.resp(
+            headers={"cache-control": "max-age=3600", "date": now}, status=200
+        )
 
         cache = DictCache({self.url: resp})
         self.c.cache = cache
@@ -194,7 +209,9 @@ class TestCacheControlRequest(object):
     def test_cache_request_unfresh_max_age(self):
         earlier = time.time() - 3700  # epoch - 1h01m40s
         now = time.strftime(TIME_FMT, time.gmtime(earlier))
-        resp = Mock(headers={"cache-control": "max-age=3600", "date": now}, status=200)
+        resp = self.resp(
+            headers={"cache-control": "max-age=3600", "date": now}, status=200
+        )
         self.c.cache = DictCache({self.url: resp})
         r = self.req({})
         assert not r
@@ -203,7 +220,7 @@ class TestCacheControlRequest(object):
         later = time.time() + 86400  # GMT + 1 day
         expires = time.strftime(TIME_FMT, time.gmtime(later))
         now = time.strftime(TIME_FMT, time.gmtime())
-        resp = Mock(headers={"expires": expires, "date": now}, status=200)
+        resp = self.resp(headers={"expires": expires, "date": now}, status=200)
         cache = DictCache({self.url: resp})
         self.c.cache = cache
         r = self.req({})
@@ -213,7 +230,7 @@ class TestCacheControlRequest(object):
         sooner = time.time() - 86400  # GMT - 1 day
         expires = time.strftime(TIME_FMT, time.gmtime(sooner))
         now = time.strftime(TIME_FMT, time.gmtime())
-        resp = Mock(headers={"expires": expires, "date": now}, status=200)
+        resp = self.resp(headers={"expires": expires, "date": now}, status=200)
         cache = DictCache({self.url: resp})
         self.c.cache = cache
         r = self.req({})
@@ -222,7 +239,9 @@ class TestCacheControlRequest(object):
     def test_cached_request_with_bad_max_age_headers_not_returned(self):
         now = time.strftime(TIME_FMT, time.gmtime())
         # Not a valid header; this would be from a misconfigured server
-        resp = Mock(headers={"cache-control": "max-age=xxx", "date": now}, status=200)
+        resp = self.resp(
+            headers={"cache-control": "max-age=xxx", "date": now}, status=200
+        )
 
         self.c.cache = DictCache({self.url: resp})
 

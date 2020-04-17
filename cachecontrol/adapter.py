@@ -3,19 +3,21 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import functools
+import logging
 import types
 import zlib
 
 from requests.adapters import HTTPAdapter
 
 from .cache import DictCache
-from .controller import PERMANENT_REDIRECT_STATUSES, CacheController
+from .controller import CacheController
 from .filewrapper import CallbackFileWrapper
+from .policy import use_cache_for_request
+
+logger = logging.getLogger(__name__)
 
 
 class CacheControlAdapter(HTTPAdapter):
-    invalidating_methods = {"PUT", "DELETE"}
-
     def __init__(
         self,
         cache=None,
@@ -27,11 +29,11 @@ class CacheControlAdapter(HTTPAdapter):
     ):
         super(CacheControlAdapter, self).__init__(*args, **kw)
         self.cache = DictCache() if cache is None else cache
-        self.cacheable_methods = cacheable_methods or ("GET",)
+        self.cacheable_methods = cacheable_methods
 
         controller_factory = controller_class or CacheController
         self.controller = controller_factory(
-            self.cache, serializer=serializer
+            self.cache, serializer=serializer, cacheable_methods=cacheable_methods,
         )
 
     def send(self, request, cacheable_methods=None, **kw):
@@ -39,17 +41,16 @@ class CacheControlAdapter(HTTPAdapter):
         Send a request. Use the request information to see if it
         exists in the cache and cache the response if we need to and can.
         """
-        cacheable = cacheable_methods or self.cacheable_methods
-        if request.method in cacheable:
-            try:
-                cached_response = self.controller.cached_request(request)
-            except zlib.error:
-                cached_response = None
-            if cached_response:
-                return self.build_response(request, cached_response, from_cache=True)
+        try:
+            cached_response = self.controller.cached_request(
+                request, cacheable_methods=cacheable_methods
+            )
+        except zlib.error:
+            cached_response = None
+        if cached_response:
+            return self.build_response(request, cached_response, from_cache=True)
 
-            # check for etags and add headers if appropriate
-            request.headers.update(self.controller.conditional_headers(request))
+        self.controller.add_conditional_headers(request)
 
         resp = super(CacheControlAdapter, self).send(request, **kw)
 
@@ -64,9 +65,12 @@ class CacheControlAdapter(HTTPAdapter):
         This will end up calling send and returning a potentially
         cached response
         """
-        cacheable = cacheable_methods or self.cacheable_methods
-        if not from_cache and request.method in cacheable:
+        if not from_cache and use_cache_for_request(
+            request, cacheable_methods=cacheable_methods
+        ):
             if response.status == 304:
+                logger.debug("Received a 'Not Modified' response.")
+
                 # We must have sent an ETag request. This could mean
                 # that we've been expired already or that we simply
                 # have an etag. In either case, we want to try and
@@ -87,9 +91,6 @@ class CacheControlAdapter(HTTPAdapter):
 
                 response = cached_response
 
-            # We always cache the 301 responses
-            elif int(response.status) in PERMANENT_REDIRECT_STATUSES:
-                self.controller.cache_response(request, response)
             else:
                 # Wrap the response file with a wrapper that will cache the
                 #   response when the stream has been consumed.
@@ -114,9 +115,7 @@ class CacheControlAdapter(HTTPAdapter):
         resp = super(CacheControlAdapter, self).build_response(request, response)
 
         # See if we should invalidate the cache.
-        if request.method in self.invalidating_methods and resp.ok:
-            cache_url = self.controller.cache_url(request.url)
-            self.cache.delete(cache_url)
+        self.controller.maybe_invalidate_cache(request, response)
 
         # Give the request a from_cache attr to let people use it
         resp.from_cache = from_cache
