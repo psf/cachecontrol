@@ -2,8 +2,8 @@ import msgpack
 import requests
 from mock import Mock
 
-from cachecontrol.compat import pickle
 from cachecontrol.serialize import Serializer
+from six.moves import cPickle as pickle
 
 
 class TestSerializer(object):
