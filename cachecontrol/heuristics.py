@@ -1,9 +1,7 @@
 import calendar
 import time
-
-from email.utils import formatdate, parsedate, parsedate_tz
-
 from datetime import datetime, timedelta
+from email.utils import formatdate, parsedate, parsedate_tz
 
 TIME_FMT = "%a, %d %b %Y %H:%M:%S GMT"
 

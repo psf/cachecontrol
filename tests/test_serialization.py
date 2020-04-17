@@ -1,6 +1,5 @@
 import msgpack
 import requests
-
 from mock import Mock
 
 from cachecontrol.compat import pickle

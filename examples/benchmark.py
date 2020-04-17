@@ -1,10 +1,11 @@
-import sys
-import requests
 import argparse
-
-from multiprocessing import Process
+import sys
 from datetime import datetime
+from multiprocessing import Process
 from wsgiref.simple_server import make_server
+
+import requests
+
 from cachecontrol import CacheControl
 
 HOST = "localhost"

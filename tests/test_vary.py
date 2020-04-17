@@ -1,11 +1,11 @@
+from pprint import pprint
+
 import pytest
 import requests
 
 from cachecontrol import CacheControl
 from cachecontrol.cache import DictCache
 from cachecontrol.compat import urljoin
-
-from pprint import pprint
 
 
 class TestVary(object):

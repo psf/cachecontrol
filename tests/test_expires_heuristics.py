@@ -1,19 +1,16 @@
 import calendar
 import time
-
-from email.utils import formatdate, parsedate
 from datetime import datetime
+from email.utils import formatdate, parsedate
+from pprint import pprint
 
 from mock import Mock
 from requests import Session, get
 from requests.structures import CaseInsensitiveDict
 
 from cachecontrol import CacheControl
-from cachecontrol.heuristics import LastModified, ExpiresAfter, OneDayCache
-from cachecontrol.heuristics import TIME_FMT
-from cachecontrol.heuristics import BaseHeuristic
-
-from pprint import pprint
+from cachecontrol.heuristics import (TIME_FMT, BaseHeuristic, ExpiresAfter,
+                                     LastModified, OneDayCache)
 
 
 class TestHeuristicWithoutWarning(object):

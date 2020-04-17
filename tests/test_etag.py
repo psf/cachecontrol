@@ -1,8 +1,6 @@
 import pytest
-
-from mock import Mock, patch
-
 import requests
+from mock import Mock, patch
 
 from cachecontrol import CacheControl
 from cachecontrol.cache import DictCache

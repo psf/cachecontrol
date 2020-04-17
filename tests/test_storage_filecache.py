@@ -3,15 +3,15 @@ Unit tests that verify FileCache storage works correctly.
 """
 import os
 import string
-
 from random import randint, sample
 
 import pytest
 import requests
-from cachecontrol import CacheControl
-from cachecontrol.caches import FileCache
 from lockfile import LockFile
 from lockfile.mkdirlockfile import MkdirLockFile
+
+from cachecontrol import CacheControl
+from cachecontrol.caches import FileCache
 
 
 def randomdata():
