@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2015 Eric Larson
+#
+# SPDX-License-Identifier: Apache-2.0
+
 # encoding: utf-8
 """
 Test for supporting streamed responses (Transfer-Encoding: chunked)
