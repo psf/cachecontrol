@@ -15,7 +15,7 @@ try:
 except NameError:
     # py2.X
     FileNotFoundError = (IOError, OSError)
-
+    FileExistsError = (IOError, OSError)
 
 logger = logging.getLogger(__name__)
 
@@ -130,10 +130,8 @@ class FileCache(BaseCache):
         parentdir = os.path.dirname(name)
         try:
             os.makedirs(parentdir, self.dirmode)
-        except (IOError, OSError):
-            logging.debug(
-                "Error trying to create directory '%s'", parentdir, exc_info=True
-            )
+        except FileExistsError:
+            pass
 
         with self.lock_class(name) as lock:
             # Write our actual file
