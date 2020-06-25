@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
+
+# SPDX-FileCopyrightText: 2015 Eric Larson
 #
+# SPDX-License-Identifier: Apache-2.0
+
 # CacheControl documentation build configuration file, created by
 # sphinx-quickstart on Mon Nov  4 15:01:23 2013.
 #

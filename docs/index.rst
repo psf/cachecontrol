@@ -1,3 +1,8 @@
+..
+  SPDX-FileCopyrightText: SPDX-FileCopyrightText: 2015 Eric Larson
+
+  SPDX-License-Identifier: Apache-2.0
+
 .. CacheControl documentation master file, created by
    sphinx-quickstart on Mon Nov  4 15:01:23 2013.
    You can adapt this file completely to your liking, but it should at least
