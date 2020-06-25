@@ -49,6 +49,11 @@ class TestSessionActions(object):
         sess.get(url)
         assert not r2.from_cache
 
+    def test_patch_invalidates_cache(self, url, sess):
+        r2 = sess.patch(url, data={"foo": "bar"})
+        sess.get(url)
+        assert not r2.from_cache
+
     def test_delete_invalidates_cache(self, url, sess):
         r2 = sess.delete(url)
         sess.get(url)

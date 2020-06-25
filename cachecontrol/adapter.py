@@ -14,7 +14,7 @@ from .filewrapper import CallbackFileWrapper
 
 
 class CacheControlAdapter(HTTPAdapter):
-    invalidating_methods = {"PUT", "DELETE"}
+    invalidating_methods = {"PUT", "PATCH", "DELETE"}
 
     def __init__(
         self,
