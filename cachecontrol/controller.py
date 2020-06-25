@@ -21,6 +21,8 @@ logger = logging.getLogger(__name__)
 
 URI = re.compile(r"^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\?([^#]*))?(#(.*))?")
 
+PERMANENT_REDIRECT_STATUSES = (301, 308)
+
 
 def parse_uri(uri):
     """Parses a URI using the regex given in Appendix B of RFC 3986.
@@ -41,7 +43,7 @@ class CacheController(object):
         self.cache = DictCache() if cache is None else cache
         self.cache_etags = cache_etags
         self.serializer = serializer or Serializer()
-        self.cacheable_status_codes = status_codes or (200, 203, 300, 301)
+        self.cacheable_status_codes = status_codes or (200, 203, 300, 301, 308)
 
     @classmethod
     def _urlnorm(cls, uri):
@@ -151,17 +153,18 @@ class CacheController(object):
             logger.warning("Cache entry deserialization failed, entry ignored")
             return False
 
-        # If we have a cached 301, return it immediately. We don't
-        # need to test our response for other headers b/c it is
+        # If we have a cached permanent redirect, return it immediately. We
+        # don't need to test our response for other headers b/c it is
         # intrinsically "cacheable" as it is Permanent.
+        #
         # See:
         #   https://tools.ietf.org/html/rfc7231#section-6.4.2
         #
         # Client can try to refresh the value by repeating the request
         # with cache busting headers as usual (ie no-cache).
-        if resp.status == 301:
+        if int(resp.status) in PERMANENT_REDIRECT_STATUSES:
             msg = (
-                'Returning cached "301 Moved Permanently" response '
+                'Returning cached permanent redirect response '
                 "(ignoring date and etag information)"
             )
             logger.debug(msg)
@@ -310,14 +313,14 @@ class CacheController(object):
         if self.cache_etags and "etag" in response_headers:
             logger.debug("Caching due to etag")
             self.cache.set(
-                cache_url, self.serializer.dumps(request, response, body=body)
+                cache_url, self.serializer.dumps(request, response, body)
             )
 
-        # Add to the cache any 301s. We do this before looking that
-        # the Date headers.
-        elif response.status == 301:
-            logger.debug("Caching permanant redirect")
-            self.cache.set(cache_url, self.serializer.dumps(request, response))
+        # Add to the cache any permanent redirects. We do this before looking
+        # that the Date headers.
+        elif int(response.status) in PERMANENT_REDIRECT_STATUSES:
+            logger.debug("Caching permanent redirect")
+            self.cache.set(cache_url, self.serializer.dumps(request, response, b''))
 
         # Add to the cache if the response headers demand it. If there
         # is no date header then we can't do anything about expiring
@@ -327,7 +330,7 @@ class CacheController(object):
             if "max-age" in cc and cc["max-age"] > 0:
                 logger.debug("Caching b/c date exists and max-age > 0")
                 self.cache.set(
-                    cache_url, self.serializer.dumps(request, response, body=body)
+                    cache_url, self.serializer.dumps(request, response, body)
                 )
 
             # If the request can expire, it means we should cache it
@@ -336,7 +339,7 @@ class CacheController(object):
                 if response_headers["expires"]:
                     logger.debug("Caching b/c of expires header")
                     self.cache.set(
-                        cache_url, self.serializer.dumps(request, response, body=body)
+                        cache_url, self.serializer.dumps(request, response, body)
                     )
 
     def update_cached_response(self, request, response):
@@ -375,6 +378,7 @@ class CacheController(object):
         cached_response.status = 200
 
         # update our cache
-        self.cache.set(cache_url, self.serializer.dumps(request, cached_response))
+        body = cached_response.read(decode_content=False)
+        self.cache.set(cache_url, self.serializer.dumps(request, cached_response, body))
 
         return cached_response

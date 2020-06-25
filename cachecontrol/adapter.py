@@ -8,7 +8,7 @@ import zlib
 
 from requests.adapters import HTTPAdapter
 
-from .controller import CacheController
+from .controller import CacheController, PERMANENT_REDIRECT_STATUSES
 from .cache import DictCache
 from .filewrapper import CallbackFileWrapper
 
@@ -97,7 +97,7 @@ class CacheControlAdapter(HTTPAdapter):
                 response = cached_response
 
             # We always cache the 301 responses
-            elif response.status == 301:
+            elif int(response.status) in PERMANENT_REDIRECT_STATUSES:
                 self.controller.cache_response(request, response)
             else:
                 # Wrap the response file with a wrapper that will cache the
