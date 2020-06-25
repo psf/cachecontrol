@@ -2,18 +2,17 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+from pprint import pprint
+
 import pytest
 import requests
 
 from cachecontrol import CacheControl
 from cachecontrol.cache import DictCache
-from cachecontrol.compat import urljoin
-
-from pprint import pprint
+from six.moves.urllib.parse import urljoin
 
 
 class TestVary(object):
-
     @pytest.fixture()
     def sess(self, url):
         self.url = urljoin(url, "/vary_accept")

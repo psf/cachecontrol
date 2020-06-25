@@ -6,26 +6,32 @@
 The cache object API for implementing caches. The default is a thread
 safe in-memory dictionary.
 """
+
+from abc import ABCMeta, abstractmethod
 from threading import Lock
 
+from six import add_metaclass
 
+
+@add_metaclass(ABCMeta)
 class BaseCache(object):
-
+    @abstractmethod
     def get(self, key):
-        raise NotImplementedError()
+        pass
 
+    @abstractmethod
     def set(self, key, value):
-        raise NotImplementedError()
+        pass
 
+    @abstractmethod
     def delete(self, key):
-        raise NotImplementedError()
+        pass
 
     def close(self):
         pass
 
 
 class DictCache(BaseCache):
-
     def __init__(self, init_dict=None):
         self.lock = Lock()
         self.data = init_dict or {}

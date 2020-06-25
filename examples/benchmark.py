@@ -2,13 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import sys
-import requests
 import argparse
-
-from multiprocessing import Process
+import sys
 from datetime import datetime
+from multiprocessing import Process
 from wsgiref.simple_server import make_server
+
+import requests
+
 from cachecontrol import CacheControl
 
 HOST = "localhost"
@@ -17,12 +18,12 @@ URL = "http://{}:{}/".format(HOST, PORT)
 
 
 class Server(object):
-
     def __call__(self, env, sr):
         body = "Hello World!"
         status = "200 OK"
         headers = [
-            ("Cache-Control", "max-age=%i" % (60 * 10)), ("Content-Type", "text/plain")
+            ("Cache-Control", "max-age=%i" % (60 * 10)),
+            ("Content-Type", "text/plain"),
         ]
         sr(status, headers)
         return body

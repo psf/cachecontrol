@@ -3,14 +3,13 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
+from argparse import ArgumentParser
 
 import requests
 
 from cachecontrol.adapter import CacheControlAdapter
 from cachecontrol.cache import DictCache
 from cachecontrol.controller import logger
-
-from argparse import ArgumentParser
 
 
 def setup_logging():

@@ -5,9 +5,9 @@
 """
 The httplib2 algorithms ported for use with requests.
 """
+import calendar
 import logging
 import re
-import calendar
 import time
 from email.utils import parsedate_tz
 
@@ -15,7 +15,6 @@ from requests.structures import CaseInsensitiveDict
 
 from .cache import DictCache
 from .serialize import Serializer
-
 
 logger = logging.getLogger(__name__)
 
@@ -164,7 +163,7 @@ class CacheController(object):
         # with cache busting headers as usual (ie no-cache).
         if int(resp.status) in PERMANENT_REDIRECT_STATUSES:
             msg = (
-                'Returning cached permanent redirect response '
+                "Returning cached permanent redirect response "
                 "(ignoring date and etag information)"
             )
             logger.debug(msg)
@@ -312,20 +311,21 @@ class CacheController(object):
         # If we've been given an etag, then keep the response
         if self.cache_etags and "etag" in response_headers:
             logger.debug("Caching due to etag")
-            self.cache.set(
-                cache_url, self.serializer.dumps(request, response, body)
-            )
+            self.cache.set(cache_url, self.serializer.dumps(request, response, body))
 
         # Add to the cache any permanent redirects. We do this before looking
         # that the Date headers.
         elif int(response.status) in PERMANENT_REDIRECT_STATUSES:
             logger.debug("Caching permanent redirect")
-            self.cache.set(cache_url, self.serializer.dumps(request, response, b''))
+            self.cache.set(cache_url, self.serializer.dumps(request, response, b""))
 
         # Add to the cache if the response headers demand it. If there
         # is no date header then we can't do anything about expiring
         # the cache.
-        elif "date" in response_headers:
+        elif "date" not in response_headers:
+            logger.debug("No date header, expiration cannot be set.")
+            return
+        else:
             # cache when there is a max-age > 0
             if "max-age" in cc and cc["max-age"] > 0:
                 logger.debug("Caching b/c date exists and max-age > 0")
@@ -341,6 +341,8 @@ class CacheController(object):
                     self.cache.set(
                         cache_url, self.serializer.dumps(request, response, body)
                     )
+            else:
+                logger.debug("No combination of headers to cache.")
 
     def update_cached_response(self, request, response):
         """On a 304 we will get a new set of headers that we want to

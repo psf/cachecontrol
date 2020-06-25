@@ -3,18 +3,15 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import pytest
-
-from mock import Mock, patch
-
 import requests
+from mock import Mock, patch
 
 from cachecontrol import CacheControl
 from cachecontrol.cache import DictCache
-from cachecontrol.compat import urljoin
+from six.moves.urllib.parse import urljoin
 
 
 class NullSerializer(object):
-
     def dumps(self, request, response, body=None):
         return response
 

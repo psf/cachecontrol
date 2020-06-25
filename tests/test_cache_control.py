@@ -5,19 +5,18 @@
 """
 Unit tests that verify our caching methods work correctly.
 """
+import time
+
 import pytest
 from mock import ANY, Mock
-import time
 
 from cachecontrol import CacheController
 from cachecontrol.cache import DictCache
-
 
 TIME_FMT = "%a, %d %b %Y %H:%M:%S GMT"
 
 
 class NullSerializer(object):
-
     def dumps(self, request, response):
         return response
 
@@ -156,7 +155,9 @@ class TestCacheControlRequest(object):
         return self.c.cached_request(mock_request)
 
     def test_cache_request_no_headers(self):
-        cached_resp = Mock(headers={"ETag": "jfd9094r808", "Content-Length": 100}, status=200)
+        cached_resp = Mock(
+            headers={"ETag": "jfd9094r808", "Content-Length": 100}, status=200
+        )
         self.c.cache = DictCache({self.url: cached_resp})
         resp = self.req({})
         assert not resp

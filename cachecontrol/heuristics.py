@@ -4,10 +4,8 @@
 
 import calendar
 import time
-
-from email.utils import formatdate, parsedate, parsedate_tz
-
 from datetime import datetime, timedelta
+from email.utils import formatdate, parsedate, parsedate_tz
 
 TIME_FMT = "%a, %d %b %Y %H:%M:%S GMT"
 
@@ -22,7 +20,6 @@ def datetime_to_header(dt):
 
 
 class BaseHeuristic(object):
-
     def warning(self, response):
         """
         Return a valid 1xx warning header value describing the cache
@@ -101,8 +98,19 @@ class LastModified(BaseHeuristic):
     http://lxr.mozilla.org/mozilla-release/source/netwerk/protocol/http/nsHttpResponseHead.cpp#397
     Unlike mozilla we limit this to 24-hr.
     """
+
     cacheable_by_default_statuses = {
-        200, 203, 204, 206, 300, 301, 404, 405, 410, 414, 501
+        200,
+        203,
+        204,
+        206,
+        300,
+        301,
+        404,
+        405,
+        410,
+        414,
+        501,
     }
 
     def update_headers(self, resp):

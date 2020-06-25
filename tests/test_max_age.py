@@ -3,15 +3,15 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from __future__ import print_function
-import pytest
 
+import pytest
 from requests import Session
+
 from cachecontrol.adapter import CacheControlAdapter
 from cachecontrol.cache import DictCache
 
 
 class NullSerializer(object):
-
     def dumps(self, request, response, body=None):
         return response
 
@@ -22,7 +22,6 @@ class NullSerializer(object):
 
 
 class TestMaxAge(object):
-
     @pytest.fixture()
     def sess(self, url):
         self.url = url

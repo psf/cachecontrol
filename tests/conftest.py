@@ -2,18 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from pprint import pformat
-
 import os
 import socket
-
-import pytest
+from pprint import pformat
 
 import cherrypy
+import pytest
 
 
 class SimpleApp(object):
-
     def __init__(self):
         self.etag_count = 0
         self.update_etag_string()

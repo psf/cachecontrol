@@ -1,6 +1,12 @@
 # SPDX-FileCopyrightText: 2015 Eric Larson
 #
 # SPDX-License-Identifier: Apache-2.0
+
+# encoding: utf-8
+
+# SPDX-FileCopyrightText: 2015 Eric Larson
+#
+# SPDX-License-Identifier: Apache-2.0
 """
 Test for supporting streamed responses (Transfer-Encoding: chunked)
 """
@@ -22,7 +28,6 @@ def sess():
 
 
 class TestChunkedResponses(object):
-
     def test_cache_chunked_response(self, url, sess):
         """
         Verify that an otherwise cacheable response is cached when the

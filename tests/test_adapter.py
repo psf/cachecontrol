@@ -4,8 +4,8 @@
 
 import mock
 import pytest
-
 from requests import Session
+
 from cachecontrol.adapter import CacheControlAdapter
 from cachecontrol.cache import DictCache
 from cachecontrol.wrapper import CacheControl
@@ -35,7 +35,6 @@ def sess(url, request):
 
 
 class TestSessionActions(object):
-
     def test_get_caches(self, url, sess):
         r2 = sess.get(url)
         assert r2.from_cache is True

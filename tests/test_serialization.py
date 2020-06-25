@@ -4,15 +4,13 @@
 
 import msgpack
 import requests
-
 from mock import Mock
 
-from cachecontrol.compat import pickle
 from cachecontrol.serialize import Serializer
+from six.moves import cPickle as pickle
 
 
 class TestSerializer(object):
-
     def setup(self):
         self.serializer = Serializer()
         self.response_data = {
@@ -93,7 +91,9 @@ class TestSerializer(object):
         original_resp = requests.get(url, stream=True)
         req = original_resp.request
 
-        resp = self.serializer.loads(req, self.serializer.dumps(req, original_resp.raw, original_resp.content))
+        resp = self.serializer.loads(
+            req, self.serializer.dumps(req, original_resp.raw, original_resp.content)
+        )
 
         assert resp.read()
 
