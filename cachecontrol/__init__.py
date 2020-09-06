@@ -13,3 +13,6 @@ __version__ = "0.12.6"
 from .wrapper import CacheControl
 from .adapter import CacheControlAdapter
 from .controller import CacheController
+
+import logging
+logging.getLogger(__name__).addHandler(logging.NullHandler())
