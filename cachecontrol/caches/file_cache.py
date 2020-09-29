@@ -118,7 +118,7 @@ class FileCache(BaseCache):
         except FileNotFoundError:
             return None
 
-    def set(self, key, value):
+    def set(self, key, value, expires=None):
         name = self._fn(key)
 
         # Make sure the directory exists
