@@ -96,7 +96,7 @@ class CacheControlAdapter(HTTPAdapter):
 
                 response = cached_response
 
-            # We always cache the 301 responses
+            # We always cache the 301, 302 and 308 responses
             elif int(response.status) in PERMANENT_REDIRECT_STATUSES:
                 self.controller.cache_response(request, response)
             else:
