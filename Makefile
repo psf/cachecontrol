@@ -1,17 +1,22 @@
-VENV = .venv
+# SPDX-FileCopyrightText: 2015 Eric Larson
+#
+# SPDX-License-Identifier: Apache-2.0
+
+VENV=.venv
+VENV_CMD=python3 -m venv
 ACTIVATE = $(VENV)/bin/activate
 CHEESE=https://pypi.python.org/pypi
 BUMPTYPE=patch
 
 
-virtualenv:
-	virtualenv $(VENV)
-
 $(VENV)/bin/pip:
-	virtualenv $(VENV)
+	$(VENV_CMD) $(VENV)
 
 bootstrap: $(VENV)/bin/pip
 	$(VENV)/bin/pip install -r dev_requirements.txt
+
+format:
+	$(VENV)/bin/black .
 
 doc: $(VENV)/bin/sphinx-build
 	. $(ACTIVATE);
@@ -36,7 +41,7 @@ clean-test:
 	rm -fr htmlcov/
 
 test-all:
-	tox
+	$(VENV)/bin/tox
 
 test:
 	$(VENV)/bin/py.test
@@ -44,11 +49,11 @@ test:
 coverage:
 	$(VENV)/bin/py.test --cov cachecontrol
 
-release: clean
-	$(VENV)/bin/python setup.py sdist register -r $(CHEESE) upload -r $(CHEESE)
+release: dist
+	$(VENV)/bin/twine upload dist/*
 
 dist: clean
-	python setup.py sdist
+	python setup.py sdist bdist_wheel
 	ls -l dist
 
 bump:

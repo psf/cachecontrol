@@ -1,3 +1,8 @@
+..
+  SPDX-FileCopyrightText: SPDX-FileCopyrightText: 2015 Eric Larson
+
+  SPDX-License-Identifier: Apache-2.0
+
 .. CacheControl documentation master file, created by
    sphinx-quickstart on Mon Nov  4 15:01:23 2013.
    You can adapt this file completely to your liking, but it should at least
@@ -67,7 +72,7 @@ production environments, replacing httplib2's usage.
 If you give it a try, please let me know of any issues.
 
 
-.. _httplib2: http://code.google.com/p/httplib2/
+.. _httplib2: https://github.com/httplib2/httplib2
 .. _requests: http://docs.python-requests.org/
 .. _Editing the Web: http://www.w3.org/1999/04/Editing/
 .. _PyPI: https://pypi.python.org/pypi/CacheControl/

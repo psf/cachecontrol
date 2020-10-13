@@ -1,3 +1,8 @@
+..
+  SPDX-FileCopyrightText: SPDX-FileCopyrightText: 2015 Eric Larson
+
+  SPDX-License-Identifier: Apache-2.0
+
 ====================
  Using CacheControl
 ====================
@@ -37,7 +42,7 @@ Here is how the adapter works: ::
   import cachecontrol
 
   sess = requests.Session()
-  sess.mount('http://', CacheControlAdapter())
+  sess.mount('http://', cachecontrol.CacheControlAdapter())
 
   resp = sess.get('http://google.com')
 

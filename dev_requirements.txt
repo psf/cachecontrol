@@ -1,11 +1,18 @@
+# SPDX-FileCopyrightText: 2015 Eric Larson
+#
+# SPDX-License-Identifier: Apache-2.0
+
 -e .
 
 tox
 pytest-cov
 pytest
 mock
-webtest
+cherrypy
 sphinx
 redis
 lockfile
 bumpversion
+twine
+black
+wheel

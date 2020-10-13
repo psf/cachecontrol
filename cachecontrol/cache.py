@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2015 Eric Larson
+#
+# SPDX-License-Identifier: Apache-2.0
+
 """
 The cache object API for implementing caches. The default is a thread
 safe in-memory dictionary.
@@ -8,13 +12,13 @@ from threading import Lock
 class BaseCache(object):
 
     def get(self, key):
-        raise NotImplemented()
+        raise NotImplementedError()
 
     def set(self, key, value):
-        raise NotImplemented()
+        raise NotImplementedError()
 
     def delete(self, key):
-        raise NotImplemented()
+        raise NotImplementedError()
 
     def close(self):
         pass

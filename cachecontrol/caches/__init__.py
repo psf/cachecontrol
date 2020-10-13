@@ -1,18 +1,6 @@
-from textwrap import dedent
+# SPDX-FileCopyrightText: 2015 Eric Larson
+#
+# SPDX-License-Identifier: Apache-2.0
 
-try:
-    from .file_cache import FileCache
-except ImportError:
-    notice = dedent('''
-    NOTE: In order to use the FileCache you must have
-    lockfile installed. You can install it via pip:
-      pip install lockfile
-    ''')
-    print(notice)
-
-
-try:
-    import redis
-    from .redis_cache import RedisCache
-except ImportError:
-    pass
+from .file_cache import FileCache  # noqa
+from .redis_cache import RedisCache  # noqa

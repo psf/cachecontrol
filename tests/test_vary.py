@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2015 Eric Larson
+#
+# SPDX-License-Identifier: Apache-2.0
+
 import pytest
 import requests
 
@@ -5,17 +9,24 @@ from cachecontrol import CacheControl
 from cachecontrol.cache import DictCache
 from cachecontrol.compat import urljoin
 
+from pprint import pprint
+
 
 class TestVary(object):
 
     @pytest.fixture()
-    def sess(self, server):
-        self.url = urljoin(server.application_url, '/vary_accept')
+    def sess(self, url):
+        self.url = urljoin(url, "/vary_accept")
         self.cache = DictCache()
         sess = CacheControl(requests.Session(), cache=self.cache)
         return sess
 
     def cached_equal(self, cached, resp):
+        # remove any transfer-encoding headers as they don't apply to
+        # a cached value
+        if "chunked" in resp.raw.headers.get("transfer-encoding", ""):
+            resp.raw.headers.pop("transfer-encoding")
+
         checks = [
             cached._fp.getvalue() == resp.content,
             cached.headers == resp.raw.headers,
@@ -25,6 +36,10 @@ class TestVary(object):
             cached.strict == resp.raw.strict,
             cached.decode_content == resp.raw.decode_content,
         ]
+
+        print(checks)
+        pprint(dict(cached.headers))
+        pprint(dict(resp.raw.headers))
         return all(checks)
 
     def test_vary_example(self, sess):
@@ -55,7 +70,7 @@ class TestVary(object):
         assert resp.from_cache
 
         # make a similar request, changing the accept header
-        resp = sess.get(self.url, headers={'Accept': 'text/plain, text/html'})
+        resp = sess.get(self.url, headers={"Accept": "text/plain, text/html"})
         assert not self.cached_equal(c, resp)
         assert not resp.from_cache
 
@@ -67,5 +82,5 @@ class TestVary(object):
         # The reason for this is that when we don't specify the header
         # in the request, it is considered the same in terms of
         # whether or not to use the cached value.
-        assert 'vary' in r.headers
-        assert len(r.headers['vary'].replace(' ', '').split(',')) == 2
+        assert "vary" in r.headers
+        assert len(r.headers["vary"].replace(" ", "").split(",")) == 2

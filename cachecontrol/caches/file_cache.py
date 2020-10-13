@@ -1,11 +1,19 @@
+# SPDX-FileCopyrightText: 2015 Eric Larson
+#
+# SPDX-License-Identifier: Apache-2.0
+
 import hashlib
 import os
-
-from lockfile import LockFile
-from lockfile.mkdirlockfile import MkdirLockFile
+from textwrap import dedent
 
 from ..cache import BaseCache
 from ..controller import CacheController
+
+try:
+    FileNotFoundError
+except NameError:
+    # py2.X
+    FileNotFoundError = (IOError, OSError)
 
 
 def _secure_open_write(filename, fmode):
@@ -42,6 +50,7 @@ def _secure_open_write(filename, fmode):
     fd = os.open(filename, flags, fmode)
     try:
         return os.fdopen(fd, "wb")
+
     except:
         # An error occurred wrapping our FD in a file object
         os.close(fd)
@@ -49,18 +58,40 @@ def _secure_open_write(filename, fmode):
 
 
 class FileCache(BaseCache):
-    def __init__(self, directory, forever=False, filemode=0o0600,
-                 dirmode=0o0700, use_dir_lock=None, lock_class=None,
-                 lock_timeout=30):
+
+    def __init__(
+        self,
+        directory,
+        forever=False,
+        filemode=0o0600,
+        dirmode=0o0700,
+        use_dir_lock=None,
+        lock_class=None,
+        lock_timeout=30,
+    ):
 
         if use_dir_lock is not None and lock_class is not None:
             raise ValueError("Cannot use use_dir_lock and lock_class together")
 
-        if use_dir_lock:
-            lock_class = MkdirLockFile
+        try:
+            from lockfile import LockFile
+            from lockfile.mkdirlockfile import MkdirLockFile
+        except ImportError:
+            notice = dedent(
+                """
+            NOTE: In order to use the FileCache you must have
+            lockfile installed. You can install it via pip:
+              pip install lockfile
+            """
+            )
+            raise ImportError(notice)
 
-        if lock_class is None:
-            lock_class = LockFile
+        else:
+            if use_dir_lock:
+                lock_class = MkdirLockFile
+
+            elif lock_class is None:
+                lock_class = LockFile
 
         self.directory = directory
         self.forever = forever
@@ -68,7 +99,6 @@ class FileCache(BaseCache):
         self.dirmode = dirmode
         self.lock_class = lock_class
         self.lock_timeout = lock_timeout
-
 
     @staticmethod
     def encode(x):
@@ -83,11 +113,12 @@ class FileCache(BaseCache):
 
     def get(self, key):
         name = self._fn(key)
-        if not os.path.exists(name):
-            return None
+        try:
+            with open(name, "rb") as fh:
+                return fh.read()
 
-        with open(name, 'rb') as fh:
-            return fh.read()
+        except FileNotFoundError:
+            return None
 
     def set(self, key, value):
         name = self._fn(key)
@@ -106,7 +137,10 @@ class FileCache(BaseCache):
     def delete(self, key):
         name = self._fn(key)
         if not self.forever:
-            os.remove(name)
+            try:
+                os.remove(name)
+            except FileNotFoundError:
+                pass
 
 
 def url_to_file_path(url, filecache):

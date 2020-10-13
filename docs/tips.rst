@@ -1,14 +1,19 @@
+..
+  SPDX-FileCopyrightText: SPDX-FileCopyrightText: 2015 Eric Larson
+
+  SPDX-License-Identifier: Apache-2.0
+
 =========================
  Tips and Best Practices
 =========================
 
 Caching is hard! It is considered one of the great challenges of
-computer science. Fortunatley, the HTTP spec helps to navigate some
+computer science. Fortunately, the HTTP spec helps to navigate some
 pitfalls of invalidation using stale responses. Below are some
 suggestions and best practices to help avoid the more subtle issues
 that can crop up using CacheControl and HTTP caching.
 
-If you have a suggetions please create a new issue in `github
+If you have a suggestion please create a new issue in `github
 <https://github.com/ionrock/cachecontrol/issues/>`_ and let folks know
 what you ran into and how you fixed it.
 

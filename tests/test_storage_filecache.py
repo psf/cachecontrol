@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2015 Eric Larson
+#
+# SPDX-License-Identifier: Apache-2.0
+
 """
 Unit tests that verify FileCache storage works correctly.
 """
@@ -17,20 +21,22 @@ from lockfile.mkdirlockfile import MkdirLockFile
 
 def randomdata():
     """Plain random http data generator:"""
-    key = ''.join(sample(string.ascii_lowercase, randint(2, 4)))
-    val = ''.join(sample(string.ascii_lowercase + string.digits,
-                         randint(2, 10)))
-    return '&{0}={1}'.format(key, val)
+    key = "".join(sample(string.ascii_lowercase, randint(2, 4)))
+    val = "".join(sample(string.ascii_lowercase + string.digits, randint(2, 10)))
+    return "&{}={}".format(key, val)
 
 
 class TestStorageFileCache(object):
 
     @pytest.fixture()
-    def sess(self, server, tmpdir):
-        self.url = server.application_url
+    def sess(self, url, tmpdir):
+        self.url = url
         self.cache = FileCache(str(tmpdir))
         sess = CacheControl(requests.Session(), cache=self.cache)
-        return sess
+        yield sess
+
+        # closing session object
+        sess.close()
 
     def test_filecache_from_cache(self, sess):
         response = sess.get(self.url)
@@ -39,10 +45,10 @@ class TestStorageFileCache(object):
         assert response.from_cache
 
     def test_filecache_directory_not_exists(self, tmpdir, sess):
-        url = self.url + ''.join(sample(string.ascii_lowercase, randint(2, 4)))
+        url = self.url + "".join(sample(string.ascii_lowercase, randint(2, 4)))
 
         # Make sure our cache dir doesn't exist
-        tmp_cache = tmpdir.join('missing', 'folder', 'name').strpath
+        tmp_cache = tmpdir.join("missing", "folder", "name").strpath
         assert not os.path.exists(tmp_cache)
 
         self.cache.directory = tmp_cache
@@ -58,10 +64,10 @@ class TestStorageFileCache(object):
         Assert no errors are raised when using a cache directory
         that already exists on the filesystem.
         """
-        url = self.url + ''.join(sample(string.ascii_lowercase, randint(2, 4)))
+        url = self.url + "".join(sample(string.ascii_lowercase, randint(2, 4)))
 
         # Make sure our cache dir DOES exist
-        tmp_cache = tmpdir.join('missing', 'folder', 'name').strpath
+        tmp_cache = tmpdir.join("missing", "folder", "name").strpath
         os.makedirs(tmp_cache, self.cache.dirmode)
 
         assert os.path.exists(tmp_cache)
@@ -80,7 +86,7 @@ class TestStorageFileCache(object):
               * Make sure hash method does not produce too long keys
               * Ideally hash method generate fixed length keys
         """
-        url0 = url1 = 'http://example.org/res?a=1'
+        url0 = url1 = "http://example.org/res?a=1"
         while len(url0) < 255:
             url0 += randomdata()
             url1 += randomdata()
@@ -93,11 +99,7 @@ class TestStorageFileCache(object):
 
     @pytest.mark.parametrize(
         ("value", "expected"),
-        [
-            (None, LockFile),
-            (True, MkdirLockFile),
-            (False, LockFile),
-        ],
+        [(None, LockFile), (True, MkdirLockFile), (False, LockFile)],
     )
     def test_simple_lockfile_arg(self, tmpdir, value, expected):
         if value is not None:
@@ -106,11 +108,13 @@ class TestStorageFileCache(object):
             cache = FileCache(str(tmpdir))
 
         assert issubclass(cache.lock_class, expected)
+        cache.close()
 
     def test_lock_class(self, tmpdir):
         lock_class = object()
         cache = FileCache(str(tmpdir), lock_class=lock_class)
         assert cache.lock_class is lock_class
+        cache.close()
 
     def test_default_lock_timeout_is_passed_to_lock(self, tmpdir):
         lock = Mock(__enter__=Mock(), __exit__=Mock())
@@ -128,3 +132,16 @@ class TestStorageFileCache(object):
                                lock_timeout=None)
         self.cache.set('key', b'value')
         lock_class.assert_called_once_with(ANY, timeout=None)
+        cache.close()
+
+    def test_filecache_with_delete_request(self, tmpdir, sess):
+        # verifies issue #155
+        url = self.url + "".join(sample(string.ascii_lowercase, randint(2, 4)))
+        sess.delete(url)
+        assert True  # test verifies no exceptions were raised
+
+    def test_filecache_with_put_request(self, tmpdir, sess):
+        # verifies issue #155
+        url = self.url + "".join(sample(string.ascii_lowercase, randint(2, 4)))
+        sess.put(url)
+        assert True  # test verifies no exceptions were raised

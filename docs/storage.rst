@@ -1,3 +1,8 @@
+..
+  SPDX-FileCopyrightText: SPDX-FileCopyrightText: 2015 Eric Larson
+
+  SPDX-License-Identifier: Apache-2.0
+
 ====================
  Storing Cache Data
 ====================
@@ -37,7 +42,7 @@ Here is an example using the `FileCache`: ::
 
   import requests
   from cachecontrol import CacheControl
-  from cachecontrol.caches import FileCache
+  from cachecontrol.caches.file_cache import FileCache
 
   sess = CacheControl(requests.Session(),
                       cache=FileCache('.web_cache'))
@@ -69,7 +74,14 @@ RedisCache
 
 The `RedisCache` uses a Redis database to store values. The values are
 stored as strings in redis, which means the get, set and delete
-actions are used.
+actions are used. It requires the `redis`_ library to be installed.
+
+.. note::
+
+  Note that you can install this dependency automatically with pip
+  by requesting the *redis* extra: ::
+
+    pip install cachecontrol[redis]
 
 The `RedisCache` also provides a clear method to delete all keys in a
 database. Obviously, this should be used with caution as it is naive
@@ -80,7 +92,7 @@ Here is an example using a `RedisCache`: ::
   import redis
   import requests
   from cachecontrol import CacheControl
-  from cachecontrol.caches import RedisCache
+  from cachecontrol.caches.redis_cache import RedisCache
 
 
   pool = redis.ConnectionPool(host='localhost', port=6379, db=0)
@@ -90,7 +102,17 @@ Here is an example using a `RedisCache`: ::
 This is primarily a proof of concept, so please file bugs if there is
 a better method for utilizing redis as a cache.
 
+Third-Party Cache Providers
+===========================
 
-.. _httplib2: http://code.google.com/p/httplib2/
+* cachecontrol-django_ uses Django's caching mechanism.
+* cachecontrol-uwsgi_ uses uWSGI's caching framework.
+
+
+
+.. _httplib2: https://github.com/httplib2/httplib2
 .. _lockfile: https://github.com/smontanaro/pylockfile
 .. _requests 2.1: http://docs.python-requests.org/en/latest/community/updates/#id2
+.. _redis: https://github.com/andymccurdy/redis-py
+.. _cachecontrol-django: https://github.com/glassesdirect/cachecontrol-django
+.. _cachecontrol-uwsgi: https://github.com/etene/cachecontrol-uwsgi
