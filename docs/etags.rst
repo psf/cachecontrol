@@ -10,8 +10,8 @@
 CacheControl's support of ETags is slightly different than
 httplib2. In httplib2, an ETag is considered when using a cached
 response when the cache is considered stale. When a cached response is
-expired and it has an ETag header, it returns a response with the
-appropriate `If-None-Match` header. We'll call this behavior a **Time
+expired and it has an ETag header, httplib2 issues the next request with
+the appropriate `If-None-Match` header. We'll call this behavior a **Time
 Priority** cache as the ETag support only takes effect when the time has
 expired.
 
