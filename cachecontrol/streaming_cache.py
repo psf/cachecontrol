@@ -15,7 +15,12 @@ class WriteHandle:
     def write(self, b: bytes) -> int:
         pass
 
+    def commit(self) -> None:
+        '''Assign the value to the key and close the WriteHandle'''
+        pass
+
     def close(self) -> None:
+        '''Discard the value without assigning it to the key'''
         pass
 
 
@@ -49,14 +54,17 @@ class ExampleCache:
     #    The buffer is discarded when the close() method is called.
     class WriteHandle:
         def __init__(self, commit):
-            self.commit = commit
+            self._commit = commit
             self.fd = io.BytesIO()
 
         def write(self, b):
             return self.fd.write(b)
 
+        def commit(self):
+            self._commit(self.fd.getvalue())
+            self.fd.close()
+
         def close(self):
-            self.commit(self.fd.getvalue())
             self.fd.close()
 
     def __init__(self):
