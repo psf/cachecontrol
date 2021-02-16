@@ -44,6 +44,11 @@ class Cache:
     def close(self):
         '''Cleanup any temporary files, database connections etc.'''
         pass
+    # Cache does not have __enter__ and __exit__ on purpose. Same for ReadHandle
+    # and WriteHandle. The idea is to keep the interface small, simple and easy
+    # to implement - it is the interface between CacheControl and storage
+    # backends. Helpers can be written on top of this interface
+    # to make it easier to use.
 
 
 # An example to use while prototyping
