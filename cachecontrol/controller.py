@@ -13,7 +13,7 @@ from email.utils import parsedate_tz
 
 from requests.structures import CaseInsensitiveDict
 
-from .cache import DictCache
+#from .cache import DictCache
 from .serialize import Serializer
 
 

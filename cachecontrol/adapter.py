@@ -9,7 +9,7 @@ import zlib
 from requests.adapters import HTTPAdapter
 
 from .controller import CacheController, PERMANENT_REDIRECT_STATUSES
-from .cache import DictCache
+# from .cache import DictCache
 from .filewrapper import CallbackFileWrapper
 
 

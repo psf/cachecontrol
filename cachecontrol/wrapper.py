@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from .adapter import CacheControlAdapter
-from .cache import DictCache
+# from .cache import DictCache
 
 
 def CacheControl(
