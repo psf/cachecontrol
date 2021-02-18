@@ -40,3 +40,11 @@ def test_read_order_does_not_matter(expect):
         put(cache, 'bar', b'two')
         for k, v in expect:
             assert get(cache, k) == v
+
+
+def test_caches_are_independent():
+    with closing(ExampleCache()) as c0, closing(ExampleCache()) as c1:
+        put(c0, 'foo', b'one')
+        put(c1, 'foo', b'two')
+        assert get(c0, 'foo') == b'one'
+        assert get(c1, 'foo') == b'two'

@@ -61,7 +61,7 @@ class ExampleCache:
 
         def write(self, b):
             global CACHE
-            CACHE[self.key] = b
+            CACHE.setdefault(self.key, []).append(b)
 
         def commit(self):
             pass
@@ -70,7 +70,7 @@ class ExampleCache:
             pass
 
     def open_read(self, key):
-        return io.BytesIO(CACHE[key])
+        return io.BytesIO(CACHE[key].pop(0))
 
     def open_write(self, key, expires=None):
         return self.WriteHandle(key)
