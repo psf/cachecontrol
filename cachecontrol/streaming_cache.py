@@ -51,6 +51,34 @@ class Cache:
     # to make it easier to use.
 
 
+CACHE = []
+
+
+class ExampleCache:
+    class WriteHandle:
+        def write(self, b):
+            global CACHE
+            CACHE.append(b)
+
+        def commit(self):
+            pass
+
+        def close(self):
+            pass
+
+    def open_read(self, key):
+        return io.BytesIO(CACHE.pop(0))
+
+    def open_write(self, key, expires=None):
+        return self.WriteHandle()
+
+    def delete(self, key):
+        pass
+
+    def close(self):
+        '''Cleanup any temporary files, database connections etc.'''
+        pass
+'''
 # An example to use while prototyping
 class ExampleCache:
     # Why is ExampleCache.data not a dict[str, io.BytesIO]?
@@ -88,3 +116,4 @@ class ExampleCache:
 
     def close(self):
         pass
+'''
