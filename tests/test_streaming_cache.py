@@ -3,44 +3,36 @@ from cachecontrol.streaming_cache import ExampleCache
 import pytest
 
 
+# Helpers
+def get(cache, key):
+    with closing(cache.open_read(key)) as r:
+        return r.read()
+
+
+def put(cache, key, value):
+    with closing(cache.open_write(key)) as w:
+        w.write(value)
+        w.commit()
+
+
 @pytest.mark.parametrize('v', [b'fizz', b'buzz'])
 def test_read_returns_what_you_wrote(v):
     with closing(ExampleCache()) as cache:
-        with closing(cache.open_write('foo')) as w:
-            w.write(v)
-            w.commit()
-        with closing(cache.open_read('foo')) as r:
-            got = r.read()
-    assert got == v
+        put(cache, 'foo', v)
+        assert get(cache, 'foo') == v
 
 
 def test_cache_remembers_more_than_one_value():
     with closing(ExampleCache()) as cache:
-        with closing(cache.open_write('foo')) as w:
-            w.write(b'one')
-            w.commit()
-        with closing(cache.open_write('bar')) as w:
-            w.write(b'two')
-            w.commit()
-        with closing(cache.open_read('foo')) as r:
-            got = r.read()
-        assert got == b'one'
-        with closing(cache.open_read('bar')) as r:
-            got = r.read()
-        assert got == b'two'
+        put(cache, 'foo', b'one')
+        put(cache, 'bar', b'two')
+        assert get(cache, 'foo') == b'one'
+        assert get(cache, 'bar') == b'two'
 
 
 def test_read_order_does_not_matter():
     with closing(ExampleCache()) as cache:
-        with closing(cache.open_write('foo')) as w:
-            w.write(b'one')
-            w.commit()
-        with closing(cache.open_write('bar')) as w:
-            w.write(b'two')
-            w.commit()
-        with closing(cache.open_read('bar')) as r:
-            got = r.read()
-        assert got == b'two'
-        with closing(cache.open_read('foo')) as r:
-            got = r.read()
-        assert got == b'one'
+        put(cache, 'foo', b'one')
+        put(cache, 'bar', b'two')
+        assert get(cache, 'bar') == b'two'
+        assert get(cache, 'foo') == b'one'
