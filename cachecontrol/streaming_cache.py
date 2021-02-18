@@ -79,7 +79,6 @@ class ExampleCache:
         pass
 
     def close(self):
-        '''Cleanup any temporary files, database connections etc.'''
         pass
 '''
 # An example to use while prototyping
