@@ -30,9 +30,13 @@ def test_cache_remembers_more_than_one_value():
         assert get(cache, 'bar') == b'two'
 
 
-def test_read_order_does_not_matter():
+@pytest.mark.parametrize('expect', [
+    [('foo', b'one'), ('bar', b'two')],
+    [('bar', b'two'), ('foo', b'one')],
+])
+def test_read_order_does_not_matter(expect):
     with closing(ExampleCache()) as cache:
         put(cache, 'foo', b'one')
         put(cache, 'bar', b'two')
-        assert get(cache, 'bar') == b'two'
-        assert get(cache, 'foo') == b'one'
+        for k, v in expect:
+            assert get(cache, k) == v
