@@ -28,3 +28,19 @@ def test_cache_remembers_more_than_one_value():
         with closing(cache.open_read('bar')) as r:
             got = r.read()
         assert got == b'two'
+
+
+def test_read_order_does_not_matter():
+    with closing(ExampleCache()) as cache:
+        with closing(cache.open_write('foo')) as w:
+            w.write(b'one')
+            w.commit()
+        with closing(cache.open_write('bar')) as w:
+            w.write(b'two')
+            w.commit()
+        with closing(cache.open_read('bar')) as r:
+            got = r.read()
+        assert got == b'two'
+        with closing(cache.open_read('foo')) as r:
+            got = r.read()
+        assert got == b'one'
