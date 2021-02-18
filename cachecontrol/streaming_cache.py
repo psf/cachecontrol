@@ -51,17 +51,13 @@ class Cache:
     # to make it easier to use.
 
 
-CACHE = {}
-
-
 class ExampleCache:
     class WriteHandle:
-        def __init__(self, key):
-            self.key = key
+        def __init__(self, put):
+            self.put = put
 
         def write(self, b):
-            global CACHE
-            CACHE.setdefault(self.key, []).append(b)
+            self.put(b)
 
         def commit(self):
             pass
@@ -69,11 +65,16 @@ class ExampleCache:
         def close(self):
             pass
 
+    def __init__(self):
+        self.data = {}
+
     def open_read(self, key):
-        return io.BytesIO(CACHE[key].pop(0))
+        return io.BytesIO(self.data[key])
 
     def open_write(self, key, expires=None):
-        return self.WriteHandle(key)
+        def put(b):
+            self.data[key] = b
+        return self.WriteHandle(put)
 
     def delete(self, key):
         pass

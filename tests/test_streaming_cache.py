@@ -42,9 +42,14 @@ def test_read_order_does_not_matter(expect):
             assert get(cache, k) == v
 
 
-def test_caches_are_independent():
+@pytest.mark.parametrize('expect', [
+    [(0, b'one'), (1, b'two')],
+    [(1, b'two'), (0, b'one')],
+])
+def test_caches_are_independent(expect):
     with closing(ExampleCache()) as c0, closing(ExampleCache()) as c1:
         put(c0, 'foo', b'one')
         put(c1, 'foo', b'two')
-        assert get(c0, 'foo') == b'one'
-        assert get(c1, 'foo') == b'two'
+        for i, v in expect:
+            c = [c0, c1][i]
+            assert get(c, 'foo') == v
