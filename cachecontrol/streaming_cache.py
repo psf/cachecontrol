@@ -3,6 +3,10 @@
 import io
 
 
+class NotFound(Exception):
+    '''Raised by Cache.open_read() and Cache.delete() when the key is missing'''
+
+
 class ReadHandle:
     def read(self, size: int = -1) -> bytes:
         pass
@@ -33,6 +37,10 @@ class Cache:
 
     # TODO: are keys really str?
     def open_read(self, key: str) -> ReadHandle:
+        '''Get data from the cache
+
+        Throw NotFound if the key is missing
+        '''
         pass
 
     def open_write(self, key: str, expires=None) -> WriteHandle:
@@ -69,7 +77,10 @@ class ExampleCache:
         self.data = {}
 
     def open_read(self, key):
-        return io.BytesIO(self.data[key])
+        try:
+            return io.BytesIO(self.data[key])
+        except KeyError:
+            raise NotFound(f'{key} not found in the cache')
 
     def open_write(self, key, expires=None):
         def put(b):

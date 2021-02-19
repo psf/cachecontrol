@@ -1,4 +1,5 @@
 from contextlib import closing
+from cachecontrol import streaming_cache
 from cachecontrol.streaming_cache import ExampleCache
 import pytest
 
@@ -53,3 +54,10 @@ def test_caches_are_independent(expect):
         for i, v in expect:
             c = [c0, c1][i]
             assert get(c, 'foo') == v
+
+
+def test_open_read_throws_if_key_is_missing():
+    with closing(ExampleCache()) as cache:
+        put(cache, 'bar', b'bar')
+        with pytest.raises(streaming_cache.NotFound):
+            get(cache, 'foo')
