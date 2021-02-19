@@ -3,6 +3,10 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from io import BytesIO
+import logging
+
+
+logger = logging.getLogger(__name__)
 
 
 class CallbackFileWrapper(object):
@@ -51,9 +55,26 @@ class CallbackFileWrapper(object):
         # TODO: Add some logging here...
         return False
 
+    def __call_callback(self):
+        if self.__callback is not None and self.__buf is not None:
+            try:
+                self.__callback(self.__buf.getvalue())
+            except Exception as e:
+                self.__callback = None
+                self.__buf = None
+                logger.exception('Failed to save a cached request', exc_info=True)
+
+    def __append(self, data):
+        if self.__callback is not None and self.__buf is not None:
+            try:
+                self.__buf.write(data)
+            except Exception as e:
+                self.__callback = None
+                self.__buf = None
+                logger.exception('Failed to save a cached request', exc_info=True)
+
     def _close(self):
-        if self.__callback:
-            self.__callback(self.__buf.getvalue())
+        self.__call_callback()
 
         # We assign this to None here, because otherwise we can get into
         # really tricky problems where the CPython interpreter dead locks
@@ -64,7 +85,7 @@ class CallbackFileWrapper(object):
 
     def read(self, amt=None):
         data = self.__fp.read(amt)
-        self.__buf.write(data)
+        self.__append(data)
         if self.__is_fp_closed():
             self._close()
 
@@ -77,7 +98,7 @@ class CallbackFileWrapper(object):
             # of the chunk.
             return data
 
-        self.__buf.write(data)
+        self.__append(data)
         if self.__is_fp_closed():
             self._close()
 
