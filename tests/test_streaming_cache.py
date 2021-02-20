@@ -116,3 +116,11 @@ def test_delete_keeps_unrelated_key():
         put(cache, 'bar', b'456')
         cache.delete('foo')
         get(cache, 'bar')
+
+
+def test_overwrite():
+    with closing(ExampleCache()) as cache:
+        put(cache, 'foo', b'123')
+        assert get(cache, 'foo') == b'123'
+        put(cache, 'foo', b'456')
+        assert get(cache, 'foo') == b'456'

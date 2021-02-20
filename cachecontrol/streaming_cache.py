@@ -86,7 +86,7 @@ class ExampleCache:
 
     def open_write(self, key, expires=None):
         def put(b):
-            self.data.setdefault(key, b)
+            self.data[key] = b
         return self.WriteHandle(put)
 
     def delete(self, key):
