@@ -99,3 +99,12 @@ def test_partial_write():
             w.write(b'23')
             w.commit()
         assert get(cache, 'foo') == b'123'
+
+
+def test_delete_removes_key():
+    with closing(ExampleCache()) as cache:
+        put(cache, 'foo', b'123')
+        get(cache, 'foo')
+        cache.delete('foo')
+        with pytest.raises(streaming_cache.NotFound):
+            get(cache, 'foo')
