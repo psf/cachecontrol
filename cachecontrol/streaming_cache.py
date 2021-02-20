@@ -63,13 +63,13 @@ class ExampleCache:
     class WriteHandle:
         def __init__(self, put):
             self.put = put
-            self.buf = b''
+            self.buf = io.BytesIO()
 
         def write(self, b):
-            self.buf = b
+            self.buf.write(b)
 
         def commit(self):
-            self.put(self.buf)
+            self.put(self.buf.getvalue())
 
         def close(self):
             pass

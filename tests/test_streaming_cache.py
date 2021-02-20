@@ -90,3 +90,12 @@ def test_key_is_not_added_until_commit_is_called():
                 get(cache, 'foo')
             w.commit()
             get(cache, 'foo')
+
+
+def test_partial_write():
+    with closing(ExampleCache()) as cache:
+        with closing(cache.open_write('foo')) as w:
+            w.write(b'1')
+            w.write(b'23')
+            w.commit()
+        assert get(cache, 'foo') == b'123'
