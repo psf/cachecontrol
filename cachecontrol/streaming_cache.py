@@ -47,6 +47,10 @@ class Cache:
         pass
 
     def delete(self, key):
+        '''Delete key from the cache
+
+        Throw NotFound if the key is missing
+        '''
         pass
 
     def close(self):
