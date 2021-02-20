@@ -124,3 +124,13 @@ def test_overwrite():
         assert get(cache, 'foo') == b'123'
         put(cache, 'foo', b'456')
         assert get(cache, 'foo') == b'456'
+
+
+def test_no_overwrite_untill_commit():
+    with closing(ExampleCache()) as cache:
+        put(cache, 'foo', b'123')
+        with closing(cache.open_write('foo')) as w:
+            w.write(b'456')
+            assert get(cache, 'foo') == b'123'
+            w.commit()
+            assert get(cache, 'foo') == b'456'

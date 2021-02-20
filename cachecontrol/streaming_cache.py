@@ -62,14 +62,12 @@ class Cache:
 # An example to use while prototyping
 class ExampleCache:
     class WriteHandle:
-        def __init__(self, put, set):
+        def __init__(self, put):
             self.put = put
-            self.set = set
             self.buf = io.BytesIO()
 
         def write(self, b):
             self.buf.write(b)
-            self.set(self.buf.getvalue())
 
         def commit(self):
             self.put(self.buf.getvalue())
@@ -89,10 +87,7 @@ class ExampleCache:
     def open_write(self, key, expires=None):
         def put(b):
             self.data[key] = b
-        def set(b):
-            if key in self.data:
-                put(b)
-        return self.WriteHandle(put, set)
+        return self.WriteHandle(put)
 
     def delete(self, key):
         del self.data[key]
