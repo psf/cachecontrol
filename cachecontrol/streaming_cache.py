@@ -63,12 +63,13 @@ class ExampleCache:
     class WriteHandle:
         def __init__(self, put):
             self.put = put
+            self.buf = b''
 
         def write(self, b):
-            self.put(b)
+            self.buf = b
 
         def commit(self):
-            pass
+            self.put(self.buf)
 
         def close(self):
             pass

@@ -80,3 +80,13 @@ def test_read_handles_are_independant():
             assert r1.read(1) == b'1'
             assert r0.read(1) == b'3'
             assert r1.read(2) == b'23'
+
+
+def test_key_is_not_added_until_commit_is_called():
+    with closing(ExampleCache()) as cache:
+        with closing(cache.open_write('foo')) as w:
+            w.write(b'123')
+            with pytest.raises(streaming_cache.NotFound):
+                get(cache, 'foo')
+            w.commit()
+            get(cache, 'foo')
