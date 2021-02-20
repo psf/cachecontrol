@@ -74,7 +74,8 @@ def test_partial_read():
 def test_read_handles_are_independant():
     with closing(ExampleCache()) as cache:
         put(cache, 'foo', b'123')
-        with closing(cache.open_read('foo')) as r0, closing(cache.open_read('foo')) as r1:
+        with closing(cache.open_read('foo')) as r0,\
+                closing(cache.open_read('foo')) as r1:
             assert r0.read(2) == b'12'
             assert r1.read(1) == b'1'
             assert r0.read(1) == b'3'
