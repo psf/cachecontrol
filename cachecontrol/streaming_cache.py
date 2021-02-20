@@ -78,13 +78,13 @@ class ExampleCache:
 
     def open_read(self, key):
         try:
-            return self.data[key]
+            return io.BytesIO(self.data[key])
         except KeyError:
             raise NotFound(f'{key} not found in the cache')
 
     def open_write(self, key, expires=None):
         def put(b):
-            self.data[key] = io.BytesIO(b)
+            self.data[key] = b
         return self.WriteHandle(put)
 
     def delete(self, key):
