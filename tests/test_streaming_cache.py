@@ -108,3 +108,11 @@ def test_delete_removes_key():
         cache.delete('foo')
         with pytest.raises(streaming_cache.NotFound):
             get(cache, 'foo')
+
+
+def test_delete_keeps_unrelated_key():
+    with closing(ExampleCache()) as cache:
+        put(cache, 'foo', b'123')
+        put(cache, 'bar', b'456')
+        cache.delete('foo')
+        get(cache, 'bar')

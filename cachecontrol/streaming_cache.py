@@ -89,7 +89,7 @@ class ExampleCache:
         return self.WriteHandle(put)
 
     def delete(self, key):
-        self.data = {}
+        del self.data[key]
 
     def close(self):
         pass
