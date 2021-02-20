@@ -59,6 +59,7 @@ class Cache:
     # to make it easier to use.
 
 
+# An example to use while prototyping
 class ExampleCache:
     class WriteHandle:
         def __init__(self, put):
