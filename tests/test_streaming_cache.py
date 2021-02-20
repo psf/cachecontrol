@@ -134,3 +134,10 @@ def test_no_overwrite_untill_commit():
             assert get(cache, 'foo') == b'123'
             w.commit()
             assert get(cache, 'foo') == b'456'
+
+
+def test_deleting_missing_key_throws():
+    with closing(ExampleCache()) as cache:
+        put(cache, 'bar', b'bar')
+        with pytest.raises(streaming_cache.NotFound):
+            cache.delete('foo')

@@ -94,7 +94,10 @@ class ExampleCache:
         return self.WriteHandle(put)
 
     def delete(self, key):
-        del self.data[key]
+        try:
+            del self.data[key]
+        except KeyError:
+            raise NotFound(f'{key} not found in the cache')
 
     def close(self):
         pass
