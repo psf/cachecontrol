@@ -61,3 +61,11 @@ def test_open_read_throws_if_key_is_missing():
         put(cache, 'bar', b'bar')
         with pytest.raises(streaming_cache.NotFound):
             get(cache, 'foo')
+
+
+def test_partial_read():
+    with closing(ExampleCache()) as cache:
+        put(cache, 'foo', b'123')
+        with closing(cache.open_read('foo')) as r:
+            assert r.read(2) == b'12'
+            assert r.read(1) == b'3'

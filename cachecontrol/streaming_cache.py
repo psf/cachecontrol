@@ -73,22 +73,12 @@ class ExampleCache:
         def close(self):
             pass
 
-    class ReadHandle:
-        def __init__(self, d):
-            self.d = d
-
-        def read(self, size=-1):
-            return self.d
-
-        def close(self):
-            pass
-
     def __init__(self):
         self.data = {}
 
     def open_read(self, key):
         try:
-            return self.ReadHandle(self.data[key])
+            return io.BytesIO(self.data[key])
         except KeyError:
             raise NotFound(f'{key} not found in the cache')
 
