@@ -137,7 +137,7 @@ class TestCacheControllerResponse(object):
         # skip our in/out processing
         cc.serializer = Mock()
         cc.serializer.loads.return_value = cached_resp
-        cc.cache_url = Mock(return_value="http://foo.com")
+        cc.cache_url = Mock(return_value=self.url)
 
         result = cc.update_cached_response(Mock(), resp)
 
