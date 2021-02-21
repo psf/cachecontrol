@@ -141,16 +141,8 @@ class CacheController(object):
             logger.debug('Request header has "max_age" as 0, cache bypassed')
             return False
 
-        # Request allows serving from the cache, let's see if we find something
-        cache_data = self.cache.get(cache_url)
-        if cache_data is None:
-            logger.debug("No cache entry available")
-            return False
-
-        # Check whether it can be deserialized
-        resp = self.serializer.loads(request, cache_data)
-        if not resp:
-            logger.warning("Cache entry deserialization failed, entry ignored")
+        resp = self.get_response_from_cache(request)
+        if resp is None:
             return False
 
         # If we have a cached permanent redirect, return it immediately. We
@@ -236,8 +228,7 @@ class CacheController(object):
         return False
 
     def conditional_headers(self, request):
-        cache_url = self.cache_url(request.url)
-        resp = self.serializer.loads(request, self.cache.get(cache_url))
+        resp = self.get_response_from_cache(request)
         new_headers = {}
 
         if resp:
@@ -381,10 +372,7 @@ class CacheController(object):
         This should only ever be called when we've sent an ETag and
         gotten a 304 as the response.
         """
-        cache_url = self.cache_url(request.url)
-
-        cached_response = self.serializer.loads(request, self.cache.get(cache_url))
-
+        cached_response = self.get_response_from_cache(request)
         if not cached_response:
             # we didn't have a cached response
             return response
@@ -411,6 +399,19 @@ class CacheController(object):
 
         # update our cache
         body = cached_response.read(decode_content=False)
+        cache_url = self.cache_url(request.url)
         self.cache.set(cache_url, self.serializer.dumps(request, cached_response, body))
 
         return cached_response
+
+    def get_response_from_cache(self, request):
+        cache_url = self.cache_url(request.url)
+        cache_data = self.cache.get(cache_url)
+        if cache_data is None:
+            logger.debug("No cache entry available")
+            return None
+        resp = self.serializer.loads(request, cache_data)
+        if resp is None:
+            logger.warning("Cache entry deserialization failed, entry ignored")
+            return None
+        return resp
