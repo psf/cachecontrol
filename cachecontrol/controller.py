@@ -22,6 +22,7 @@ logger = logging.getLogger(__name__)
 URI = re.compile(r"^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\?([^#]*))?(#(.*))?")
 
 PERMANENT_REDIRECT_STATUSES = (301, 308)
+CACHECONTROL_MAXAGE_ENTRIES = ("max-age", "s-maxage")
 
 
 def parse_uri(uri):
@@ -137,9 +138,10 @@ class CacheController(object):
             logger.debug('Request header has "no-cache", cache bypassed')
             return False
 
-        if "max-age" in cc and cc["max-age"] == 0:
-            logger.debug('Request header has "max_age" as 0, cache bypassed')
-            return False
+        for max_age in CACHECONTROL_MAXAGE_ENTRIES:
+            if max_age in cc and cc[max_age] == 0:
+                logger.debug('Request header has "%s" as 0, cache bypassed', max_age)
+                return False
 
         # Request allows serving from the cache, let's see if we find something
         cache_data = self.cache.get(cache_url)
@@ -195,12 +197,15 @@ class CacheController(object):
         freshness_lifetime = 0
 
         # Check the max-age pragma in the cache control header
-        if "max-age" in resp_cc:
-            freshness_lifetime = resp_cc["max-age"]
-            logger.debug("Freshness lifetime from max-age: %i", freshness_lifetime)
+        did_max = False
+        for max_age in CACHECONTROL_MAXAGE_ENTRIES:
+            if max_age in resp_cc:
+                freshness_lifetime = resp_cc[max_age]
+                logger.debug("Freshness lifetime from %s: %i", max_age, freshness_lifetime)
+                did_max = True
 
         # If there isn't a max-age, check for an expires header
-        elif "expires" in headers:
+        if not did_max and "expires" in headers:
             expires = parsedate_tz(headers["expires"])
             if expires is not None:
                 expire_time = calendar.timegm(expires) - date
@@ -209,11 +214,12 @@ class CacheController(object):
 
         # Determine if we are setting freshness limit in the
         # request. Note, this overrides what was in the response.
-        if "max-age" in cc:
-            freshness_lifetime = cc["max-age"]
-            logger.debug(
-                "Freshness lifetime from request max-age: %i", freshness_lifetime
-            )
+        for max_age in CACHECONTROL_MAXAGE_ENTRIES:
+            if max_age in cc:
+                freshness_lifetime = cc[max_age]
+                logger.debug(
+                    "Freshness lifetime from request %s: %i", max_age, freshness_lifetime
+                )
 
         if "min-fresh" in cc:
             min_fresh = cc["min-fresh"]
@@ -348,18 +354,20 @@ class CacheController(object):
                 parsedate_tz(response_headers['date'])
             )
             # cache when there is a max-age > 0
-            if "max-age" in cc and cc["max-age"] > 0:
-                logger.debug("Caching b/c date exists and max-age > 0")
-                expires_time = cc['max-age']
-                self.cache.set(
-                    cache_url,
-                    self.serializer.dumps(request, response, body),
-                    expires=expires_time
-                )
+            for max_age in CACHECONTROL_MAXAGE_ENTRIES:
+                if max_age in cc and cc[max_age] > 0:
+                    logger.debug("Caching b/c date exists and %s > 0", max_age)
+                    expires_time = cc[max_age]
+                    self.cache.set(
+                        cache_url,
+                        self.serializer.dumps(request, response, body),
+                        expires=expires_time
+                    )
+                    return
 
             # If the request can expire, it means we should cache it
             # in the meantime.
-            elif "expires" in response_headers:
+            if "expires" in response_headers:
                 if response_headers["expires"]:
                     expires = parsedate_tz(response_headers['expires'])
                     if expires is not None:
