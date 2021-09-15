@@ -17,10 +17,11 @@ class Test39(object):
     @pytest.mark.skipif(
         sys.version.startswith("2"), reason="Only run this for python 3.x"
     )
-    def test_file_cache_recognizes_consumed_file_handle(self):
+    def test_file_cache_recognizes_consumed_file_handle(self, url):
         s = CacheControl(Session(), FileCache("web_cache"))
-        s.get("http://httpbin.org/cache/60")
-        r = s.get("http://httpbin.org/cache/60")
+        the_url = url + "cache_60"
+        s.get(the_url)
+        r = s.get(the_url)
         assert r.from_cache
         s.close()
 

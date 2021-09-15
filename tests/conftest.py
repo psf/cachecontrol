@@ -73,6 +73,11 @@ class SimpleApp(object):
             start_response("200 OK", headers)
         return [pformat(env).encode("utf8")]
 
+    def cache_60(self, env, start_response):
+        headers = [("Cache-Control", "public, max-age=60")]
+        start_response("200 OK", headers)
+        return [pformat(env).encode("utf8")]
+
     def no_cache(self, env, start_response):
         headers = [("Cache-Control", "no-cache")]
         start_response("200 OK", headers)
