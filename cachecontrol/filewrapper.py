@@ -2,7 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from io import BytesIO
+from tempfile import NamedTemporaryFile
+import mmap
 
 
 class CallbackFileWrapper(object):
@@ -18,7 +19,7 @@ class CallbackFileWrapper(object):
     """
 
     def __init__(self, fp, callback):
-        self.__buf = BytesIO()
+        self.__buf = NamedTemporaryFile("rb+", delete=True)
         self.__fp = fp
         self.__callback = callback
 
@@ -53,7 +54,17 @@ class CallbackFileWrapper(object):
 
     def _close(self):
         if self.__callback:
-            self.__callback(self.__buf.getvalue())
+            if self.__buf.tell() == 0:
+                # Empty file:
+                result = b""
+            else:
+                # Return the data without actually loading it into memory,
+                # relying on Python's buffer API:
+                self.__buf.seek(0, 0)
+                result = memoryview(
+                    mmap.mmap(self.__buf.fileno(), 0, access=mmap.ACCESS_READ)
+                )
+            self.__callback(result)
 
         # We assign this to None here, because otherwise we can get into
         # really tricky problems where the CPython interpreter dead locks
