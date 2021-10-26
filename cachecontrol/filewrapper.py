@@ -16,6 +16,13 @@ class CallbackFileWrapper(object):
 
     This class uses members with a double underscore (__) leading prefix so as
     not to accidentally shadow an attribute.
+
+    The data is stored in a temporary file until it is all available.  As long
+    as the temporary files directory is disk-based (sometimes it's a
+    memory-backed-``tmpfs`` on Linux), data will be unloaded to disk if memory
+    pressure is high.  For small files the disk usually won't be used at all,
+    it'll all be in the filesystem memory cache, so there should be no
+    performance impact.
     """
 
     def __init__(self, fp, callback):
@@ -59,7 +66,9 @@ class CallbackFileWrapper(object):
                 result = b""
             else:
                 # Return the data without actually loading it into memory,
-                # relying on Python's buffer API:
+                # relying on Python's buffer API and mmap(). mmap() just gives
+                # a view directly into the filesystem's memory cache, so it
+                # doesn't result in duplicate memory use.
                 self.__buf.seek(0, 0)
                 result = memoryview(
                     mmap.mmap(self.__buf.fileno(), 0, access=mmap.ACCESS_READ)
@@ -73,8 +82,8 @@ class CallbackFileWrapper(object):
         # and allows the garbage collector to do it's thing normally.
         self.__callback = None
 
-        # Closing the BytesIO stream releases memory. Important when caching
-        # big files.
+        # Closing the tempoary file releases memory and frees disk space.
+        # Important when caching big files.
         self.__buf.close()
 
     def read(self, amt=None):
