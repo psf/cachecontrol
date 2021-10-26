@@ -7,6 +7,11 @@
  Release Notes
 ===============
 
+0.13.0
+======
+
+* Dropped support for Python 2.7, 3.4, 3.5.
+
 0.12.0
 ======
 
