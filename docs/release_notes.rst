@@ -11,6 +11,7 @@
 ======
 
 * Dropped support for Python 2.7, 3.4, 3.5.
+* Reduced memory usage when caching large files.
 
 0.12.0
 ======
