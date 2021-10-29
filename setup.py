@@ -24,7 +24,7 @@ setup_params = dict(
     install_requires=["requests", "msgpack>=0.5.2"],
     extras_require={"filecache": ["lockfile>=0.9"], "redis": ["redis>=2.10.5"]},
     entry_points={"console_scripts": ["doesitcache = cachecontrol._cmd:main"]},
-    python_requires=">=3.6.*",
+    python_requires=">=3.6",
     classifiers=[
         "Development Status :: 4 - Beta",
         "Environment :: Web Environment",
