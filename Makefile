@@ -9,11 +9,11 @@ CHEESE=https://pypi.python.org/pypi
 BUMPTYPE=patch
 
 
-$(VENV)/bin/pip:
+$(VENV)/bin/pip3:
 	$(VENV_CMD) $(VENV)
 
-bootstrap: $(VENV)/bin/pip
-	$(VENV)/bin/pip install -r dev_requirements.txt
+bootstrap: $(VENV)/bin/pip3
+	$(VENV)/bin/pip3 install -r dev_requirements.txt
 
 format:
 	$(VENV)/bin/black .
