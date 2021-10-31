@@ -164,7 +164,7 @@ class CacheController(object):
         # with cache busting headers as usual (ie no-cache).
         if int(resp.status) in PERMANENT_REDIRECT_STATUSES:
             msg = (
-                'Returning cached permanent redirect response '
+                "Returning cached permanent redirect response "
                 "(ignoring date and etag information)"
             )
             logger.debug(msg)
@@ -268,10 +268,8 @@ class CacheController(object):
 
         response_headers = CaseInsensitiveDict(response.headers)
 
-        if 'date' in response_headers:
-            date = calendar.timegm(
-                parsedate_tz(response_headers['date'])
-            )
+        if "date" in response_headers:
+            date = calendar.timegm(parsedate_tz(response_headers["date"]))
         else:
             date = 0
 
@@ -319,55 +317,57 @@ class CacheController(object):
         # If we've been given an etag, then keep the response
         if self.cache_etags and "etag" in response_headers:
             expires_time = 0
-            if response_headers.get('expires'):
-                expires = parsedate_tz(response_headers['expires'])
+            if response_headers.get("expires"):
+                expires = parsedate_tz(response_headers["expires"])
                 if expires is not None:
                     expires_time = calendar.timegm(expires) - date
 
             expires_time = max(expires_time, 14 * 86400)
 
-            logger.debug('etag object cached for {0} seconds'.format(expires_time))
+            logger.debug("etag object cached for {0} seconds".format(expires_time))
             logger.debug("Caching due to etag")
             self.cache.set(
                 cache_url,
                 self.serializer.dumps(request, response, body),
-                expires=expires_time
+                expires=expires_time,
             )
 
         # Add to the cache any permanent redirects. We do this before looking
         # that the Date headers.
         elif int(response.status) in PERMANENT_REDIRECT_STATUSES:
             logger.debug("Caching permanent redirect")
-            self.cache.set(cache_url, self.serializer.dumps(request, response, b''))
+            self.cache.set(cache_url, self.serializer.dumps(request, response, b""))
 
         # Add to the cache if the response headers demand it. If there
         # is no date header then we can't do anything about expiring
         # the cache.
         elif "date" in response_headers:
-            date = calendar.timegm(
-                parsedate_tz(response_headers['date'])
-            )
+            date = calendar.timegm(parsedate_tz(response_headers["date"]))
             # cache when there is a max-age > 0
             if "max-age" in cc and cc["max-age"] > 0:
                 logger.debug("Caching b/c date exists and max-age > 0")
-                expires_time = cc['max-age']
+                expires_time = cc["max-age"]
                 self.cache.set(
                     cache_url,
                     self.serializer.dumps(request, response, body),
-                    expires=expires_time
+                    expires=expires_time,
                 )
 
             # If the request can expire, it means we should cache it
             # in the meantime.
             elif "expires" in response_headers:
                 if response_headers["expires"]:
-                    expires = parsedate_tz(response_headers['expires'])
+                    expires = parsedate_tz(response_headers["expires"])
                     if expires is not None:
                         expires_time = calendar.timegm(expires) - date
                     else:
                         expires_time = None
 
-                    logger.debug('Caching b/c of expires header. expires in {0} seconds'.format(expires_time))
+                    logger.debug(
+                        "Caching b/c of expires header. expires in {0} seconds".format(
+                            expires_time
+                        )
+                    )
                     self.cache.set(
                         cache_url,
                         self.serializer.dumps(request, response, body=body),
