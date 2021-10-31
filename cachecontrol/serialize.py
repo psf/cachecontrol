@@ -25,9 +25,15 @@ _default_body_read = object()
 
 
 class Serializer(object):
-
-    def dumps(self, request, response, body):
+    def dumps(self, request, response, body=None):
         response_headers = CaseInsensitiveDict(response.headers)
+
+        if body is None:
+            # When a body isn't passed in, we'll read the response. We
+            # also update the response with a new file handler to be
+            # sure it acts as though it was never read.
+            body = response.read(decode_content=False)
+            response._fp = io.BytesIO(body)
 
         # NOTE: This is all a bit weird, but it's really important that on
         #       Python 2.x these objects are unicode and not str, even when
