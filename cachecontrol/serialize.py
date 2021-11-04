@@ -32,6 +32,7 @@ class Serializer(object):
             # When a body isn't passed in, we'll read the response. We
             # also update the response with a new file handler to be
             # sure it acts as though it was never read.
+            # TODO switch to using FileWrapper or something like it
             body = response.read(decode_content=False)
             response._fp = io.BytesIO(body)
 
