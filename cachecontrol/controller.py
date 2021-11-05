@@ -10,10 +10,12 @@ import re
 import calendar
 import time
 from email.utils import parsedate_tz
+from typing import Optional, Union
+from pathlib import Path
 
 from requests.structures import CaseInsensitiveDict
 
-from .cache import DictCache
+from .cache import DictCache, CacheInterface, _OldCacheToNew
 from .serialize import Serializer
 
 
@@ -39,7 +41,14 @@ class CacheController(object):
     def __init__(
         self, cache=None, cache_etags=True, serializer=None, status_codes=None
     ):
-        self.cache = DictCache() if cache is None else cache
+        cache = DictCache() if cache is None else cache
+
+        # Figure out if the cache uses the new interface or the old
+        # interface. If it's the old interface, use an adapter.
+        if not isinstance(cache, CacheInterface):
+            cache = _OldCacheToNew(cache)
+
+        self.cache = cache
         self.cache_etags = cache_etags
         self.serializer = serializer or Serializer()
         self.cacheable_status_codes = status_codes or (200, 203, 300, 301, 308)
@@ -250,7 +259,14 @@ class CacheController(object):
 
         return new_headers
 
-    def _cache_set(self, cache_url, request, response, body=None, expires_time=None):
+    def _cache_set(
+        self,
+        cache_url,
+        request,
+        response,
+        body: Optional[Union[bytes, Path]] = None,
+        expires_time=None,
+    ):
         """
         Store the data in the cache.
         """
@@ -260,11 +276,23 @@ class CacheController(object):
             expires=expires_time,
         )
 
-    def cache_response(self, request, response, body=None, status_codes=None):
+    def cache_response(
+        self,
+        request,
+        response,
+        body: Optional[Union[bytes, Path]] = None,
+        status_codes=None,
+    ):
         """
         Algorithm for caching requests.
 
         This assumes a requests Response object.
+
+        The body can be three different values:
+
+        * ``None``, indicating the body has not been read yet.
+        * ``bytes``, for backwards compatibility; should not be used in new code paths.
+        * ``Path``, a path to a file on the filesystem where the body is stored.
         """
         # From httplib2: Don't cache 206's since we aren't going to
         #                handle byte range requests

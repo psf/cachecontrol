@@ -6,6 +6,7 @@ import base64
 import io
 import json
 import zlib
+from typing import BinaryIO, Optional, Union
 
 import msgpack
 from requests.structures import CaseInsensitiveDict
@@ -26,6 +27,7 @@ _default_body_read = object()
 
 class Serializer(object):
     def dumps(self, request, response, body=None):
+        # TODO this returns (bytes, file-like)
         response_headers = CaseInsensitiveDict(response.headers)
 
         if body is None:
@@ -70,7 +72,20 @@ class Serializer(object):
 
         return b",".join([b"cc=4", msgpack.dumps(data, use_bin_type=True)])
 
-    def loads(self, request, data):
+    def loads(self, request, data: bytes) -> Optional[HTTPResponse]:
+        """
+        Load legacy formats, where metadata and body are combined in one chunk
+        of bytes.
+        """
+        return self._loads(request, data)
+
+    def _loads(self, request, data: bytes) -> Optional[Union[dict,HTTPResponse]]:
+        """
+        Used by both legacy and new code.
+
+        In legacy code it returns HTTPResponse, in new code it just returns the
+        encoded metadata.
+        """
         # Short circuit if we've been given an empty set of data
         if not data:
             return
@@ -100,9 +115,45 @@ class Serializer(object):
             # just treat it as a miss and return None
             return
 
-    def prepare_response(self, request, cached):
-        """Verify our vary headers match and construct a real urllib3
-        HTTPResponse object.
+    def loads_separate(self, request, encoded_metadata: bytes, body: BinaryIO) -> HTTPResponse:
+        """
+        Load metadata, and use that + body to construct a HTTPResponse.
+
+        This can be used by implementations of ``CacheInterface`` where
+        metadata and body are stored separately.
+        """
+        metadata = self._loads(request, encoded_metadata)
+        if metadata is None:
+            return
+        response = self._prepare_metadata(request, metadata)
+        if response is None:
+            return
+        return HTTPResponse(body=body, preload_content=False, **response)
+
+    def prepare_response_combined(self, request, cached):
+        """
+        Verify our vary headers match and construct a real urllib3
+        HTTPResponse object from combined metadata + body.
+        """
+        response = self._prepare_metadata(request, cached)
+        body_raw = response.pop("body")
+        try:
+            body = io.BytesIO(body_raw)
+        except TypeError:
+            # This can happen if cachecontrol serialized to v1 format (pickle)
+            # using Python 2. A Python 2 str(byte string) will be unpickled as
+            # a Python 3 str (unicode string), which will cause the above to
+            # fail with:
+            #
+            #     TypeError: 'str' does not support the buffer interface
+            body = io.BytesIO(body_raw.encode("utf8"))
+
+        return HTTPResponse(body=body, preload_content=False, **response)
+
+    def _prepare_metadata(self, request, cached):
+        """
+        Return response dictionary, or None if loading from cache turns out not
+        to be possible.
         """
         # Special case the '*' Vary value as it means we cannot actually
         # determine if the cached response is suitable for this request.
@@ -117,26 +168,12 @@ class Serializer(object):
             if request.headers.get(header, None) != value:
                 return
 
-        body_raw = cached["response"].pop("body")
-
         headers = CaseInsensitiveDict(data=cached["response"]["headers"])
         if headers.get("transfer-encoding", "") == "chunked":
             headers.pop("transfer-encoding")
 
         cached["response"]["headers"] = headers
-
-        try:
-            body = io.BytesIO(body_raw)
-        except TypeError:
-            # This can happen if cachecontrol serialized to v1 format (pickle)
-            # using Python 2. A Python 2 str(byte string) will be unpickled as
-            # a Python 3 str (unicode string), which will cause the above to
-            # fail with:
-            #
-            #     TypeError: 'str' does not support the buffer interface
-            body = io.BytesIO(body_raw.encode("utf8"))
-
-        return HTTPResponse(body=body, preload_content=False, **cached["response"])
+        return cached["response"]
 
     def _loads_v0(self, request, data):
         # The original legacy cache data. This doesn't contain enough
@@ -150,7 +187,7 @@ class Serializer(object):
         except ValueError:
             return
 
-        return self.prepare_response(request, cached)
+        return self.prepare_response_combined(request, cached)
 
     def _loads_v2(self, request, data):
         try:
@@ -170,7 +207,7 @@ class Serializer(object):
             for k, v in cached["vary"].items()
         )
 
-        return self.prepare_response(request, cached)
+        return self.prepare_response_combined(request, cached)
 
     def _loads_v3(self, request, data):
         # Due to Python 2 encoding issues, it's impossible to know for sure
@@ -184,4 +221,4 @@ class Serializer(object):
         except ValueError:
             return
 
-        return self.prepare_response(request, cached)
+        return self.prepare_response_combined(request, cached)

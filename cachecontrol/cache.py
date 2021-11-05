@@ -7,9 +7,11 @@ The cache object API for implementing caches. The default is a thread
 safe in-memory dictionary.
 """
 from threading import Lock
-from typing import Tuple, BinaryIO, Optional
+from typing import Optional
 from pathlib import Path
 from abc import ABC
+from .compat import HTTPResponse
+from .serialize import Serializer
 
 
 class LegacyCache(object):
@@ -41,9 +43,9 @@ class CacheInterface(ABC):
     can support both.
     """
 
-    def get_as_file(self, key: str) -> Tuple[bytes, BinaryIO]:
+    def get_as_file(self, key: str, serializer: Serializer) -> HTTPResponse:
         """
-        Return tuple of (encoded-metadata, readable file-like object for body).
+        Return tuple of (encoded-metadata file-like, body file-like).
         """
 
     def set_from_file(
@@ -86,3 +88,34 @@ class DictCache(BaseCache):
         with self.lock:
             if key in self.data:
                 self.data.pop(key)
+
+
+class _OldCacheToNew(CacheInterface):
+    """Adapt an old-style cache to the new interface."""
+
+    def __init__(self, cache):
+        self._cache = cache
+
+    def __getattr__(self, attr):
+        return getattr(self._cache, attr)
+
+    def get_as_file(self, key: str, request, serializer: Serializer) -> HTTPResponse:
+        """
+        Return tuple of (encoded-metadata file-like, body file-like).
+        """
+        combined_data = self.get(key)
+        # This is old-school format where metadata and body are combined...
+        return serializer.loads(request, combined_data)
+
+    def set_from_file(
+        self,
+        key: str,
+        metadata_value: bytes,
+        body_path: Path,
+        expires: Optional[int] = None,
+    ):
+        """
+        Store a cache entry, with metadata and body being passed in separately,
+        the latter as a path to a file.  The metadata is encoded.  Expiration
+        time is a duration (from the present moment) in seconds.
+        """
