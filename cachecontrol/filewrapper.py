@@ -82,7 +82,7 @@ class CallbackFileWrapper(object):
         # and allows the garbage collector to do it's thing normally.
         self.__callback = None
 
-        # Closing the tempoary file releases memory and frees disk space.
+        # Closing the temporary file releases memory and frees disk space.
         # Important when caching big files.
         self.__buf.close()
 
