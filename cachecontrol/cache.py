@@ -43,7 +43,7 @@ class CacheInterface(ABC):
     can support both.
     """
 
-    def get_as_file(self, key: str, serializer: Serializer) -> HTTPResponse:
+    def get_as_file(self, key: str, request, serializer: Serializer) -> HTTPResponse:
         """
         Return tuple of (encoded-metadata file-like, body file-like).
         """
