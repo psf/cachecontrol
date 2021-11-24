@@ -52,6 +52,14 @@ class SeparateBodyBaseCache(BaseCache):
 
         cache.set(key, serialized_metadata)
         cache.set_body(key)
+
+    Similarly, the body should be loaded separately via ``get_body()``.
     """
     def set_body(self, key, body):
+        raise NotImplementedError()
+
+    def get_body(self, key):
+        """
+        Return the body as file-like object.
+        """
         raise NotImplementedError()

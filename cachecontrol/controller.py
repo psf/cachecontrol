@@ -13,7 +13,7 @@ from email.utils import parsedate_tz
 
 from requests.structures import CaseInsensitiveDict
 
-from .cache import DictCache
+from .cache import DictCache, SeparateBodyBaseCache
 from .serialize import Serializer
 
 
@@ -146,6 +146,11 @@ class CacheController(object):
             logger.debug("No cache entry available")
             return False
 
+        if isinstance(self.cache, SeparateBodyBaseCache):
+            body_file = self.cache.get_body(cache_url)
+        else:
+            body_file = None
+
         # Check whether it can be deserialized
         resp = self.serializer.loads(request, cache_data)
         if not resp:
@@ -254,11 +259,21 @@ class CacheController(object):
         """
         Store the data in the cache.
         """
-        self.cache.set(
-            cache_url,
-            self.serializer.dumps(request, response, body),
-            expires=expires_time,
-        )
+        if isinstance(self.cache, SeparateBodyBaseCache):
+            # We pass in the body separately; just put a placeholder empty
+            # string in the metadata.
+            self.cache.set(
+                cache_url,
+                self.serializer.dumps(request, response, b""),
+                expires=expires_time,
+            )
+            self.cache.set_body(cache_url, body)
+        else:
+            self.cache.set(
+                cache_url,
+                self.serializer.dumps(request, response, body),
+                expires=expires_time,
+            )
 
     def cache_response(self, request, response, body=None, status_codes=None):
         """
