@@ -15,3 +15,5 @@ include
 docs/_build
 build/
 .tox
+.venv
+web_cache
