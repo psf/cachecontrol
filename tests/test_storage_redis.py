@@ -14,7 +14,7 @@ class TestRedisCache(object):
         self.conn = Mock()
         self.cache = RedisCache(self.conn)
 
-    def test_set_expiration(self):
+    def test_set_expiration_datetime(self):
         self.cache.set("foo", "bar", expires=datetime(2014, 2, 2))
         assert self.conn.setex.called
 
