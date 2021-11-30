@@ -21,7 +21,7 @@ class NullSerializer(object):
     def dumps(self, request, response):
         return response
 
-    def loads(self, request, data):
+    def loads(self, request, data, body_file=None):
         return data
 
 
