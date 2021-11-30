@@ -126,3 +126,26 @@ class TestStorageFileCache(object):
         url = self.url + "".join(sample(string.ascii_lowercase, randint(2, 4)))
         sess.put(url)
         assert True  # test verifies no exceptions were raised
+
+
+    def test_body_actually_stored_separately(self, sess):
+        """
+        Body is stored and can be retrieved from the FileCache, with assurances
+        it's actually being loaded from separate file than metadata.
+        """
+        url = self.url + "cache_60"
+        response = sess.get(url)
+        body = response.content
+        response2 = sess.get(url)
+        assert response2.from_cache
+        assert response2.content == body
+
+        # OK now let's violate some abstraction boundaries to make sure body
+        # actually came from separate file.
+        with open(self.cache._fn(url), "rb") as f:
+            assert body not in f.read()
+        with open(self.cache._fn(url) + ".body", "wb") as f:
+            f.write(b"CORRUPTED")
+        response2 = sess.get(url)
+        assert response2.from_cache
+        assert response2.content == b"CORRUPTED"

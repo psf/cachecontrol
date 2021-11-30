@@ -6,7 +6,7 @@ import hashlib
 import os
 from textwrap import dedent
 
-from ..cache import BaseCache
+from ..cache import SeparateBodyBaseCache
 from ..controller import CacheController
 
 try:
@@ -57,7 +57,7 @@ def _secure_open_write(filename, fmode):
         raise
 
 
-class FileCache(BaseCache):
+class FileCache(SeparateBodyBaseCache):
 
     def __init__(
         self,
@@ -118,19 +118,35 @@ class FileCache(BaseCache):
         except FileNotFoundError:
             return None
 
-    def set(self, key, value, expires=None):
-        name = self._fn(key)
+    def get_body(self, key):
+        name = self._fn(key) + ".body"
+        try:
+            return open(name, "rb")
+        except FileNotFoundError:
+            return None
 
+    def _write(self, path, data: bytes):
+        """
+        Safely write the data to the given path.
+        """
         # Make sure the directory exists
         try:
-            os.makedirs(os.path.dirname(name), self.dirmode)
+            os.makedirs(os.path.dirname(path), self.dirmode)
         except (IOError, OSError):
             pass
 
-        with self.lock_class(name) as lock:
+        with self.lock_class(path) as lock:
             # Write our actual file
             with _secure_open_write(lock.path, self.filemode) as fh:
-                fh.write(value)
+                fh.write(data)
+
+    def set(self, key, value, expires=None):
+        name = self._fn(key)
+        self._write(name, value)
+
+    def set_body(self, key, body):
+        name = self._fn(key) + ".body"
+        self._write(name, body)
 
     def delete(self, key):
         name = self._fn(key)
