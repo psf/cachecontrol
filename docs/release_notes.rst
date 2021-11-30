@@ -7,7 +7,12 @@
  Release Notes
 ===============
 
-0.13.0
+0.12.11
+=======
+
+* ``FileCache`` now uses less memory.
+
+0.12.7
 ======
 
 * Dropped support for Python 2.7, 3.4, 3.5.
