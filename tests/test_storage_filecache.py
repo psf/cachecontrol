@@ -144,6 +144,8 @@ class TestStorageFileCache(object):
         # actually came from separate file.
         with open(self.cache._fn(url), "rb") as f:
             assert body not in f.read()
+        with open(self.cache._fn(url) + ".body", "rb") as f:
+            assert body == f.read()
         with open(self.cache._fn(url) + ".body", "wb") as f:
             f.write(b"CORRUPTED")
         response2 = sess.get(url)
