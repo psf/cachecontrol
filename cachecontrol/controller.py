@@ -152,7 +152,7 @@ class CacheController(object):
             body_file = None
 
         # Check whether it can be deserialized
-        resp = self.serializer.loads(request, cache_data)
+        resp = self.serializer.loads(request, cache_data, body_file)
         if not resp:
             logger.warning("Cache entry deserialization failed, entry ignored")
             return False
