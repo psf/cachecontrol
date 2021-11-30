@@ -99,7 +99,7 @@ class Serializer(object):
             # just treat it as a miss and return None
             return
 
-    def prepare_response(self, request, cached, body_file):
+    def prepare_response(self, request, cached, body_file=None):
         """Verify our vary headers match and construct a real urllib3
         HTTPResponse object.
         """
@@ -140,13 +140,13 @@ class Serializer(object):
 
         return HTTPResponse(body=body, preload_content=False, **cached["response"])
 
-    def _loads_v0(self, request, data, body_file):
+    def _loads_v0(self, request, data, body_file=None):
         # The original legacy cache data. This doesn't contain enough
         # information to construct everything we need, so we'll treat this as
         # a miss.
         return
 
-    def _loads_v1(self, request, data, body_file):
+    def _loads_v1(self, request, data, body_file=None):
         try:
             cached = pickle.loads(data)
         except ValueError:
@@ -154,7 +154,7 @@ class Serializer(object):
 
         return self.prepare_response(request, cached, body_file)
 
-    def _loads_v2(self, request, data, body_file):
+    def _loads_v2(self, request, data, body_file=None):
         assert body_file is None
         try:
             cached = json.loads(zlib.decompress(data).decode("utf8"))
@@ -181,7 +181,7 @@ class Serializer(object):
         # that they get rewritten out as v4 entries.
         return
 
-    def _loads_v4(self, request, data, body_file):
+    def _loads_v4(self, request, data, body_file=None):
         try:
             cached = msgpack.loads(data, raw=False)
         except ValueError:
