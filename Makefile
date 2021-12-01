@@ -6,8 +6,6 @@ VENV=.venv
 VENV_CMD=python3 -m venv
 ACTIVATE = $(VENV)/bin/activate
 CHEESE=https://pypi.python.org/pypi
-BUMPTYPE=patch
-
 
 $(VENV)/bin/pip3:
 	$(VENV_CMD) $(VENV)
@@ -55,7 +53,3 @@ release: dist
 dist: clean
 	python setup.py sdist bdist_wheel
 	ls -l dist
-
-bump:
-	$(VENV)/bin/bumpversion $(BUMPTYPE)
-	git push && git push --tags

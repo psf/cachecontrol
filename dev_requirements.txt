@@ -12,7 +12,8 @@ cherrypy
 sphinx
 redis
 lockfile
-bumpversion
 twine
 black
 wheel
+setuptools_scm
+setuptools
