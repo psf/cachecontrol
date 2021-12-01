@@ -17,3 +17,6 @@ build/
 .tox
 .venv
 web_cache
+
+# Auto-generated via setuptools_scm at install or packaging time:
+cachecontrol/_version.py

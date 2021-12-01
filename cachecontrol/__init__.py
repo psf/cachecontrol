@@ -8,7 +8,10 @@ Make it easy to import from cachecontrol without long namespaces.
 """
 __author__ = "Eric Larson"
 __email__ = "eric@ionrock.org"
-__version__ = "0.12.10"
+try:
+    from ._version import version as __version__
+except ImportError:
+    __version__ = "unknown"
 
 from .wrapper import CacheControl
 from .adapter import CacheControlAdapter

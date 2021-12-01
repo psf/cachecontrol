@@ -12,7 +12,10 @@ cherrypy
 sphinx
 redis
 lockfile
-bumpversion
 twine
 black
 wheel
+setuptools_scm
+setuptools
+# Backport of version in stdlib from Python 3.8 and up:
+importlib_metadata; python_version < '3.8'

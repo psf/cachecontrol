@@ -6,11 +6,8 @@ import setuptools
 
 long_description = open("README.rst").read()
 
-VERSION = "0.12.10"
-
 setup_params = dict(
     name="CacheControl",
-    version=VERSION,
     author="Eric Larson",
     author_email="eric@ionrock.org",
     url="https://github.com/ionrock/cachecontrol",
