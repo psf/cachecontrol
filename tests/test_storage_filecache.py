@@ -13,7 +13,7 @@ from random import randint, sample
 import pytest
 import requests
 from cachecontrol import CacheControl
-from cachecontrol.caches import FileCache
+from cachecontrol.caches import FileCache, SeparateBodyFileCache
 from lockfile import LockFile
 from lockfile.mkdirlockfile import MkdirLockFile
 
@@ -25,12 +25,14 @@ def randomdata():
     return "&{}={}".format(key, val)
 
 
-class TestStorageFileCache(object):
+class FileCacheTestsMixin(object):
+
+    FileCacheClass = None  # Either FileCache or SeparateBodyFileCache
 
     @pytest.fixture()
     def sess(self, url, tmpdir):
         self.url = url
-        self.cache = FileCache(str(tmpdir))
+        self.cache = self.FileCacheClass(str(tmpdir))
         sess = CacheControl(requests.Session(), cache=self.cache)
         yield sess
 
@@ -94,7 +96,7 @@ class TestStorageFileCache(object):
 
     def test_cant_use_dir_and_lock_class(self, tmpdir):
         with pytest.raises(ValueError):
-            FileCache(str(tmpdir), use_dir_lock=True, lock_class=object())
+            self.FileCacheClass(str(tmpdir), use_dir_lock=True, lock_class=object())
 
     @pytest.mark.parametrize(
         ("value", "expected"),
@@ -102,16 +104,16 @@ class TestStorageFileCache(object):
     )
     def test_simple_lockfile_arg(self, tmpdir, value, expected):
         if value is not None:
-            cache = FileCache(str(tmpdir), use_dir_lock=value)
+            cache = self.FileCacheClass(str(tmpdir), use_dir_lock=value)
         else:
-            cache = FileCache(str(tmpdir))
+            cache = self.FileCacheClass(str(tmpdir))
 
         assert issubclass(cache.lock_class, expected)
         cache.close()
 
     def test_lock_class(self, tmpdir):
         lock_class = object()
-        cache = FileCache(str(tmpdir), lock_class=lock_class)
+        cache = self.FileCacheClass(str(tmpdir), lock_class=lock_class)
         assert cache.lock_class is lock_class
         cache.close()
 
@@ -128,9 +130,39 @@ class TestStorageFileCache(object):
         assert True  # test verifies no exceptions were raised
 
 
+class TestFileCache(FileCacheTestsMixin):
+    """
+    Tests for ``FileCache``.
+    """
+    
+    FileCacheClass = FileCache
+
+    def test_body_stored_inline(self, sess):
+        """The body is stored together with the metadata."""
+        url = self.url + "cache_60"
+        response = sess.get(url)
+        body = response.content
+        response2 = sess.get(url)
+        assert response2.from_cache
+        assert response2.content == body
+
+        # OK now let's violate some abstraction boundaries to make sure body
+        # was stored in metadata file.
+        with open(self.cache._fn(url), "rb") as f:
+            assert body in f.read()
+        assert not os.path.exists(self.cache._fn(url) + ".body")
+
+
+class TestSeparateBodyFileCache(FileCacheTestsMixin):
+    """
+    Tests for ``SeparateBodyFileCache``
+    """
+
+    FileCacheClass = SeparateBodyFileCache
+
     def test_body_actually_stored_separately(self, sess):
         """
-        Body is stored and can be retrieved from the FileCache, with assurances
+        Body is stored and can be retrieved from the SeparateBodyFileCache, with assurances
         it's actually being loaded from separate file than metadata.
         """
         url = self.url + "cache_60"
