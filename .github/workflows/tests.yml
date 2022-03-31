@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2021 Itamar Turner-Trauring <itamar@itamarst.org>
+#
+# SPDX-License-Identifier: Apache-2.0
+
 ---
 name: CI
 

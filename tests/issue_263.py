@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+
+# SPDX-FileCopyrightText: 2021 Eric Larson
+#
+# SPDX-License-Identifier: Apache-2.0
+
 import sys
 
 import cachecontrol
