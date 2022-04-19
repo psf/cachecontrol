@@ -53,7 +53,7 @@ release: dist
 	$(VENV)/bin/twine upload dist/*
 
 dist: clean
-	python setup.py sdist bdist_wheel
+	$(VENV)/bin/python setup.py sdist bdist_wheel
 	ls -l dist
 
 bump:
