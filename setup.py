@@ -6,7 +6,7 @@ import setuptools
 
 long_description = open("README.rst").read()
 
-VERSION = "0.12.10"
+VERSION = "0.12.11"
 
 setup_params = dict(
     name="CacheControl",
