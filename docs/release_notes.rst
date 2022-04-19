@@ -7,7 +7,12 @@
  Release Notes
 ===============
 
-0.13.0
+0.12.11
+=======
+
+* Added new variant of ``FileCache``, ``SeparateBodyFileCache``, which uses less memory by storing the body in a separate file than metadata, and streaming data in and out directly to/from that file. Implemented by [Itamar Turner-Trauring](https://pythonspeed.com), work sponsored by [G-Research](https://www.gresearch.co.uk/technology-innovation-and-open-source/).
+
+0.12.7
 ======
 
 * Dropped support for Python 2.7, 3.4, 3.5.
