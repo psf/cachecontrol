@@ -267,7 +267,10 @@ class CacheController(object):
                 self.serializer.dumps(request, response, b""),
                 expires=expires_time,
             )
-            self.cache.set_body(cache_url, body)
+            # body is None can happen when, for example, we're only updating
+            # headers, as is the case in update_cached_response().
+            if body is not None:
+                self.cache.set_body(cache_url, body)
         else:
             self.cache.set(
                 cache_url,
