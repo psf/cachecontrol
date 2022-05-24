@@ -10,12 +10,12 @@ from datetime import datetime
 
 from mock import Mock
 from requests import Session, get
-from requests.structures import CaseInsensitiveDict
 
 from cachecontrol import CacheControl
 from cachecontrol.heuristics import LastModified, ExpiresAfter, OneDayCache
 from cachecontrol.heuristics import TIME_FMT
 from cachecontrol.heuristics import BaseHeuristic
+from .utils import DummyResponse
 
 from pprint import pprint
 
@@ -129,13 +129,6 @@ class TestLastModified(object):
         r = self.sess.get(the_url)
         pprint(dict(r.headers))
         assert r.from_cache
-
-
-class DummyResponse:
-
-    def __init__(self, status, headers):
-        self.status = status
-        self.headers = CaseInsensitiveDict(headers)
 
 
 def datetime_to_header(dt):
