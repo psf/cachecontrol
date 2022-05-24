@@ -8,21 +8,15 @@ Unit tests that verify our caching methods work correctly.
 import pytest
 from mock import ANY, Mock
 import time
+from tempfile import mkdtemp
 
 from cachecontrol import CacheController
 from cachecontrol.cache import DictCache
-
+from cachecontrol.caches import SeparateBodyFileCache
+from .utils import NullSerializer, DummyResponse, DummyRequest
 
 TIME_FMT = "%a, %d %b %Y %H:%M:%S GMT"
 
-
-class NullSerializer(object):
-
-    def dumps(self, request, response):
-        return response
-
-    def loads(self, request, data, body_file=None):
-        return data
 
 
 class TestCacheControllerResponse(object):
@@ -124,25 +118,97 @@ class TestCacheControllerResponse(object):
 
         assert not cc.cache.set.called
 
+    def test_update_cached_response_no_local_cache(self):
+        """
+        If the local cache doesn't have the given URL, just reuse the response
+        passed to ``update_cached_response()``
+        """
+        cache = DictCache({})
+        cc = CacheController(cache)
+        req = DummyRequest(url="http://localhost/", headers={"if-match": "xyz"})
+        resp = DummyResponse(status=304, headers={
+            "ETag": "xyz",
+            "x-value": "b",
+            "Date": time.strftime(TIME_FMT, time.gmtime()),
+            "Cache-Control": "max-age=60",
+            "Content-Length": "200"
+        })
+        # First, ensure the response from update_cached_response() matches the
+        # cached one:
+        result = cc.update_cached_response(req, resp)
+        assert result is resp
+
+    def test_update_cached_response_with_valid_headers_separate_body(self):
+        """
+        If the local cache has the given URL ``update_cached_response()`` will:
+
+        1. Load the body from the cache.
+        2. Update the stored headers to match the returned response.
+
+        This is the version for a cache that stores a separate body.
+        """
+        cache = SeparateBodyFileCache(mkdtemp())
+        self.update_cached_response_with_valid_headers_test(cache)
+
     def test_update_cached_response_with_valid_headers(self):
-        cached_resp = Mock(headers={"ETag": "jfd9094r808", "Content-Length": 100})
+        """
+        If the local cache has the given URL ``update_cached_response()`` will:
+
+        1. Load the body from the cache.
+        2. Update the stored headers to match the returned response.
+
+        This is the version for non-separate body.
+        """
+        cache = DictCache({})
+        self.update_cached_response_with_valid_headers_test(cache)
+
+    def update_cached_response_with_valid_headers_test(self, cache):
+        """
+        If the local cache has the given URL ``update_cached_response()`` will:
+
+        1. Load the body from the cache.
+        2. Update the stored headers to match the returned response.
+
+        This is the shared utility for any cache object.
+        """
+        # Cache starts out prepopulated wih an entry:
+        etag = "jfd9094r808"
+        cc = CacheController(cache)
+        url = "http://localhost:123/x"
+        req = DummyRequest(url=url, headers={})
+        cached_resp = DummyResponse(status=200, headers={
+            "ETag": etag,
+            "x-value:": "a",
+            "Content-Length": "100",
+            "Cache-Control": "max-age=60",
+            "Date": time.strftime(TIME_FMT, time.gmtime()),
+        })
+        cc._cache_set(url, req, cached_resp, b"my body")
+
+        # Now we get another request, and it's a 304, with new value for
+        # `x-value` header.
 
         # Set our content length to 200. That would be a mistake in
         # the server, but we'll handle it gracefully... for now.
-        resp = Mock(headers={"ETag": "28371947465", "Content-Length": 200})
-        cache = DictCache({self.url: cached_resp})
+        req = DummyRequest(url=url, headers={"if-match": etag})
+        resp = DummyResponse(status=304, headers={
+            "ETag": etag,
+            "x-value": "b",
+            "Date": time.strftime(TIME_FMT, time.gmtime()),
+            "Cache-Control": "max-age=60",
+            "Content-Length": "200"
+        })
+        # First, ensure the response from update_cached_response() matches the
+        # cached one:
+        result = cc.update_cached_response(req, resp)
+        # Second, ensure that the cache was updated:
+        result2 = cc.cached_request(req)
 
-        cc = CacheController(cache)
-
-        # skip our in/out processing
-        cc.serializer = Mock()
-        cc.serializer.loads.return_value = cached_resp
-        cc.cache_url = Mock(return_value=self.url)
-
-        result = cc.update_cached_response(Mock(), resp)
-
-        assert result.headers["ETag"] == resp.headers["ETag"]
-        assert result.headers["Content-Length"] == 100
+        for r in [result, result2]:
+            assert r.headers["ETag"] == etag
+            assert r.headers["x-value"] == "b"
+            assert r.headers["Content-Length"] == "100"
+            assert r.read() == b"my body"
 
 
 class TestCacheControlRequest(object):
