@@ -11,17 +11,7 @@ import requests
 from cachecontrol import CacheControl
 from cachecontrol.cache import DictCache
 from cachecontrol.compat import urljoin
-
-
-class NullSerializer(object):
-
-    def dumps(self, request, response, body=None):
-        return response
-
-    def loads(self, request, data, body_file=None):
-        if data and getattr(data, "chunked", False):
-            data.chunked = False
-        return data
+from .utils import NullSerializer
 
 
 class TestETag(object):
