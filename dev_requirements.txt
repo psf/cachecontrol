@@ -16,3 +16,6 @@ bumpversion
 twine
 black
 wheel
+mypy
+types-redis
+types-requests

@@ -30,3 +30,5 @@ try:
     text_type = unicode
 except NameError:
     text_type = str
+
+__all__ = ["urljoin", "pickle", "HTTPResponse", "is_fp_closed", "text_type"]

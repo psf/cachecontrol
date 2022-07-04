@@ -10,9 +10,19 @@ __author__ = "Eric Larson"
 __email__ = "eric@ionrock.org"
 __version__ = "0.12.11"
 
-from .wrapper import CacheControl
 from .adapter import CacheControlAdapter
 from .controller import CacheController
+from .wrapper import CacheControl
+
+__all__ = [
+    "__author__",
+    "__email__",
+    "__version__",
+    "CacheControlAdapter",
+    "CacheController",
+    "CacheControl",
+]
 
 import logging
+
 logging.getLogger(__name__).addHandler(logging.NullHandler())
