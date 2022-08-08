@@ -127,6 +127,8 @@ class Serializer(object):
         try:
             if body_file is None:
                 body = io.BytesIO(body_raw)
+            elif not hasattr(body_file, "read"):
+                body = io.BytesIO(body_file)
             else:
                 body = body_file
         except TypeError:
