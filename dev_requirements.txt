@@ -11,7 +11,7 @@ mock
 cherrypy
 sphinx
 redis
-lockfile
+filelock
 bumpversion
 twine
 black
