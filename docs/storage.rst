@@ -28,7 +28,7 @@ FileCache
 =========
 
 The `FileCache` is similar to the caching mechanism provided by
-httplib2_. It requires `lockfile`_ be installed as it prevents
+httplib2_. It requires `filelock`_ be installed as it prevents
 multiple threads from writing to the same file at the same time.
 
 .. note::
@@ -64,7 +64,7 @@ This is similar to ``FileCache``, but far more memory efficient, and therefore r
 
 The body of the request is stored in a separate file than metadata, and streamed in and out.
 
-It requires `lockfile`_ be installed as it prevents multiple threads from writing to the same file at the same time.
+It requires `filelock`_ be installed as it prevents multiple threads from writing to the same file at the same time.
 
 .. note::
 
@@ -127,7 +127,7 @@ Third-Party Cache Providers
 
 
 .. _httplib2: https://github.com/httplib2/httplib2
-.. _lockfile: https://github.com/smontanaro/pylockfile
+.. _filelock: https://github.com/tox-dev/py-filelock
 .. _requests 2.1: http://docs.python-requests.org/en/latest/community/updates/#id2
 .. _redis: https://github.com/andymccurdy/redis-py
 .. _cachecontrol-django: https://github.com/glassesdirect/cachecontrol-django

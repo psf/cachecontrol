@@ -62,7 +62,7 @@ the provided `FileCache` from CacheControl: ::
 
   from cachecontrol import CacheControl
 
-  # NOTE: This requires lockfile be installed
+  # NOTE: This requires filelock be installed
   from cachecontrol.caches import FileCache
 
   sess = CacheControl(requests.Session(),
