@@ -6,9 +6,9 @@ import logging
 
 import requests
 
-from cachecontrol.adapter import CacheControlAdapter
-from cachecontrol.cache import DictCache
-from cachecontrol.controller import logger
+from .adapter import CacheControlAdapter
+from .cache import DictCache
+from .controller import logger
 
 from argparse import ArgumentParser
 
