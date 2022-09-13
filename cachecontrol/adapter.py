@@ -146,9 +146,9 @@ class CacheControlAdapter(HTTPAdapter):
                         _update_chunk_length, response
                     )
 
-        resp: "Response" = super(CacheControlAdapter, self).build_response(
-            request, response
-        )  # type: ignore[no-untyped-call]
+        resp: "Response" = super(  # type: ignore[no-untyped-call]
+            CacheControlAdapter, self
+        ).build_response(request, response)
 
         # See if we should invalidate the cache.
         if request.method in self.invalidating_methods and resp.ok:
