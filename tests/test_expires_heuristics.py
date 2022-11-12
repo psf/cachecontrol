@@ -8,7 +8,7 @@ import time
 from email.utils import formatdate, parsedate
 from datetime import datetime
 
-from mock import Mock
+from unittest.mock import Mock
 from requests import Session, get
 
 from cachecontrol import CacheControl

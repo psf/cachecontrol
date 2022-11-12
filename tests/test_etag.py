@@ -4,7 +4,7 @@
 
 import pytest
 
-from mock import Mock, patch
+from unittest.mock import Mock, patch
 
 import requests
 
