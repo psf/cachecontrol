@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from datetime import datetime
+from datetime import datetime, timezone
 from unittest.mock import Mock
 
 from cachecontrol.caches import RedisCache
@@ -15,6 +15,11 @@ class TestRedisCache(object):
 
     def test_set_expiration_datetime(self):
         self.cache.set("foo", "bar", expires=datetime(2014, 2, 2))
+        assert self.conn.setex.called
+
+    def test_set_expiration_datetime_aware(self):
+        self.cache.set("foo", "bar",
+                       expires=datetime(2014, 2, 2, tzinfo=timezone.utc))
         assert self.conn.setex.called
 
     def test_set_expiration_int(self):
