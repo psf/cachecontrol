@@ -4,7 +4,7 @@
 
 import calendar
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from email.utils import formatdate, parsedate, parsedate_tz
 from typing import TYPE_CHECKING, Any, Dict, Mapping, Optional
 
@@ -15,7 +15,7 @@ TIME_FMT = "%a, %d %b %Y %H:%M:%S GMT"
 
 
 def expire_after(delta: timedelta, date: Optional[datetime] = None) -> datetime:
-    date = date or datetime.utcnow()
+    date = date or datetime.now(timezone.utc).replace(tzinfo=None)
     return date + delta
 
 
