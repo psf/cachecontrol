@@ -4,26 +4,27 @@
 
 import calendar
 import time
-
-from email.utils import formatdate, parsedate
 from datetime import datetime
+from email.utils import formatdate, parsedate
+from pprint import pprint
 
 from mock import Mock
 from requests import Session, get
 
 from cachecontrol import CacheControl
-from cachecontrol.heuristics import LastModified, ExpiresAfter, OneDayCache
-from cachecontrol.heuristics import TIME_FMT
-from cachecontrol.heuristics import BaseHeuristic
-from .utils import DummyResponse
+from cachecontrol.heuristics import (
+    TIME_FMT,
+    BaseHeuristic,
+    ExpiresAfter,
+    LastModified,
+    OneDayCache,
+)
 
-from pprint import pprint
+from .utils import DummyResponse
 
 
 class TestHeuristicWithoutWarning(object):
-
-    def setup(self):
-
+    def setup_method(self):
         class NoopHeuristic(BaseHeuristic):
             warning = Mock()
 
@@ -35,17 +36,14 @@ class TestHeuristicWithoutWarning(object):
 
     def test_no_header_change_means_no_warning_header(self, url):
         the_url = url + "optional_cacheable_request"
-        resp = self.sess.get(the_url)
+        self.sess.get(the_url)
 
         assert not self.heuristic.warning.called
 
 
 class TestHeuristicWith3xxResponse(object):
-
-    def setup(self):
-
+    def setup_method(self):
         class DummyHeuristic(BaseHeuristic):
-
             def update_headers(self, resp):
                 return {"x-dummy-header": "foobar"}
 
@@ -63,7 +61,6 @@ class TestHeuristicWith3xxResponse(object):
 
 
 class TestUseExpiresHeuristic(object):
-
     def test_expires_heuristic_arg(self):
         sess = Session()
         cached_sess = CacheControl(sess, heuristic=Mock())
@@ -71,8 +68,7 @@ class TestUseExpiresHeuristic(object):
 
 
 class TestOneDayCache(object):
-
-    def setup(self):
+    def setup_method(self):
         self.sess = Session()
         self.cached_sess = CacheControl(self.sess, heuristic=OneDayCache())
 
@@ -91,8 +87,7 @@ class TestOneDayCache(object):
 
 
 class TestExpiresAfter(object):
-
-    def setup(self):
+    def setup_method(self):
         self.sess = Session()
         self.cache_sess = CacheControl(self.sess, heuristic=ExpiresAfter(days=1))
 
@@ -112,8 +107,7 @@ class TestExpiresAfter(object):
 
 
 class TestLastModified(object):
-
-    def setup(self):
+    def setup_method(self):
         self.sess = Session()
         self.cached_sess = CacheControl(self.sess, heuristic=LastModified())
 
@@ -136,11 +130,10 @@ def datetime_to_header(dt):
 
 
 class TestModifiedUnitTests(object):
-
     def last_modified(self, period):
         return time.strftime(TIME_FMT, time.gmtime(self.time_now - period))
 
-    def setup(self):
+    def setup_method(self):
         self.heuristic = LastModified()
         self.time_now = time.time()
         day_in_seconds = 86400

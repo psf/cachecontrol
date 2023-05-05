@@ -3,14 +3,13 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import pytest
-
-from mock import Mock, patch
-
 import requests
+from mock import Mock, patch
 
 from cachecontrol import CacheControl
 from cachecontrol.cache import DictCache
 from cachecontrol.compat import urljoin
+
 from .utils import NullSerializer
 
 
@@ -136,7 +135,7 @@ class TestReleaseConnection(object):
 
         # This is how the urllib3 response is created in
         # requests.adapters
-        response_mod = "requests.adapters.HTTPResponse.from_httplib"
+        response_mod = "urllib3.HTTPConnectionPool.urlopen"
 
         with patch(response_mod, Mock(return_value=resp)):
             sess.get(etag_url)

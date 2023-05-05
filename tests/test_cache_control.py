@@ -5,18 +5,19 @@
 """
 Unit tests that verify our caching methods work correctly.
 """
-import pytest
-from mock import ANY, Mock
 import time
 from tempfile import mkdtemp
+
+import pytest
+from mock import ANY, Mock
 
 from cachecontrol import CacheController
 from cachecontrol.cache import DictCache
 from cachecontrol.caches import SeparateBodyFileCache
-from .utils import NullSerializer, DummyResponse, DummyRequest
+
+from .utils import DummyRequest, DummyResponse, NullSerializer
 
 TIME_FMT = "%a, %d %b %Y %H:%M:%S GMT"
-
 
 
 class TestCacheControllerResponse(object):
@@ -126,13 +127,16 @@ class TestCacheControllerResponse(object):
         cache = DictCache({})
         cc = CacheController(cache)
         req = DummyRequest(url="http://localhost/", headers={"if-match": "xyz"})
-        resp = DummyResponse(status=304, headers={
-            "ETag": "xyz",
-            "x-value": "b",
-            "Date": time.strftime(TIME_FMT, time.gmtime()),
-            "Cache-Control": "max-age=60",
-            "Content-Length": "200"
-        })
+        resp = DummyResponse(
+            status=304,
+            headers={
+                "ETag": "xyz",
+                "x-value": "b",
+                "Date": time.strftime(TIME_FMT, time.gmtime()),
+                "Cache-Control": "max-age=60",
+                "Content-Length": "200",
+            },
+        )
         # First, ensure the response from update_cached_response() matches the
         # cached one:
         result = cc.update_cached_response(req, resp)
@@ -176,13 +180,16 @@ class TestCacheControllerResponse(object):
         cc = CacheController(cache)
         url = "http://localhost:123/x"
         req = DummyRequest(url=url, headers={})
-        cached_resp = DummyResponse(status=200, headers={
-            "ETag": etag,
-            "x-value:": "a",
-            "Content-Length": "100",
-            "Cache-Control": "max-age=60",
-            "Date": time.strftime(TIME_FMT, time.gmtime()),
-        })
+        cached_resp = DummyResponse(
+            status=200,
+            headers={
+                "ETag": etag,
+                "x-value:": "a",
+                "Content-Length": "100",
+                "Cache-Control": "max-age=60",
+                "Date": time.strftime(TIME_FMT, time.gmtime()),
+            },
+        )
         cc._cache_set(url, req, cached_resp, b"my body")
 
         # Now we get another request, and it's a 304, with new value for
@@ -191,13 +198,16 @@ class TestCacheControllerResponse(object):
         # Set our content length to 200. That would be a mistake in
         # the server, but we'll handle it gracefully... for now.
         req = DummyRequest(url=url, headers={"if-match": etag})
-        resp = DummyResponse(status=304, headers={
-            "ETag": etag,
-            "x-value": "b",
-            "Date": time.strftime(TIME_FMT, time.gmtime()),
-            "Cache-Control": "max-age=60",
-            "Content-Length": "200"
-        })
+        resp = DummyResponse(
+            status=304,
+            headers={
+                "ETag": etag,
+                "x-value": "b",
+                "Date": time.strftime(TIME_FMT, time.gmtime()),
+                "Cache-Control": "max-age=60",
+                "Content-Length": "200",
+            },
+        )
         # First, ensure the response from update_cached_response() matches the
         # cached one:
         result = cc.update_cached_response(req, resp)
@@ -214,7 +224,7 @@ class TestCacheControllerResponse(object):
 class TestCacheControlRequest(object):
     url = "http://foo.com/bar"
 
-    def setup(self):
+    def setup_method(self):
         self.c = CacheController(DictCache(), serializer=NullSerializer())
 
     def req(self, headers):
@@ -222,7 +232,9 @@ class TestCacheControlRequest(object):
         return self.c.cached_request(mock_request)
 
     def test_cache_request_no_headers(self):
-        cached_resp = Mock(headers={"ETag": "jfd9094r808", "Content-Length": 100}, status=200)
+        cached_resp = Mock(
+            headers={"ETag": "jfd9094r808", "Content-Length": 100}, status=200
+        )
         self.c.cache = DictCache({self.url: cached_resp})
         resp = self.req({})
         assert not resp
