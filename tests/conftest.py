@@ -104,6 +104,16 @@ class SimpleApp(object):
         for i in range(10):
             yield pformat(i).encode("utf8")
 
+    def fixed_length(self, env, start_response):
+        body = b"0123456789"
+        headers = [
+            ("Content-Type", "text/plain"),
+            ("Cache-Control", "max-age=5000"),
+            ("Content-Length", str(len(body)))
+        ]
+        start_response("200 OK", headers)
+        return [body]
+
     def __call__(self, env, start_response):
         func = self.dispatch(env)
 
