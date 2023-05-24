@@ -137,6 +137,9 @@ class Serializer(object):
             #     TypeError: 'str' does not support the buffer interface
             body = io.BytesIO(body_raw.encode("utf8"))
 
+        # Discard any `strict` parameter serialized by older version of cachecontrol.
+        cached["response"].pop("strict", None)
+
         return HTTPResponse(body=body, preload_content=False, **cached["response"])
 
     def _loads_v0(self, request, data, body_file=None):
