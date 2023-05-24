@@ -51,7 +51,6 @@ class Serializer(object):
                 u"status": response.status,
                 u"version": response.version,
                 u"reason": text_type(response.reason),
-                u"strict": response.strict,
                 u"decode_content": response.decode_content,
             }
         }
