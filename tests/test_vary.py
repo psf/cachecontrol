@@ -33,7 +33,6 @@ class TestVary(object):
             cached.status == resp.raw.status,
             cached.version == resp.raw.version,
             cached.reason == resp.raw.reason,
-            cached.strict == resp.raw.strict,
             cached.decode_content == resp.raw.decode_content,
         ]
 

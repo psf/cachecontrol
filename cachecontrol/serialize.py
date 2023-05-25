@@ -51,7 +51,6 @@ class Serializer(object):
                 u"status": response.status,
                 u"version": response.version,
                 u"reason": text_type(response.reason),
-                u"strict": response.strict,
                 u"decode_content": response.decode_content,
             }
         }
@@ -137,6 +136,9 @@ class Serializer(object):
             #
             #     TypeError: 'str' does not support the buffer interface
             body = io.BytesIO(body_raw.encode("utf8"))
+
+        # Discard any `strict` parameter serialized by older version of cachecontrol.
+        cached["response"].pop("strict", None)
 
         return HTTPResponse(body=body, preload_content=False, **cached["response"])
 
