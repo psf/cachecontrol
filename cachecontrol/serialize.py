@@ -34,6 +34,7 @@ class Serializer(object):
             # sure it acts as though it was never read.
             body = response.read(decode_content=False)
             response._fp = io.BytesIO(body)
+            response.length_remaining = len(body)
 
         # NOTE: This is all a bit weird, but it's really important that on
         #       Python 2.x these objects are unicode and not str, even when

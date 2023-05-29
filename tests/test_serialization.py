@@ -135,3 +135,9 @@ class TestSerializer(object):
         # handle. Reading it again proves we're resetting the internal
         # file handle with a buffer.
         assert original_resp.raw.read()
+
+    def test_no_incomplete_read_on_dumps(self, url):
+        resp = requests.get(url + "fixed_length", stream=True)
+        self.serializer.dumps(resp.request, resp.raw)
+        
+        assert resp.content == b"0123456789"
