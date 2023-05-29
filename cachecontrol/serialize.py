@@ -6,7 +6,7 @@ import base64
 import io
 import json
 import zlib
-from typing import TYPE_CHECKING, Any, Mapping, Optional
+from typing import IO, TYPE_CHECKING, Any, Mapping, Optional
 
 import msgpack
 from requests.structures import CaseInsensitiveDict
@@ -14,8 +14,6 @@ from requests.structures import CaseInsensitiveDict
 from .compat import HTTPResponse, pickle, text_type
 
 if TYPE_CHECKING:
-    from io import BufferedIOBase
-
     from requests import PreparedRequest, Request
 
 
@@ -79,7 +77,7 @@ class Serializer(object):
         self,
         request: "PreparedRequest",
         data: bytes,
-        body_file: Optional["BufferedIOBase"] = None,
+        body_file: Optional["IO[bytes]"] = None,
     ) -> HTTPResponse:
         # Short circuit if we've been given an empty set of data
         if not data:
@@ -114,7 +112,7 @@ class Serializer(object):
         self,
         request: "Request",
         cached: Mapping[str, Any],
-        body_file: Optional["BufferedIOBase"] = None,
+        body_file: Optional["IO[bytes]"] = None,
     ) -> Optional[HTTPResponse]:
         """Verify our vary headers match and construct a real urllib3
         HTTPResponse object.
@@ -143,7 +141,7 @@ class Serializer(object):
         cached["response"]["headers"] = headers
 
         try:
-            body: "BufferedIOBase"
+            body: "IO[bytes]"
             if body_file is None:
                 body = io.BytesIO(body_raw)
             else:
@@ -166,7 +164,7 @@ class Serializer(object):
         self,
         request: "Request",
         data: bytes,
-        body_file: Optional["BufferedIOBase"] = None,
+        body_file: Optional["IO[bytes]"] = None,
     ) -> None:
         # The original legacy cache data. This doesn't contain enough
         # information to construct everything we need, so we'll treat this as
@@ -177,7 +175,7 @@ class Serializer(object):
         self,
         request: "Request",
         data: bytes,
-        body_file: Optional["BufferedIOBase"] = None,
+        body_file: Optional["IO[bytes]"] = None,
     ) -> Optional[HTTPResponse]:
         try:
             cached = pickle.loads(data)
@@ -190,7 +188,7 @@ class Serializer(object):
         self,
         request: "Request",
         data: bytes,
-        body_file: Optional["BufferedIOBase"] = None,
+        body_file: Optional["IO[bytes]"] = None,
     ) -> Optional[HTTPResponse]:
         assert body_file is None
         try:
@@ -216,7 +214,7 @@ class Serializer(object):
         self,
         request: "Request",
         data: bytes,
-        body_file: Optional["BufferedIOBase"] = None,
+        body_file: Optional["IO[bytes]"] = None,
     ) -> None:
         # Due to Python 2 encoding issues, it's impossible to know for sure
         # exactly how to load v3 entries, thus we'll treat these as a miss so
@@ -227,7 +225,7 @@ class Serializer(object):
         self,
         request: "Request",
         data: bytes,
-        body_file: Optional["BufferedIOBase"] = None,
+        body_file: Optional["IO[bytes]"] = None,
     ) -> Optional[HTTPResponse]:
         try:
             cached = msgpack.loads(data, raw=False)

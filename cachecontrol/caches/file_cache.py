@@ -5,13 +5,14 @@
 import hashlib
 import os
 from textwrap import dedent
-from typing import TYPE_CHECKING, Optional, Type
+from typing import IO, TYPE_CHECKING, Optional, Type, Union
 
 from ..cache import BaseCache, SeparateBodyBaseCache
 from ..controller import CacheController
 
 if TYPE_CHECKING:
-    from io import BufferedIOBase, BufferedWriter
+    from datetime import datetime
+
     from filelock import BaseFileLock
 
 
@@ -22,7 +23,7 @@ except NameError:
     FileNotFoundError = (IOError, OSError)
 
 
-def _secure_open_write(filename: str, fmode: int) -> "BufferedWriter":
+def _secure_open_write(filename: str, fmode: int) -> "IO[bytes]":
     # We only want to write to this file, so open it in write only mode
     flags = os.O_WRONLY
 
@@ -74,7 +75,6 @@ class _FileCacheMixin:
         dirmode: int = 0o0700,
         lock_class: Optional[Type["BaseFileLock"]] = None,
     ) -> None:
-
         try:
             if lock_class is None:
                 from filelock import FileLock
@@ -116,7 +116,9 @@ class _FileCacheMixin:
         except FileNotFoundError:
             return None
 
-    def set(self, key: str, value: bytes, expires: Optional[int] = None) -> None:
+    def set(
+        self, key: str, value: bytes, expires: Optional[Union[int, "datetime"]] = None
+    ) -> None:
         name = self._fn(key)
         self._write(name, value)
 
@@ -160,7 +162,7 @@ class SeparateBodyFileCache(_FileCacheMixin, SeparateBodyBaseCache):
     peak memory usage.
     """
 
-    def get_body(self, key: str) -> Optional["BufferedIOBase"]:
+    def get_body(self, key: str) -> Optional["IO[bytes]"]:
         name = self._fn(key) + ".body"
         try:
             return open(name, "rb")

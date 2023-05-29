@@ -7,17 +7,19 @@ The cache object API for implementing caches. The default is a thread
 safe in-memory dictionary.
 """
 from threading import Lock
-from typing import TYPE_CHECKING, MutableMapping, Optional
+from typing import IO, TYPE_CHECKING, MutableMapping, Optional, Union
 
 if TYPE_CHECKING:
-    from io import BufferedIOBase
+    from datetime import datetime
 
 
 class BaseCache(object):
     def get(self, key: str) -> Optional[bytes]:
         raise NotImplementedError()
 
-    def set(self, key: str, value: bytes, expires: Optional[int] = None) -> None:
+    def set(
+        self, key: str, value: bytes, expires: Optional[Union[int, "datetime"]] = None
+    ) -> None:
         raise NotImplementedError()
 
     def delete(self, key: str) -> None:
@@ -35,7 +37,9 @@ class DictCache(BaseCache):
     def get(self, key: str) -> Optional[bytes]:
         return self.data.get(key, None)
 
-    def set(self, key: str, value: bytes, expires: Optional[int] = None) -> None:
+    def set(
+        self, key: str, value: bytes, expires: Optional[Union[int, "datetime"]] = None
+    ) -> None:
         with self.lock:
             self.data.update({key: value})
 
@@ -61,7 +65,7 @@ class SeparateBodyBaseCache(BaseCache):
     def set_body(self, key: str, body: bytes) -> None:
         raise NotImplementedError()
 
-    def get_body(self, key: str) -> Optional["BufferedIOBase"]:
+    def get_body(self, key: str) -> Optional["IO[bytes]"]:
         """
         Return the body as file-like object.
         """
