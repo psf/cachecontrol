@@ -15,7 +15,7 @@ setup_params = dict(
     author_email="eric@ionrock.org",
     url="https://github.com/ionrock/cachecontrol",
     keywords="requests http caching web",
-    packages=setuptools.find_packages(),
+    packages=setuptools.find_packages(exclude=["tests", "tests.*"]),
     package_data={"": ["LICENSE.txt"]},
     package_dir={"cachecontrol": "cachecontrol"},
     include_package_data=True,
