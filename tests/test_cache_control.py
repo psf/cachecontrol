@@ -6,7 +6,7 @@
 Unit tests that verify our caching methods work correctly.
 """
 import pytest
-from mock import ANY, Mock
+from unittest.mock import ANY, Mock
 import time
 from tempfile import mkdtemp
 

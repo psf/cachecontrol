@@ -5,7 +5,7 @@
 import msgpack
 import requests
 
-from mock import Mock
+from unittest.mock import Mock
 
 from cachecontrol.compat import pickle
 from cachecontrol.serialize import Serializer

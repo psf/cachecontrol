@@ -7,7 +7,6 @@
 tox
 pytest-cov
 pytest
-mock
 cherrypy
 sphinx
 redis
