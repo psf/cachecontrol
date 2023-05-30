@@ -25,8 +25,8 @@ jobs:
             os: "windows-latest"
 
     steps:
-      - uses: "actions/checkout@v2"
-      - uses: "actions/setup-python@v2"
+      - uses: "actions/checkout@v3"
+      - uses: "actions/setup-python@v4"
         with:
           python-version: "${{ matrix.python-version }}"
       - name: "Install dependencies"
@@ -38,6 +38,3 @@ jobs:
 
       - name: "Run tox targets for ${{ matrix.python-version }}"
         run: "python -m tox"
-
-      - name: "Run mypy for ${{ matrix.python-version }}"
-        run: "python -m tox -e mypy"

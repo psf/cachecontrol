@@ -5,13 +5,13 @@
 import base64
 import io
 import json
+import pickle
 import zlib
 from typing import IO, TYPE_CHECKING, Any, Mapping, Optional
 
 import msgpack
 from requests.structures import CaseInsensitiveDict
-
-from .compat import HTTPResponse, pickle, text_type
+from urllib3 import HTTPResponse
 
 if TYPE_CHECKING:
     from requests import PreparedRequest, Request
@@ -44,18 +44,16 @@ class Serializer(object):
             # also update the response with a new file handler to be
             # sure it acts as though it was never read.
             body = response.read(decode_content=False)
-            response._fp = io.BytesIO(body)
+            response._fp = io.BytesIO(body)  # type: ignore[attr-defined]
             response.length_remaining = len(body)
 
         data = {
             "response": {
                 "body": body,  # Empty bytestring if body is stored separately
-                "headers": dict(
-                    (text_type(k), text_type(v)) for k, v in response.headers.items()
-                ),
+                "headers": dict((str(k), str(v)) for k, v in response.headers.items()),  # type: ignore[no-untyped-call]
                 "status": response.status,
                 "version": response.version,
-                "reason": text_type(response.reason),
+                "reason": str(response.reason),
                 "decode_content": response.decode_content,
             }
         }
@@ -65,10 +63,10 @@ class Serializer(object):
         if "vary" in response_headers:
             varied_headers = response_headers["vary"].split(",")
             for header in varied_headers:
-                header = text_type(header).strip()
+                header = str(header).strip()
                 header_value = request.headers.get(header, None)
                 if header_value is not None:
-                    header_value = text_type(header_value)
+                    header_value = str(header_value)
                 data["vary"][header] = header_value
 
         return b",".join([b"cc=4", msgpack.dumps(data, use_bin_type=True)])
@@ -78,10 +76,10 @@ class Serializer(object):
         request: "PreparedRequest",
         data: bytes,
         body_file: Optional["IO[bytes]"] = None,
-    ) -> HTTPResponse:
+    ) -> Optional[HTTPResponse]:
         # Short circuit if we've been given an empty set of data
         if not data:
-            return
+            return None
 
         # Determine what version of the serializer the data was serialized
         # with
@@ -101,12 +99,12 @@ class Serializer(object):
 
         # Dispatch to the actual load method for the given version
         try:
-            return getattr(self, "_loads_v{}".format(verstr))(request, data, body_file)
+            return getattr(self, "_loads_v{}".format(verstr))(request, data, body_file)  # type: ignore[no-any-return]
 
         except AttributeError:
             # This is a version we don't have a loads function for, so we'll
             # just treat it as a miss and return None
-            return
+            return None
 
     def prepare_response(
         self,

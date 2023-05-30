@@ -4,16 +4,16 @@
 
 from typing import TYPE_CHECKING, Collection, Optional, Type
 
-from .adapter import CacheControlAdapter
-from .cache import DictCache
+from cachecontrol.adapter import CacheControlAdapter
+from cachecontrol.cache import DictCache
 
 if TYPE_CHECKING:
     import requests
 
-    from .cache import BaseCache
-    from .controller import CacheController
-    from .heuristics import BaseHeuristic
-    from .serialize import Serializer
+    from cachecontrol.cache import BaseCache
+    from cachecontrol.controller import CacheController
+    from cachecontrol.heuristics import BaseHeuristic
+    from cachecontrol.serialize import Serializer
 
 
 def CacheControl(
@@ -26,7 +26,6 @@ def CacheControl(
     adapter_class: Optional[Type[CacheControlAdapter]] = None,
     cacheable_methods: Optional[Collection[str]] = None,
 ) -> "requests.Session":
-
     cache = DictCache() if cache is None else cache
     adapter_class = adapter_class or CacheControlAdapter
     adapter = adapter_class(

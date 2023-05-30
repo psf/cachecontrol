@@ -7,20 +7,13 @@ import os
 from textwrap import dedent
 from typing import IO, TYPE_CHECKING, Optional, Type, Union
 
-from ..cache import BaseCache, SeparateBodyBaseCache
-from ..controller import CacheController
+from cachecontrol.cache import BaseCache, SeparateBodyBaseCache
+from cachecontrol.controller import CacheController
 
 if TYPE_CHECKING:
     from datetime import datetime
 
     from filelock import BaseFileLock
-
-
-try:
-    FileNotFoundError
-except NameError:
-    # py2.X
-    FileNotFoundError = (IOError, OSError)
 
 
 def _secure_open_write(filename: str, fmode: int) -> "IO[bytes]":
