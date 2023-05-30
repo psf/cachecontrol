@@ -38,6 +38,3 @@ jobs:
 
       - name: "Run tox targets for ${{ matrix.python-version }}"
         run: "python -m tox"
-
-      - name: "Run mypy for ${{ matrix.python-version }}"
-        run: "python -m tox -e mypy"

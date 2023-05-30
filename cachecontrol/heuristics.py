@@ -9,7 +9,7 @@ from email.utils import formatdate, parsedate, parsedate_tz
 from typing import TYPE_CHECKING, Any, Dict, Mapping, Optional
 
 if TYPE_CHECKING:
-    from .compat import HTTPResponse
+    from urllib3 import HTTPResponse
 
 TIME_FMT = "%a, %d %b %Y %H:%M:%S GMT"
 

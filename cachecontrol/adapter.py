@@ -9,17 +9,17 @@ from typing import TYPE_CHECKING, Any, Collection, Mapping, Optional, Tuple, Typ
 
 from requests.adapters import HTTPAdapter
 
-from .cache import DictCache
-from .controller import PERMANENT_REDIRECT_STATUSES, CacheController
-from .filewrapper import CallbackFileWrapper
+from cachecontrol.cache import DictCache
+from cachecontrol.controller import PERMANENT_REDIRECT_STATUSES, CacheController
+from cachecontrol.filewrapper import CallbackFileWrapper
 
 if TYPE_CHECKING:
     from requests import PreparedRequest, Response
+    from urllib3 import HTTPResponse
 
-    from .cache import BaseCache
-    from .compat import HTTPResponse
-    from .heuristics import BaseHeuristic
-    from .serialize import Serializer
+    from cachecontrol.cache import BaseCache
+    from cachecontrol.heuristics import BaseHeuristic
+    from cachecontrol.serialize import Serializer
 
 
 class CacheControlAdapter(HTTPAdapter):
@@ -128,21 +128,21 @@ class CacheControlAdapter(HTTPAdapter):
             else:
                 # Wrap the response file with a wrapper that will cache the
                 #   response when the stream has been consumed.
-                response._fp = CallbackFileWrapper(
-                    response._fp,
+                response._fp = CallbackFileWrapper(  # type: ignore[attr-defined]
+                    response._fp,  # type: ignore[attr-defined]
                     functools.partial(
                         self.controller.cache_response, request, response
                     ),
                 )
                 if response.chunked:
-                    super_update_chunk_length = response._update_chunk_length
+                    super_update_chunk_length = response._update_chunk_length  # type: ignore[attr-defined]
 
                     def _update_chunk_length(self: "HTTPResponse") -> None:
                         super_update_chunk_length()
                         if self.chunk_left == 0:
-                            self._fp._close()
+                            self._fp._close()  # type: ignore[attr-defined]
 
-                    response._update_chunk_length = types.MethodType(
+                    response._update_chunk_length = types.MethodType(  # type: ignore[attr-defined]
                         _update_chunk_length, response
                     )
 

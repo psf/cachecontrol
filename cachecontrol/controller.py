@@ -14,14 +14,16 @@ from typing import TYPE_CHECKING, Collection, Dict, Mapping, Optional, Tuple, Un
 
 from requests.structures import CaseInsensitiveDict
 
-from .cache import DictCache, SeparateBodyBaseCache
-from .serialize import Serializer
+from cachecontrol.cache import DictCache, SeparateBodyBaseCache
+from cachecontrol.serialize import Serializer
 
 if TYPE_CHECKING:
-    from requests import PreparedRequest
+    from typing import Literal
 
-    from .cache import BaseCache
-    from .compat import HTTPResponse
+    from requests import PreparedRequest
+    from urllib3 import HTTPResponse
+
+    from cachecontrol.cache import BaseCache
 
 logger = logging.getLogger(__name__)
 
@@ -157,7 +159,9 @@ class CacheController(object):
             logger.warning("Cache entry deserialization failed, entry ignored")
         return result
 
-    def cached_request(self, request: "PreparedRequest") -> Union["HTTPResponse", bool]:
+    def cached_request(
+        self, request: "PreparedRequest"
+    ) -> Union["HTTPResponse", "Literal[False]"]:
         """
         Return a cached response if it exists in the cache, otherwise
         return False.
@@ -478,7 +482,7 @@ class CacheController(object):
         cached_response.headers.update(
             dict(
                 (k, v)
-                for k, v in response.headers.items()
+                for k, v in response.headers.items()  # type: ignore[no-untyped-call]
                 if k.lower() not in excluded_headers
             )
         )

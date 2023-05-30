@@ -1,19 +1,16 @@
 # SPDX-FileCopyrightText: 2015 Eric Larson
 #
 # SPDX-License-Identifier: Apache-2.0
-from contextlib import ExitStack
-from contextlib import suppress
+from contextlib import ExitStack, suppress
+from unittest.mock import Mock, patch
+from urllib.parse import urljoin
 
 import pytest
-
-from unittest.mock import Mock, patch
-
 import requests
 
 from cachecontrol import CacheControl
 from cachecontrol.cache import DictCache
-from cachecontrol.compat import urljoin
-from .utils import NullSerializer
+from tests.utils import NullSerializer
 
 
 class TestETag(object):

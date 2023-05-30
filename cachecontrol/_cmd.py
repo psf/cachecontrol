@@ -15,7 +15,7 @@ from cachecontrol.controller import logger
 if TYPE_CHECKING:
     from argparse import Namespace
 
-    from .controller import CacheController
+    from cachecontrol.controller import CacheController
 
 
 def setup_logging() -> None:

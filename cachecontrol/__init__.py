@@ -10,9 +10,9 @@ __author__ = "Eric Larson"
 __email__ = "eric@ionrock.org"
 __version__ = "0.12.11"
 
-from .adapter import CacheControlAdapter
-from .controller import CacheController
-from .wrapper import CacheControl
+from cachecontrol.adapter import CacheControlAdapter
+from cachecontrol.controller import CacheController
+from cachecontrol.wrapper import CacheControl
 
 __all__ = [
     "__author__",
