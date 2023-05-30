@@ -11,8 +11,7 @@ from cachecontrol import CacheControl
 
 
 class TestPermanentRedirects(object):
-
-    def setup(self):
+    def setup_method(self):
         self.sess = CacheControl(requests.Session())
 
     def test_redirect_response_is_cached(self, url):
@@ -33,8 +32,7 @@ class TestPermanentRedirects(object):
 
 
 class TestMultipleChoicesRedirects(object):
-
-    def setup(self):
+    def setup_method(self):
         self.sess = CacheControl(requests.Session())
 
     def test_multiple_choices_is_cacheable(self, url):
