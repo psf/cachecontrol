@@ -144,7 +144,7 @@ class TestReleaseConnection(object):
 
         with ExitStack() as stack:
             for mod in response_mods:
-                with suppress(ImportError):
+                with suppress(ImportError, AttributeError):
                     stack.enter_context(patch(mod, Mock(return_value=resp)))
 
             sess.get(etag_url)
