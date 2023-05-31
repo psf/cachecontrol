@@ -4,8 +4,10 @@ Shared utility classes.
 
 from requests.structures import CaseInsensitiveDict
 
+from cachecontrol.serialize import Serializer
 
-class NullSerializer(object):
+
+class NullSerializer(Serializer):
 
     def dumps(self, request, response, body=None):
         return response

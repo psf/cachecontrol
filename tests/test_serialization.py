@@ -12,7 +12,7 @@ from cachecontrol.serialize import Serializer
 
 
 class TestSerializer(object):
-    def setup(self):
+    def setup_method(self):
         self.serializer = Serializer()
         self.response_data = {
             "response": {

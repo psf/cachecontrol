@@ -11,8 +11,8 @@
     :target: https://pypi.python.org/pypi/cachecontrol
     :alt: Latest Version
 
-.. image:: https://travis-ci.org/ionrock/cachecontrol.png?branch=master
-  :target: https://travis-ci.org/ionrock/cachecontrol
+.. image:: https://github.com/psf/cachecontrol/actions/workflows/tests.yml/badge.svg
+  :target: https://github.com/psf/cachecontrol/actions/workflows/tests.yml
 
 CacheControl is a port of the caching algorithms in httplib2_ for use with
 requests_ session object.

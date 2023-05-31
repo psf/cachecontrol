@@ -3,14 +3,13 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from datetime import datetime
-
 from unittest.mock import Mock
+
 from cachecontrol.caches import RedisCache
 
 
 class TestRedisCache(object):
-
-    def setup(self):
+    def setup_method(self):
         self.conn = Mock()
         self.cache = RedisCache(self.conn)
 
