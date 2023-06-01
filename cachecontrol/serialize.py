@@ -2,11 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import base64
 import io
-import json
-import pickle
-import zlib
 from typing import IO, TYPE_CHECKING, Any, Mapping, Optional
 
 import msgpack
@@ -15,17 +11,6 @@ from urllib3 import HTTPResponse
 
 if TYPE_CHECKING:
     from requests import PreparedRequest, Request
-
-
-def _b64_decode_bytes(b: str) -> bytes:
-    return base64.b64decode(b.encode("ascii"))
-
-
-def _b64_decode_str(s: str) -> str:
-    return _b64_decode_bytes(s).decode("utf8")
-
-
-_default_body_read = object()
 
 
 class Serializer(object):
