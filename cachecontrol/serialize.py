@@ -2,11 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import base64
 import io
-import json
-import pickle
-import zlib
 from typing import IO, TYPE_CHECKING, Any, Mapping, Optional
 
 import msgpack
@@ -15,17 +11,6 @@ from urllib3 import HTTPResponse
 
 if TYPE_CHECKING:
     from requests import PreparedRequest, Request
-
-
-def _b64_decode_bytes(b: str) -> bytes:
-    return base64.b64decode(b.encode("ascii"))
-
-
-def _b64_decode_str(s: str) -> str:
-    return _b64_decode_bytes(s).decode("utf8")
-
-
-_default_body_read = object()
 
 
 class Serializer(object):
@@ -167,7 +152,7 @@ class Serializer(object):
         # The original legacy cache data. This doesn't contain enough
         # information to construct everything we need, so we'll treat this as
         # a miss.
-        return
+        return None
 
     def _loads_v1(
         self,
@@ -175,12 +160,9 @@ class Serializer(object):
         data: bytes,
         body_file: Optional["IO[bytes]"] = None,
     ) -> Optional[HTTPResponse]:
-        try:
-            cached = pickle.loads(data)
-        except ValueError:
-            return None
-
-        return self.prepare_response(request, cached, body_file)
+        # The "v1" pickled cache format. This is no longer supported
+        # for security reasons, so we treat it as a miss.
+        return None
 
     def _loads_v2(
         self,
@@ -188,25 +170,10 @@ class Serializer(object):
         data: bytes,
         body_file: Optional["IO[bytes]"] = None,
     ) -> Optional[HTTPResponse]:
-        assert body_file is None
-        try:
-            cached = json.loads(zlib.decompress(data).decode("utf8"))
-        except (ValueError, zlib.error):
-            return None
-
-        # We need to decode the items that we've base64 encoded
-        cached["response"]["body"] = _b64_decode_bytes(cached["response"]["body"])
-        cached["response"]["headers"] = dict(
-            (_b64_decode_str(k), _b64_decode_str(v))
-            for k, v in cached["response"]["headers"].items()
-        )
-        cached["response"]["reason"] = _b64_decode_str(cached["response"]["reason"])
-        cached["vary"] = dict(
-            (_b64_decode_str(k), _b64_decode_str(v) if v is not None else v)
-            for k, v in cached["vary"].items()
-        )
-
-        return self.prepare_response(request, cached, body_file)
+        # The "v2" compressed base64 cache format.
+        # This has been removed due to age and poor size/performance
+        # characteristics, so we treat it as a miss.
+        return None
 
     def _loads_v3(
         self,
@@ -217,7 +184,7 @@ class Serializer(object):
         # Due to Python 2 encoding issues, it's impossible to know for sure
         # exactly how to load v3 entries, thus we'll treat these as a miss so
         # that they get rewritten out as v4 entries.
-        return
+        return None
 
     def _loads_v4(
         self,
