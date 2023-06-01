@@ -4,7 +4,7 @@
 
 from __future__ import division
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Optional, Union
 
 from cachecontrol.cache import BaseCache
@@ -26,7 +26,10 @@ class RedisCache(BaseCache):
         if not expires:
             self.conn.set(key, value)
         elif isinstance(expires, datetime):
-            delta = expires - datetime.utcnow()
+            now_utc = datetime.now(timezone.utc)
+            if expires.tzinfo is None:
+                now_utc = now_utc.replace(tzinfo=None)
+            delta = expires - now_utc
             self.conn.setex(key, int(delta.total_seconds()), value)
         else:
             self.conn.setex(key, expires, value)

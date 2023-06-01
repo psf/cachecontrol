@@ -4,7 +4,7 @@
 
 import calendar
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from email.utils import formatdate, parsedate
 from pprint import pprint
 from unittest.mock import Mock
@@ -157,7 +157,9 @@ class TestModifiedUnitTests(object):
         resp = DummyResponse(200, {"Date": self.now, "Last-Modified": self.week_ago})
         modified = self.heuristic.update_headers(resp)
         assert ["expires"] == list(modified.keys())
-        assert datetime(*parsedate(modified["expires"])[:6]) > datetime.now()
+
+        expected = datetime(*parsedate(modified["expires"])[:6], tzinfo=timezone.utc)
+        assert expected > datetime.now(timezone.utc)
 
     def test_last_modified_is_not_used_when_cache_control_present(self):
         resp = DummyResponse(
@@ -185,7 +187,8 @@ class TestModifiedUnitTests(object):
         )
         modified = self.heuristic.update_headers(resp)
         assert ["expires"] == list(modified.keys())
-        assert datetime(*parsedate(modified["expires"])[:6]) > datetime.now()
+        expected = datetime(*parsedate(modified["expires"])[:6], tzinfo=timezone.utc)
+        assert expected > datetime.now(timezone.utc)
 
     def test_warning_not_added_when_response_more_recent_than_24_hours(self):
         resp = DummyResponse(200, {"Date": self.now, "Last-Modified": self.week_ago})

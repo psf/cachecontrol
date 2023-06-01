@@ -4,7 +4,7 @@
 
 import calendar
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from email.utils import formatdate, parsedate, parsedate_tz
 from typing import TYPE_CHECKING, Any, Dict, Mapping, Optional
 
@@ -15,7 +15,7 @@ TIME_FMT = "%a, %d %b %Y %H:%M:%S GMT"
 
 
 def expire_after(delta: timedelta, date: Optional[datetime] = None) -> datetime:
-    date = date or datetime.utcnow()
+    date = date or datetime.now(timezone.utc)
     return date + delta
 
 
@@ -67,7 +67,7 @@ class OneDayCache(BaseHeuristic):
 
         if "expires" not in response.headers:
             date = parsedate(response.headers["date"])
-            expires = expire_after(timedelta(days=1), date=datetime(*date[:6]))
+            expires = expire_after(timedelta(days=1), date=datetime(*date[:6], tzinfo=timezone.utc))  # type: ignore[misc]
             headers["expires"] = datetime_to_header(expires)
             headers["cache-control"] = "public"
         return headers
