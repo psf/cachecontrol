@@ -187,7 +187,7 @@ class TestModifiedUnitTests(object):
         )
         modified = self.heuristic.update_headers(resp)
         assert ["expires"] == list(modified.keys())
-        expected = datetime(*parsedate(modified["expires"][:6]), tzinfo=timezone.utc)
+        expected = datetime(*parsedate(modified["expires"])[:6], tzinfo=timezone.utc)
         assert expected > datetime.now(timezone.utc)
 
     def test_warning_not_added_when_response_more_recent_than_24_hours(self):
