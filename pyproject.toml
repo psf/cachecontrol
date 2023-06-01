@@ -46,6 +46,7 @@ redis = ["redis>=2.10.5"]
 # Development extras.
 dev = [
     "CacheControl[filecache,redis]",
+    "build",
     "mypy",
     "tox",
     "pytest-cov",
