@@ -7,6 +7,11 @@
  Release Notes
 ===============
 
+Unreleased
+==========
+
+* Support for old serialization formats has been removed.
+
 0.13.0
 ======
 
