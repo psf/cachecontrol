@@ -40,7 +40,7 @@ Source = "https://github.com/psf/cachecontrol"
 
 [project.optional-dependencies]
 # End-user extras.
-filecache = ["filelock > =3.8.0"]
+filecache = ["filelock >= 3.8.0"]
 redis = ["redis>=2.10.5"]
 
 # Development extras.
