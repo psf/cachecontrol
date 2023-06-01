@@ -5,6 +5,9 @@ build-backend = "flit_core.buildapi"
 [tool.flit.module]
 name = "cachecontrol"
 
+[tool.flit.sdist]
+include = ["tests/"]
+
 [project]
 name = "CacheControl"
 dynamic = ["version"]
