@@ -10,6 +10,8 @@
 0.13.0
 ======
 
+The project has been moved to the `PSF <https://github.com/psf>`_ organization.
+
 * Discard the ``strict`` attribute when serializing and deserializing responses.
 * Fix the ``IncompleteRead`` error thrown by ``urllib3 2.0``.
 * Remove usage of ``utcnow`` in favor of timezone-aware datetimes.
