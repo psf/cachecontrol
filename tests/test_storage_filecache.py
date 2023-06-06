@@ -14,7 +14,8 @@ import pytest
 import requests
 from cachecontrol import CacheControl
 from cachecontrol.caches import FileCache, SeparateBodyFileCache
-from filelock import FileLock
+from lockfile import LockFile
+from lockfile.mkdirlockfile import MkdirLockFile
 
 
 def randomdata():
@@ -93,10 +94,21 @@ class FileCacheTestsMixin(object):
         assert len(self.cache.encode(url0)) < 200
         assert len(self.cache.encode(url0)) == len(self.cache.encode(url1))
 
-    def test_simple_lockfile_arg(self, tmpdir):
-        cache = self.FileCacheClass(str(tmpdir))
+    def test_cant_use_dir_and_lock_class(self, tmpdir):
+        with pytest.raises(ValueError):
+            self.FileCacheClass(str(tmpdir), use_dir_lock=True, lock_class=object())
 
-        assert issubclass(cache.lock_class, FileLock)
+    @pytest.mark.parametrize(
+        ("value", "expected"),
+        [(None, LockFile), (True, MkdirLockFile), (False, LockFile)],
+    )
+    def test_simple_lockfile_arg(self, tmpdir, value, expected):
+        if value is not None:
+            cache = self.FileCacheClass(str(tmpdir), use_dir_lock=value)
+        else:
+            cache = self.FileCacheClass(str(tmpdir))
+
+        assert issubclass(cache.lock_class, expected)
         cache.close()
 
     def test_lock_class(self, tmpdir):
@@ -122,7 +134,7 @@ class TestFileCache(FileCacheTestsMixin):
     """
     Tests for ``FileCache``.
     """
-
+    
     FileCacheClass = FileCache
 
     def test_body_stored_inline(self, sess):

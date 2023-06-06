@@ -66,22 +66,32 @@ class _FileCacheMixin:
         forever=False,
         filemode=0o0600,
         dirmode=0o0700,
+        use_dir_lock=None,
         lock_class=None,
     ):
 
+        if use_dir_lock is not None and lock_class is not None:
+            raise ValueError("Cannot use use_dir_lock and lock_class together")
+
         try:
-            if lock_class is None:
-                from filelock import FileLock
-                lock_class = FileLock
+            from lockfile import LockFile
+            from lockfile.mkdirlockfile import MkdirLockFile
         except ImportError:
             notice = dedent(
                 """
             NOTE: In order to use the FileCache you must have
-            filelock installed. You can install it via pip:
-              pip install filelock
+            lockfile installed. You can install it via pip:
+              pip install lockfile
             """
             )
             raise ImportError(notice)
+
+        else:
+            if use_dir_lock:
+                lock_class = MkdirLockFile
+
+            elif lock_class is None:
+                lock_class = LockFile
 
         self.directory = directory
         self.forever = forever
@@ -123,9 +133,9 @@ class _FileCacheMixin:
         except (IOError, OSError):
             pass
 
-        with self.lock_class(path + ".lock"):
+        with self.lock_class(path) as lock:
             # Write our actual file
-            with _secure_open_write(path, self.filemode) as fh:
+            with _secure_open_write(lock.path, self.filemode) as fh:
                 fh.write(data)
 
     def _delete(self, key, suffix):
