@@ -11,6 +11,7 @@ Unreleased
 ==========
 
 * Support for old serialization formats has been removed.
+* Move the serialization implementation into own method.
 
 0.13.0
 ======
