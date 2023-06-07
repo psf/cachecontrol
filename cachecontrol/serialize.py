@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import io
-from typing import IO, TYPE_CHECKING, Any, Dict, Mapping, Optional
+from typing import IO, TYPE_CHECKING, Any, Dict, Mapping, Optional, cast
 
 import msgpack
 from requests.structures import CaseInsensitiveDict
@@ -59,7 +59,7 @@ class Serializer(object):
         return b",".join([f"cc={self.serde_version}".encode(), self.serialize(data)])
 
     def serialize(self, data: Dict[str, Any]) -> bytes:
-        return msgpack.dumps(data, use_bin_type=True)
+        return cast(bytes, msgpack.dumps(data, use_bin_type=True))
 
     def loads(
         self,
