@@ -23,7 +23,7 @@ from cachecontrol.heuristics import (
 from .utils import DummyResponse
 
 
-class TestHeuristicWithoutWarning(object):
+class TestHeuristicWithoutWarning:
     def setup_method(self):
         class NoopHeuristic(BaseHeuristic):
             warning = Mock()
@@ -41,7 +41,7 @@ class TestHeuristicWithoutWarning(object):
         assert not self.heuristic.warning.called
 
 
-class TestHeuristicWith3xxResponse(object):
+class TestHeuristicWith3xxResponse:
     def setup_method(self):
         class DummyHeuristic(BaseHeuristic):
             def update_headers(self, resp):
@@ -60,14 +60,14 @@ class TestHeuristicWith3xxResponse(object):
         assert "x-dummy-header" in resp.headers
 
 
-class TestUseExpiresHeuristic(object):
+class TestUseExpiresHeuristic:
     def test_expires_heuristic_arg(self):
         sess = Session()
         cached_sess = CacheControl(sess, heuristic=Mock())
         assert cached_sess
 
 
-class TestOneDayCache(object):
+class TestOneDayCache:
     def setup_method(self):
         self.sess = Session()
         self.cached_sess = CacheControl(self.sess, heuristic=OneDayCache())
@@ -86,7 +86,7 @@ class TestOneDayCache(object):
         assert r.from_cache
 
 
-class TestExpiresAfter(object):
+class TestExpiresAfter:
     def setup_method(self):
         self.sess = Session()
         self.cache_sess = CacheControl(self.sess, heuristic=ExpiresAfter(days=1))
@@ -106,7 +106,7 @@ class TestExpiresAfter(object):
         assert r.from_cache
 
 
-class TestLastModified(object):
+class TestLastModified:
     def setup_method(self):
         self.sess = Session()
         self.cached_sess = CacheControl(self.sess, heuristic=LastModified())
@@ -129,7 +129,7 @@ def datetime_to_header(dt):
     return formatdate(calendar.timegm(dt.timetuple()))
 
 
-class TestModifiedUnitTests(object):
+class TestModifiedUnitTests:
     def last_modified(self, period):
         return time.strftime(TIME_FMT, time.gmtime(self.time_now - period))
 

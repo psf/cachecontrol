@@ -34,7 +34,7 @@ def sess(url, request):
     sess.close()
 
 
-class TestSessionActions(object):
+class TestSessionActions:
 
     def test_get_caches(self, url, sess):
         r2 = sess.get(url)

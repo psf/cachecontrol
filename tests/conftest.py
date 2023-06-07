@@ -12,7 +12,7 @@ import pytest
 import cherrypy
 
 
-class SimpleApp(object):
+class SimpleApp:
 
     def __init__(self):
         self.etag_count = 0
@@ -53,7 +53,7 @@ class SimpleApp(object):
 
     def update_etag_string(self):
         self.etag_count += 1
-        self.etag_string = '"ETAG-{}"'.format(self.etag_count)
+        self.etag_string = f'"ETAG-{self.etag_count}"'
 
     def update_etag(self, env, start_response):
         self.update_etag_string()
@@ -86,16 +86,16 @@ class SimpleApp(object):
     def permanent_redirect(self, env, start_response):
         headers = [("Location", "/permalink")]
         start_response("301 Moved Permanently", headers)
-        return ["See: /permalink".encode("utf-8")]
+        return [b"See: /permalink"]
 
     def permalink(self, env, start_response):
         start_response("200 OK", [("Content-Type", "text/plain")])
-        return ["The permanent resource".encode("utf-8")]
+        return [b"The permanent resource"]
 
     def multiple_choices(self, env, start_response):
         headers = [("Link", "/permalink")]
         start_response("300 Multiple Choices", headers)
-        return ["See: /permalink".encode("utf-8")]
+        return [b"See: /permalink"]
 
     def stream(self, env, start_response):
         headers = [("Content-Type", "text/plain"), ("Cache-Control", "max-age=5000")]

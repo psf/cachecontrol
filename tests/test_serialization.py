@@ -11,14 +11,14 @@ import requests
 from cachecontrol.serialize import Serializer
 
 
-class TestSerializer(object):
+class TestSerializer:
     def setup_method(self):
         self.serializer = Serializer()
         self.response_data = {
             "response": {
                 # Encode the body as bytes b/c it will eventually be
                 # converted back into a BytesIO object.
-                "body": "Hello World".encode("utf-8"),
+                "body": b"Hello World",
                 "headers": {
                     "Content-Type": "text/plain",
                     "Expires": "87654",
@@ -60,7 +60,7 @@ class TestSerializer(object):
         req = Mock()
         resp = self.serializer._loads_v4(req, msgpack.dumps(self.response_data))
         # We have to decode our urllib3 data back into a unicode string.
-        assert resp.data == "Hello World".encode("utf-8")
+        assert resp.data == b"Hello World"
 
     def test_read_latest_version_streamable(self, url):
         original_resp = requests.get(url, stream=True)
