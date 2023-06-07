@@ -5,7 +5,7 @@ from __future__ import annotations
 
 
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING 
+from typing import TYPE_CHECKING
 
 from cachecontrol.cache import BaseCache
 

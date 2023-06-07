@@ -6,7 +6,7 @@ from __future__ import annotations
 import functools
 import types
 import zlib
-from typing import TYPE_CHECKING, Any, Collection, Mapping 
+from typing import TYPE_CHECKING, Any, Collection, Mapping
 
 from requests.adapters import HTTPAdapter
 
@@ -53,9 +53,7 @@ class CacheControlAdapter(HTTPAdapter):
         stream: bool = False,
         timeout: None | float | tuple[float, float] | tuple[float, None] = None,
         verify: bool | str = True,
-        cert: (
-            None | bytes | str | tuple[bytes | str, bytes | str]
-        ) = None,
+        cert: (None | bytes | str | tuple[bytes | str, bytes | str]) = None,
         proxies: Mapping[str, str] | None = None,
         cacheable_methods: Collection[str] | None = None,
     ) -> Response:
@@ -75,9 +73,7 @@ class CacheControlAdapter(HTTPAdapter):
             # check for etags and add headers if appropriate
             request.headers.update(self.controller.conditional_headers(request))
 
-        resp = super().send(
-            request, stream, timeout, verify, cert, proxies
-        )
+        resp = super().send(request, stream, timeout, verify, cert, proxies)
 
         return resp
 
@@ -147,7 +143,7 @@ class CacheControlAdapter(HTTPAdapter):
                         _update_chunk_length, response
                     )
 
-        resp: Response = super().build_response(request, response)
+        resp: Response = super().build_response(request, response)  # type: ignore[no-untyped-call]
 
         # See if we should invalidate the cache.
         if request.method in self.invalidating_methods and resp.ok:

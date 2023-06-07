@@ -6,7 +6,7 @@ from __future__ import annotations
 import hashlib
 import os
 from textwrap import dedent
-from typing import IO, TYPE_CHECKING 
+from typing import IO, TYPE_CHECKING
 
 from cachecontrol.cache import BaseCache, SeparateBodyBaseCache
 from cachecontrol.controller import CacheController
