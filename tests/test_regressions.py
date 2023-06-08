@@ -12,7 +12,7 @@ from cachecontrol.filewrapper import CallbackFileWrapper
 from requests import Session
 
 
-class Test39(object):
+class Test39:
 
     @pytest.mark.skipif(
         sys.version.startswith("2"), reason="Only run this for python 3.x"

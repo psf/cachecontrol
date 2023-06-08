@@ -8,7 +8,7 @@ from unittest.mock import Mock
 from cachecontrol.caches import RedisCache
 
 
-class TestRedisCache(object):
+class TestRedisCache:
     def setup_method(self):
         self.conn = Mock()
         self.cache = RedisCache(self.conn)

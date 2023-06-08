@@ -12,7 +12,7 @@ from cachecontrol import CacheControl
 from cachecontrol.cache import DictCache
 
 
-class TestVary(object):
+class TestVary:
     @pytest.fixture()
     def sess(self, url):
         self.url = urljoin(url, "/vary_accept")
