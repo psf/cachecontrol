@@ -2,15 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
--e .
+-e .[filecache,redis]
 
 tox
 pytest-cov
 pytest
 cherrypy
 sphinx
-redis
-filelock
 bumpversion
 twine
 black
