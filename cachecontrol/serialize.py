@@ -11,10 +11,10 @@ from requests.structures import CaseInsensitiveDict
 from urllib3 import HTTPResponse
 
 if TYPE_CHECKING:
-    from requests import PreparedRequest, Request
+    from requests import PreparedRequest
 
 
-class Serializer(object):
+class Serializer:
     serde_version = "4"
 
     def dumps(
@@ -99,7 +99,7 @@ class Serializer(object):
 
     def prepare_response(
         self,
-        request: Request,
+        request: PreparedRequest,
         cached: Mapping[str, Any],
         body_file: IO[bytes] | None = None,
     ) -> HTTPResponse | None:
@@ -151,7 +151,7 @@ class Serializer(object):
 
     def _loads_v0(
         self,
-        request: Request,
+        request: PreparedRequest,
         data: bytes,
         body_file: IO[bytes] | None = None,
     ) -> None:
@@ -162,7 +162,7 @@ class Serializer(object):
 
     def _loads_v1(
         self,
-        request: Request,
+        request: PreparedRequest,
         data: bytes,
         body_file: IO[bytes] | None = None,
     ) -> HTTPResponse | None:
@@ -172,7 +172,7 @@ class Serializer(object):
 
     def _loads_v2(
         self,
-        request: Request,
+        request: PreparedRequest,
         data: bytes,
         body_file: IO[bytes] | None = None,
     ) -> HTTPResponse | None:
@@ -183,7 +183,7 @@ class Serializer(object):
 
     def _loads_v3(
         self,
-        request: Request,
+        request: PreparedRequest,
         data: bytes,
         body_file: IO[bytes] | None = None,
     ) -> None:
@@ -194,7 +194,7 @@ class Serializer(object):
 
     def _loads_v4(
         self,
-        request: Request,
+        request: PreparedRequest,
         data: bytes,
         body_file: IO[bytes] | None = None,
     ) -> HTTPResponse | None:
