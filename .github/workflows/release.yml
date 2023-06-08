@@ -1,0 +1,41 @@
+on:
+  release:
+    types:
+      - published
+
+name: release
+
+jobs:
+  pypi:
+    name: upload release to PyPI
+    runs-on: ubuntu-latest
+
+    permissions:
+      # Used to authenticate to PyPI via OIDC.
+      # Used to sign the release's artifacts with sigstore-python.
+      id-token: write
+
+      # Used to attach signing artifacts to the published release.
+      contents: write
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - uses: actions/setup-python@v4
+      with:
+        python-version: ">= 3.6"
+
+    - name: deps
+      run: python -m pip install -U build
+
+    - name: build
+      run: python -m build
+
+    - name: publish
+      uses: pypa/gh-action-pypi-publish@release/v1
+
+    - name: sign
+      uses: sigstore/gh-action-sigstore-python@v1.2.3
+      with:
+        inputs: ./dist/*.tar.gz ./dist/*.whl
+        release-signing-artifacts: true

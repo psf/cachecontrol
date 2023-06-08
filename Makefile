@@ -7,13 +7,14 @@ VENV_CMD=python3 -m venv
 ACTIVATE = $(VENV)/bin/activate
 CHEESE=https://pypi.python.org/pypi
 BUMPTYPE=patch
+BUMPPRE=0
 
 
 $(VENV)/bin/pip3:
 	$(VENV_CMD) $(VENV)
 
 bootstrap: $(VENV)/bin/pip3
-	$(VENV)/bin/pip3 install -r dev_requirements.txt
+	$(VENV)/bin/pip3 install -e .[dev]
 
 format:
 	$(VENV)/bin/black .
@@ -49,13 +50,6 @@ test:
 coverage:
 	$(VENV)/bin/py.test --cov cachecontrol
 
-release: dist
-	$(VENV)/bin/twine upload dist/*
-
 dist: clean
-	$(VENV)/bin/python setup.py sdist bdist_wheel
+	$(VENV)/bin/python -m build
 	ls -l dist
-
-bump:
-	$(VENV)/bin/bumpversion $(BUMPTYPE)
-	git push && git push --tags
