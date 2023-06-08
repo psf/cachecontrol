@@ -1,9 +1,10 @@
 # SPDX-FileCopyrightText: 2015 Eric Larson
 #
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
 
 import io
-from typing import IO, TYPE_CHECKING, Any, Dict, Mapping, Optional, cast
+from typing import IO, TYPE_CHECKING, Any, Mapping, cast
 
 import msgpack
 from requests.structures import CaseInsensitiveDict
@@ -18,9 +19,9 @@ class Serializer(object):
 
     def dumps(
         self,
-        request: "PreparedRequest",
+        request: PreparedRequest,
         response: HTTPResponse,
-        body: Optional[bytes] = None,
+        body: bytes | None = None,
     ) -> bytes:
         response_headers: CaseInsensitiveDict[str] = CaseInsensitiveDict(
             response.headers
@@ -37,7 +38,7 @@ class Serializer(object):
         data = {
             "response": {
                 "body": body,  # Empty bytestring if body is stored separately
-                "headers": dict((str(k), str(v)) for k, v in response.headers.items()),  # type: ignore[no-untyped-call]
+                "headers": {str(k): str(v) for k, v in response.headers.items()},  # type: ignore[no-untyped-call]
                 "status": response.status,
                 "version": response.version,
                 "reason": str(response.reason),
@@ -58,15 +59,15 @@ class Serializer(object):
 
         return b",".join([f"cc={self.serde_version}".encode(), self.serialize(data)])
 
-    def serialize(self, data: Dict[str, Any]) -> bytes:
+    def serialize(self, data: dict[str, Any]) -> bytes:
         return cast(bytes, msgpack.dumps(data, use_bin_type=True))
 
     def loads(
         self,
-        request: "PreparedRequest",
+        request: PreparedRequest,
         data: bytes,
-        body_file: Optional["IO[bytes]"] = None,
-    ) -> Optional[HTTPResponse]:
+        body_file: IO[bytes] | None = None,
+    ) -> HTTPResponse | None:
         # Short circuit if we've been given an empty set of data
         if not data:
             return None
@@ -89,7 +90,7 @@ class Serializer(object):
 
         # Dispatch to the actual load method for the given version
         try:
-            return getattr(self, "_loads_v{}".format(verstr))(request, data, body_file)  # type: ignore[no-any-return]
+            return getattr(self, f"_loads_v{verstr}")(request, data, body_file)  # type: ignore[no-any-return]
 
         except AttributeError:
             # This is a version we don't have a loads function for, so we'll
@@ -98,10 +99,10 @@ class Serializer(object):
 
     def prepare_response(
         self,
-        request: "Request",
+        request: Request,
         cached: Mapping[str, Any],
-        body_file: Optional["IO[bytes]"] = None,
-    ) -> Optional[HTTPResponse]:
+        body_file: IO[bytes] | None = None,
+    ) -> HTTPResponse | None:
         """Verify our vary headers match and construct a real urllib3
         HTTPResponse object.
         """
@@ -129,7 +130,7 @@ class Serializer(object):
         cached["response"]["headers"] = headers
 
         try:
-            body: "IO[bytes]"
+            body: IO[bytes]
             if body_file is None:
                 body = io.BytesIO(body_raw)
             else:
@@ -150,9 +151,9 @@ class Serializer(object):
 
     def _loads_v0(
         self,
-        request: "Request",
+        request: Request,
         data: bytes,
-        body_file: Optional["IO[bytes]"] = None,
+        body_file: IO[bytes] | None = None,
     ) -> None:
         # The original legacy cache data. This doesn't contain enough
         # information to construct everything we need, so we'll treat this as
@@ -161,20 +162,20 @@ class Serializer(object):
 
     def _loads_v1(
         self,
-        request: "Request",
+        request: Request,
         data: bytes,
-        body_file: Optional["IO[bytes]"] = None,
-    ) -> Optional[HTTPResponse]:
+        body_file: IO[bytes] | None = None,
+    ) -> HTTPResponse | None:
         # The "v1" pickled cache format. This is no longer supported
         # for security reasons, so we treat it as a miss.
         return None
 
     def _loads_v2(
         self,
-        request: "Request",
+        request: Request,
         data: bytes,
-        body_file: Optional["IO[bytes]"] = None,
-    ) -> Optional[HTTPResponse]:
+        body_file: IO[bytes] | None = None,
+    ) -> HTTPResponse | None:
         # The "v2" compressed base64 cache format.
         # This has been removed due to age and poor size/performance
         # characteristics, so we treat it as a miss.
@@ -182,9 +183,9 @@ class Serializer(object):
 
     def _loads_v3(
         self,
-        request: "Request",
+        request: Request,
         data: bytes,
-        body_file: Optional["IO[bytes]"] = None,
+        body_file: IO[bytes] | None = None,
     ) -> None:
         # Due to Python 2 encoding issues, it's impossible to know for sure
         # exactly how to load v3 entries, thus we'll treat these as a miss so
@@ -193,10 +194,10 @@ class Serializer(object):
 
     def _loads_v4(
         self,
-        request: "Request",
+        request: Request,
         data: bytes,
-        body_file: Optional["IO[bytes]"] = None,
-    ) -> Optional[HTTPResponse]:
+        body_file: IO[bytes] | None = None,
+    ) -> HTTPResponse | None:
         try:
             cached = msgpack.loads(data, raw=False)
         except ValueError:

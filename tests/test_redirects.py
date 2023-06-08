@@ -10,7 +10,7 @@ import requests
 from cachecontrol import CacheControl
 
 
-class TestPermanentRedirects(object):
+class TestPermanentRedirects:
     def setup_method(self):
         self.sess = CacheControl(requests.Session())
 
@@ -31,7 +31,7 @@ class TestPermanentRedirects(object):
         assert not resp.from_cache
 
 
-class TestMultipleChoicesRedirects(object):
+class TestMultipleChoicesRedirects:
     def setup_method(self):
         self.sess = CacheControl(requests.Session())
 

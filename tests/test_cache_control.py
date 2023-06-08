@@ -20,7 +20,7 @@ from .utils import DummyRequest, DummyResponse, NullSerializer
 TIME_FMT = "%a, %d %b %Y %H:%M:%S GMT"
 
 
-class TestCacheControllerResponse(object):
+class TestCacheControllerResponse:
     url = "http://url.com/"
 
     def req(self, headers=None):
@@ -221,7 +221,7 @@ class TestCacheControllerResponse(object):
             assert r.read() == b"my body"
 
 
-class TestCacheControlRequest(object):
+class TestCacheControlRequest:
     url = "http://foo.com/bar"
 
     def setup_method(self):

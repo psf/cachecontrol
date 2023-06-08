@@ -4,7 +4,6 @@
 """
 Test for supporting streamed responses (Transfer-Encoding: chunked)
 """
-from __future__ import print_function, unicode_literals
 
 import pytest
 import requests
@@ -21,7 +20,7 @@ def sess():
     sess.close()
 
 
-class TestChunkedResponses(object):
+class TestChunkedResponses:
 
     def test_cache_chunked_response(self, url, sess):
         """

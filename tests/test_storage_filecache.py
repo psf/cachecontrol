@@ -21,10 +21,10 @@ def randomdata():
     """Plain random http data generator:"""
     key = "".join(sample(string.ascii_lowercase, randint(2, 4)))
     val = "".join(sample(string.ascii_lowercase + string.digits, randint(2, 10)))
-    return "&{}={}".format(key, val)
+    return f"&{key}={val}"
 
 
-class FileCacheTestsMixin(object):
+class FileCacheTestsMixin:
 
     FileCacheClass = None  # Either FileCache or SeparateBodyFileCache
 

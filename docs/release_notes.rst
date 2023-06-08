@@ -12,6 +12,7 @@ Unreleased
 
 * Support for old serialization formats has been removed.
 * Move the serialization implementation into own method.
+* Drop support for Python older than 3.7.
 
 0.13.0
 ======
