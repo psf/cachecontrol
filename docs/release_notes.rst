@@ -7,8 +7,8 @@
  Release Notes
 ===============
 
-Unreleased
-==========
+0.13.1
+======
 
 * Support for old serialization formats has been removed.
 * Move the serialization implementation into own method.
@@ -16,6 +16,8 @@ Unreleased
 
 0.13.0
 ======
+
+**YANKED**
 
 The project has been moved to the `PSF <https://github.com/psf>`_ organization.
 
