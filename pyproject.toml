@@ -56,6 +56,8 @@ dev = [
     "pytest",
     "cherrypy",
     "sphinx",
+    "furo",
+    "sphinx-copybutton",
     "black",
     "types-redis",
     "types-requests",
