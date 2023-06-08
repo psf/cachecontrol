@@ -56,7 +56,6 @@ dev = [
     "pytest",
     "cherrypy",
     "sphinx",
-    "bump",
     "black",
     "types-redis",
     "types-requests",
@@ -76,8 +75,3 @@ ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 norecursedirs = ["bin", "lib", "include", "build"]
-
-[tool.bump]
-input = "cachecontrol/__init__.py"
-canonicalize = true
-reset = true

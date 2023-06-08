@@ -7,6 +7,7 @@ VENV_CMD=python3 -m venv
 ACTIVATE = $(VENV)/bin/activate
 CHEESE=https://pypi.python.org/pypi
 BUMPTYPE=patch
+BUMPPRE=0
 
 
 $(VENV)/bin/pip3:
@@ -52,7 +53,3 @@ coverage:
 dist: clean
 	$(VENV)/bin/python -m build
 	ls -l dist
-
-bump:
-	$(VENV)/bin/bump --$(BUMPTYPE)
-	git push && git push --tags
