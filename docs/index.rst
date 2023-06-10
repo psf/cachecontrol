@@ -79,7 +79,8 @@ If you give it a try, please let me know of any issues.
 .. _pip: http://www.pip-installer.org/
 
 
-Contents:
+Contents
+========
 
 .. toctree::
    :maxdepth: 2
@@ -89,8 +90,15 @@ Contents:
    etags
    custom_heuristics
    tips
-   release_notes
 
+.. toctree::
+   :hidden:
+   :caption: Development
+   :maxdepth: 2
+
+   release_notes
+   GitHub <https://github.com/psf/cachecontrol>
+   PyPI <https://pypi.org/project/cachecontrol>
 
 
 Indices and tables

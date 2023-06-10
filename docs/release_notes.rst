@@ -29,6 +29,18 @@ The project has been moved to the `PSF <https://github.com/psf>`_ organization.
 * Add type annotations.
 * Exclude the ``tests`` directory from the wheel.
 
+0.12.14
+=======
+
+* Revert the change "switch lockfile to filelock" to fix the compatibility issue.
+
+0.12.13
+=======
+
+* Discard the ``strict`` attribute when serializing and deserializing responses.
+* Fix the IncompleteRead error thrown by ``urllib3`` 2.0.
+* Exclude the tests directory from the wheel.
+
 0.12.11
 =======
 
