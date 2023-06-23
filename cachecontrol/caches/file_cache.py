@@ -79,7 +79,7 @@ class _FileCacheMixin:
                 """
             NOTE: In order to use the FileCache you must have
             filelock installed. You can install it via pip:
-              pip install filelock
+              pip install cachecontrol[filecache]
             """
             )
             raise ImportError(notice)
