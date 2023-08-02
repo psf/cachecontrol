@@ -73,10 +73,9 @@ If you give it a try, please let me know of any issues.
 
 
 .. _httplib2: https://github.com/httplib2/httplib2
-.. _requests: http://docs.python-requests.org/
-.. _Editing the Web: http://www.w3.org/1999/04/Editing/
-.. _PyPI: https://pypi.python.org/pypi/CacheControl/
-.. _pip: http://www.pip-installer.org/
+.. _requests: https://requests.readthedocs.io/en/latest/
+.. _PyPI: https://pypi.org/project/CacheControl/
+.. _pip: https://pip.pypa.io/en/stable/
 
 
 Contents
