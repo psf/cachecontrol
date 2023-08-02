@@ -5,10 +5,6 @@
 VENV=.venv
 VENV_CMD=python3 -m venv
 ACTIVATE = $(VENV)/bin/activate
-CHEESE=https://pypi.python.org/pypi
-BUMPTYPE=patch
-BUMPPRE=0
-
 
 $(VENV)/bin/pip:
 	$(VENV_CMD) $(VENV)
