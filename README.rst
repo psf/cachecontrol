@@ -35,7 +35,7 @@ Quickstart
   sess = requests.session()
   cached_sess = CacheControl(sess)
 
-  response = cached_sess.get('http://google.com')
+  response = cached_sess.get('https://google.com')
 
 If the URL contains any caching based headers, it will cache the
 result in a simple dictionary.
