@@ -6,7 +6,8 @@ from __future__ import annotations
 import hashlib
 import os
 from textwrap import dedent
-from typing import IO, TYPE_CHECKING
+from typing import IO, TYPE_CHECKING, Union
+from pathlib import Path
 
 from cachecontrol.cache import BaseCache, SeparateBodyBaseCache
 from cachecontrol.controller import CacheController
@@ -63,7 +64,7 @@ class _FileCacheMixin:
 
     def __init__(
         self,
-        directory: str,
+        directory: Union[str, Path],
         forever: bool = False,
         filemode: int = 0o0600,
         dirmode: int = 0o0700,
