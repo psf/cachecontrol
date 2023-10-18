@@ -480,7 +480,7 @@ class CacheController:
         cached_response.headers.update(
             {
                 k: v
-                for k, v in response.headers.items()  # type: ignore[no-untyped-call]
+                for k, v in response.headers.items()
                 if k.lower() not in excluded_headers
             }
         )
