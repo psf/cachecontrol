@@ -18,8 +18,7 @@ class TestRedisCache:
         assert self.conn.setex.called
 
     def test_set_expiration_datetime_aware(self):
-        self.cache.set("foo", "bar",
-                       expires=datetime(2014, 2, 2, tzinfo=timezone.utc))
+        self.cache.set("foo", "bar", expires=datetime(2014, 2, 2, tzinfo=timezone.utc))
         assert self.conn.setex.called
 
     def test_set_expiration_int(self):

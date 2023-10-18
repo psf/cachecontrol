@@ -35,7 +35,6 @@ def sess(url, request):
 
 
 class TestSessionActions:
-
     def test_get_caches(self, url, sess):
         r2 = sess.get(url)
         assert r2.from_cache is True

@@ -12,7 +12,6 @@ from requests import Session
 
 
 class Test39:
-
     def test_file_cache_recognizes_consumed_file_handle(self, url):
         s = CacheControl(Session(), FileCache("web_cache"))
         the_url = url + "cache_60"

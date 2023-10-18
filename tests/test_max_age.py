@@ -11,7 +11,6 @@ from .utils import NullSerializer
 
 
 class TestMaxAge:
-
     @pytest.fixture()
     def sess(self, url):
         self.url = url

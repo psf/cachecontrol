@@ -13,7 +13,6 @@ import cherrypy
 
 
 class SimpleApp:
-
     def __init__(self):
         self.etag_count = 0
         self.update_etag_string()
@@ -109,7 +108,7 @@ class SimpleApp:
         headers = [
             ("Content-Type", "text/plain"),
             ("Cache-Control", "max-age=5000"),
-            ("Content-Length", str(len(body)))
+            ("Content-Length", str(len(body))),
         ]
         start_response("200 OK", headers)
         return [body]

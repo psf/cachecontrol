@@ -25,7 +25,6 @@ def randomdata():
 
 
 class FileCacheTestsMixin:
-
     FileCacheClass = None  # Either FileCache or SeparateBodyFileCache
 
     @pytest.fixture()
