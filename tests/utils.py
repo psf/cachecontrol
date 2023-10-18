@@ -8,7 +8,6 @@ from cachecontrol.serialize import Serializer
 
 
 class NullSerializer(Serializer):
-
     def dumps(self, request, response, body=None):
         return response
 
@@ -20,6 +19,7 @@ class NullSerializer(Serializer):
 
 class DummyResponse:
     """Match a ``urllib3.response.HTTPResponse``."""
+
     version = "1.1"
     reason = b"Because"
     strict = 0

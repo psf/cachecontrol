@@ -13,16 +13,16 @@ from cachecontrol import CacheControl
 
 HOST = "localhost"
 PORT = 8050
-URL = "http://{}:{}/".format(HOST, PORT)
+URL = f"http://{HOST}:{PORT}/"
 
 
-class Server(object):
-
+class Server:
     def __call__(self, env, sr):
         body = "Hello World!"
         status = "200 OK"
         headers = [
-            ("Cache-Control", "max-age=%i" % (60 * 10)), ("Content-Type", "text/plain")
+            ("Cache-Control", "max-age=%i" % (60 * 10)),
+            ("Content-Type", "text/plain"),
         ]
         sr(status, headers)
         return body
