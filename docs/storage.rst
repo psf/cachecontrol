@@ -77,10 +77,10 @@ Here is an example of using the cache::
 
   import requests
   from cachecontrol import CacheControl
-  from cachecontrol.caches SeparateBodyFileCache
+  from cachecontrol.caches import SeparateBodyFileCache
 
   sess = CacheControl(requests.Session(),
-                      cache=SeparatedBodyFileCache('.web_cache'))
+                      cache=SeparateBodyFileCache('.web_cache'))
 
 ``SeparateBodyFileCache`` supports the same options as ``FileCache``.
 
