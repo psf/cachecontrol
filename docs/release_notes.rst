@@ -11,7 +11,6 @@
 ======
 
 * Explicitly allow ``pathlib.Path`` as a type for ``FileCache.directory``.
-* Drop support for Python 3.7. Python 3.8 is now the minimum version.
 * Don't use the cache to return a full response if a request has a Range header.
 
 0.13.1
