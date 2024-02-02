@@ -142,6 +142,11 @@ class CacheController:
         """
         Load a cached response, or return None if it's not available.
         """
+        # We do not support caching of partial content: so if the request contains a
+        # Range header then we don't want to load anything from the cache.
+        if "Range" in request.headers:
+            return None
+
         cache_url = request.url
         assert cache_url is not None
         cache_data = self.cache.get(cache_url)

@@ -79,6 +79,31 @@ class TestETag:
         # Make sure we updated our cache with the new etag'd response.
         assert self.cache.get(self.etag_url) == resp.raw
 
+    def test_etags_get_no_cache(self, sess, server):
+        """A 'Cache-Control: no-cache' header stops us from using the cache directly,
+        but not from using the 'If-None-Match' header on the request."""
+        # get our response
+        r = sess.get(self.etag_url)
+        assert "if-none-match" not in r.request.headers
+
+        r = sess.get(self.etag_url, headers={"Cache-Control": "no-cache"})
+        assert "if-none-match" in r.request.headers
+        assert r.status_code == 200
+
+        # This response does come from the cache, but only after the 304 response from
+        # the server told us that was fine.
+        assert r.from_cache
+
+    def test_etags_get_with_range(self, sess, server):
+        """A 'Range' header stops us from using the cache altogether."""
+        # get our response
+        r = sess.get(self.etag_url)
+
+        r = sess.get(self.etag_url, headers={"Range": "0-10"})
+        assert "if-none-match" not in r.request.headers
+        assert r.status_code == 200
+        assert not r.from_cache
+
 
 class TestDisabledETags:
     """Test our use of ETags when the response is stale and the
