@@ -5,7 +5,7 @@
 import pytest
 
 
-from cachecontrol import CacheControl
+from cachecontrol import CacheControl, CacheControlAdapter
 from cachecontrol.caches import FileCache
 from cachecontrol.filewrapper import CallbackFileWrapper
 from requests import Session
@@ -31,3 +31,18 @@ def test_getattr_during_gc():
     vars(s).clear()  # gc does this.
     with pytest.raises(AttributeError):
         s.x
+
+
+def test_handle_no_chunked_attr():
+
+    class NoChunked(CacheControlAdapter):
+        def build_response(self, request, response, from_cache=False,
+                           cacheable_methods=None):
+            if hasattr(response, 'chunked'):
+                pytest.skip('Requests is new enough, test makes no sense.')
+                # delattr(response, 'chunked')
+            return super().build_response(request, response, from_cache,
+                                          cacheable_methods)
+    sess = Session()
+    sess.mount('http://', NoChunked())
+    sess.get('http://httpbin.org/cache/60')
