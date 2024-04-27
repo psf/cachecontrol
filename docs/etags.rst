@@ -18,7 +18,7 @@ expired.
 In CacheControl the default behavior when an ETag is sent by the
 server is to cache the response. We'll refer to this pattern as a
 **Equal Priority** cache as the decision to cache is either time base or
-due to the presense of an ETag.
+due to the presence of an ETag.
 
 The spec is not explicit what takes priority when caching with both
 ETags and time based headers. Therefore, CacheControl supports the

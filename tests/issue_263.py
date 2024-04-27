@@ -13,9 +13,6 @@ clogger.addHandler(logging.StreamHandler())
 clogger.setLevel(logging.DEBUG)
 
 
-from pprint import pprint
-
-
 class NoAgeHeuristic(BaseHeuristic):
     def update_headers(self, response):
         if "cache-control" in response.headers:
