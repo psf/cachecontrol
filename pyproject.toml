@@ -79,5 +79,3 @@ ignore_missing_imports = true
 [tool.pytest.ini_options]
 norecursedirs = ["bin", "lib", "include", "build"]
 
-[tool.ruff]
-target-version = "py38"
