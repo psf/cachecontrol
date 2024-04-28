@@ -50,15 +50,16 @@ redis = ["redis>=2.10.5"]
 dev = [
     "CacheControl[filecache,redis]",
     "build",
-    "mypy",
-    "tox",
-    "pytest-cov",
-    "pytest",
     "cherrypy",
-    "sphinx",
+    "codespell[tomli]",
     "furo",
+    "mypy",
+    "pytest",
+    "pytest-cov",
+    "ruff",
+    "sphinx",
     "sphinx-copybutton",
-    "black",
+    "tox",
     "types-redis",
     "types-requests",
 ]
@@ -77,3 +78,4 @@ ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 norecursedirs = ["bin", "lib", "include", "build"]
+

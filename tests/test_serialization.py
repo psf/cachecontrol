@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import pickle
 from unittest.mock import Mock
 
 import msgpack

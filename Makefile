@@ -13,7 +13,9 @@ bootstrap: $(VENV)/bin/pip
 	$(VENV)/bin/pip install -e .[dev]
 
 format:
-	$(VENV)/bin/black .
+	$(VENV)/bin/codespell
+	$(VENV)/bin/ruff check --fix
+	$(VENV)/bin/ruff format
 
 doc: $(VENV)/bin/sphinx-build
 	. $(ACTIVATE);

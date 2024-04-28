@@ -5,6 +5,7 @@
 """
 Unit tests that verify our caching methods work correctly.
 """
+
 import time
 from tempfile import mkdtemp
 from unittest.mock import ANY, Mock
@@ -175,7 +176,7 @@ class TestCacheControllerResponse:
 
         This is the shared utility for any cache object.
         """
-        # Cache starts out prepopulated wih an entry:
+        # Cache starts out prepopulated with an entry:
         etag = "jfd9094r808"
         cc = CacheController(cache)
         url = "http://localhost:123/x"

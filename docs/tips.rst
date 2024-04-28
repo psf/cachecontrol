@@ -43,7 +43,7 @@ response.
 
 With that in mind, you should be aware that if you try to cache a very
 large response on a network store, you still might have some latency
-tranferring the data from the network store to your
+transferring the data from the network store to your
 application. Another consideration is storing large responses in a
 `FileCache`. If you are caching using ETags and the server is
 extremely specific as to what constitutes an equivalent request, it

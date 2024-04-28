@@ -5,6 +5,7 @@
 """
 Test for supporting redirect caches as needed.
 """
+
 import requests
 
 from cachecontrol import CacheControl
