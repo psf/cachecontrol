@@ -18,6 +18,15 @@ jobs:
       matrix:
         python-version: ["3.7", "3.8", "3.9", "3.10", "3.11", "3.12"]
         os: ["macos-latest", "windows-latest", "ubuntu-latest"]
+        # Use the macos-13 runner for 3.7, since 3.7 is not currently available
+        # on ARM64 macOS runners (i.e. 14+).
+        # See: https://github.com/actions/setup-python/issues/856
+        exclude:
+          - python-version: "3.7"
+            os: "macos-latest"
+        include:
+          - python-version: "3.7"
+            os: "macos-13"
 
     steps:
       - uses: "actions/checkout@v4"
