@@ -14,7 +14,7 @@ bootstrap: $(VENV)/bin/pip
 
 format:
 	$(VENV)/bin/codespell
-	$(VENV)/bin/ruff check
+	$(VENV)/bin/ruff check --fix
 	$(VENV)/bin/ruff format
 
 doc: $(VENV)/bin/sphinx-build
