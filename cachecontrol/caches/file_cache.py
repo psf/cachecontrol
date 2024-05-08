@@ -89,8 +89,8 @@ class _FileCacheMixin:
             # Write our actual file
             (fd, name) = tempfile.mkstemp(dir=dirname)
             os.write(fd, data)
-            os.fchmod(fd, self.filemode)
             os.close(fd)
+            os.chmod(name, self.filemode)
             os.replace(name, path)
 
     def _delete(self, key: str, suffix: str) -> None:
