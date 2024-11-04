@@ -7,6 +7,12 @@
  Release Notes
 ===============
 
+0.14.1
+======
+
+* Drop support for Python 3.8.
+* Explicitly support Python 3.13.
+
 0.14.0
 ======
 
