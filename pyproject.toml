@@ -24,17 +24,17 @@ classifiers = [
     "Environment :: Web Environment",
     "License :: OSI Approved :: Apache Software License",
     "Operating System :: OS Independent",
-    "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Internet :: WWW/HTTP",
 ]
 keywords = ["requests", "http", "caching", "web"]
 dependencies = ["requests >= 2.16.0", "msgpack >= 0.5.2, < 2.0.0"]
-requires-python = ">=3.7"
+requires-python = ">=3.8"
 
 [project.urls]
 Homepage = "https://pypi.org/project/CacheControl/"
@@ -78,4 +78,3 @@ ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 norecursedirs = ["bin", "lib", "include", "build"]
-
