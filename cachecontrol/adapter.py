@@ -131,7 +131,7 @@ class CacheControlAdapter(HTTPAdapter):
                         self.controller.cache_response, request, response
                     ),
                 )
-                if response.chunked:
+                if hasattr(response, 'chunked') and response.chunked:
                     super_update_chunk_length = response._update_chunk_length
 
                     def _update_chunk_length(self: HTTPResponse) -> None:
