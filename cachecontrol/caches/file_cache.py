@@ -88,8 +88,10 @@ class _FileCacheMixin:
         with self.lock_class(path + ".lock"):
             # Write our actual file
             (fd, name) = tempfile.mkstemp(dir=dirname)
-            os.write(fd, data)
-            os.close(fd)
+            try:
+                os.write(fd, data)
+            finally:
+                os.close(fd)
             os.chmod(name, self.filemode)
             os.replace(name, path)
 
