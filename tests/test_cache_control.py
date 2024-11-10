@@ -6,8 +6,8 @@
 Unit tests that verify our caching methods work correctly.
 """
 
+import os
 import time
-from tempfile import mkdtemp
 from unittest.mock import ANY, Mock
 
 import pytest
@@ -143,7 +143,7 @@ class TestCacheControllerResponse:
         result = cc.update_cached_response(req, resp)
         assert result is resp
 
-    def test_update_cached_response_with_valid_headers_separate_body(self):
+    def test_update_cached_response_with_valid_headers_separate_body(self, tmp_path):
         """
         If the local cache has the given URL ``update_cached_response()`` will:
 
@@ -152,7 +152,7 @@ class TestCacheControllerResponse:
 
         This is the version for a cache that stores a separate body.
         """
-        cache = SeparateBodyFileCache(mkdtemp())
+        cache = SeparateBodyFileCache(os.fsdecode(tmp_path))
         self.update_cached_response_with_valid_headers_test(cache)
 
     def test_update_cached_response_with_valid_headers(self):
