@@ -118,7 +118,7 @@ class CallbackFileWrapper:
 
         return data
 
-    def close(self):
+    def close(self) -> None:
         try:
             self.__fp.close()
         finally:
