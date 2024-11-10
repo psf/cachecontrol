@@ -50,7 +50,6 @@ class TestChunkedResponses:
         assert content_1 == content_2
 
     def test_stream_is_not_cached_when_content_is_not_read(self, url, sess):
-        with sess.get(url + "stream", stream=True) as r1:
+        with sess.get(url + "stream", stream=True):
             with sess.get(url + "stream", stream=True) as resp:
-
                 assert not resp.from_cache
