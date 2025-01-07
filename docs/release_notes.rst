@@ -7,6 +7,12 @@
  Release Notes
 ===============
 
+0.14.2
+======
+
+* Eliminate a race condition when overwriting cache entries.
+* Fix a ``requests`` object leak when doing caching on a streamed response
+
 0.14.1
 ======
 
