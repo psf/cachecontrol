@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import gc
+import platform
 import weakref
 from unittest import mock
 
@@ -82,6 +83,12 @@ class TestSessionActions:
         # We should not break this.
 
         resp = None
+        if platform.python_implementation() == "PyPy":
+            # NOTE: Need to explicitly tell PyPy to collect at this point.
+            # See: https://github.com/psf/cachecontrol/issues/351
+            # See: https://doc.pypy.org/en/latest/cpython_differences.html#differences-related-to-garbage-collection-strategies
+            gc.collect()
+
         # Below this point, it should be closed because there are no more references
         # to the session response.
 
