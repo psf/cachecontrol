@@ -5,6 +5,8 @@ on:
 
 name: release
 
+permissions: {}
+
 jobs:
   pypi:
     name: upload release to PyPI
