@@ -8,6 +8,8 @@ on:
     branches: ["master"]
   workflow_dispatch:
 
+permissions: {}
+
 jobs:
   tests:
     name: "Python ${{ matrix.python-version }} ${{ matrix.os }}"
@@ -16,7 +18,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13"]
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
         os: ["macos-latest", "windows-latest", "ubuntu-latest"]
 
     steps:
