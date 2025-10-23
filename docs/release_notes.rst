@@ -7,6 +7,11 @@
  Release Notes
 ===============
 
+0.14.4
+======
+
+* Explicitly support Python 3.14.
+
 0.14.3
 ======
 
