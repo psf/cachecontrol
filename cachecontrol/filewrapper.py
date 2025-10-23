@@ -68,6 +68,7 @@ class CallbackFileWrapper:
         return False
 
     def _close(self) -> None:
+        result: bytes | memoryview[int]
         if self.__callback:
             if self.__buf.tell() == 0:
                 # Empty file:
