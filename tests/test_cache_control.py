@@ -16,6 +16,7 @@ from cachecontrol import CacheController
 from cachecontrol.cache import DictCache
 from cachecontrol.caches import SeparateBodyFileCache
 
+
 from .utils import DummyRequest, DummyResponse, NullSerializer
 
 TIME_FMT = "%a, %d %b %Y %H:%M:%S GMT"
@@ -305,3 +306,27 @@ class TestCacheControlRequest:
         self.c.cache = DictCache({self.url: resp})
 
         assert not self.req({})
+
+    def test_cached_request_max_age_zero(self):
+        
+        from requests import PreparedRequest
+
+        # Setup
+        cache = DictCache()
+        controller = CacheController(cache=cache)
+
+        # Simulate a request
+        request = PreparedRequest()
+        request.prepare(method="GET", url="http://example.com/")
+        request.headers["Cache-Control"] = "max-age=0"
+
+        # Cache a fake response
+        class FakeResponse:
+            def __init__(self):
+                self.status = 200
+                self.headers = {"Date": "Wed, 27 Oct 2025 12:00:00 GMT"}
+
+        controller.cache_response(request, FakeResponse())
+
+        # Test: cached_request should bypass cache
+        assert controller.cached_request(request) is False
