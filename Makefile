@@ -12,6 +12,10 @@ $(VENV)/bin/pip:
 bootstrap: $(VENV)/bin/pip
 	uv pip install -e .[dev]
 
+lint:
+	uv run ruff check
+	uv run mypy cachecontrol
+
 format:
 	uv run codespell
 	uv run ruff check --fix

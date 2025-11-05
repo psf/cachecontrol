@@ -58,8 +58,6 @@ dev = [
     "ruff",
     "sphinx",
     "sphinx-copybutton",
-    "tox",
-    "tox-uv",
     "types-redis",
     "types-requests",
 ]
