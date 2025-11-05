@@ -11,6 +11,7 @@
 ======
 
 * Explicitly support Python 3.14.
+* Drop support for Python 3.9.
 
 0.14.3
 ======
