@@ -4,10 +4,9 @@
 
 VENV=.venv
 ACTIVATE = $(VENV)/bin/activate
-PYVERSION?="3.14"
 
 bootstrap:
-	uv sync --python $(PYVERSION) --extra dev
+	uv sync --extra dev
 
 lint:
 	uv run ruff check
