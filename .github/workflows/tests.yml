@@ -31,12 +31,10 @@ jobs:
           python-version: "${{ matrix.python-version }}"
           allow-prereleases: true
 
-      - name: "Install dependencies"
-        run: |
-          python -VV
-          python -m site
-          python -m pip install --upgrade pip setuptools wheel
-          python -m pip install --upgrade virtualenv tox tox-gh-actions
+      - name: Install the latest version of uv
+        uses: astral-sh/setup-uv@85856786d1ce8acfbcc2f13a5f3fbd6b938f9f41 # v7.1.2
 
-      - name: "Run tox targets for ${{ matrix.python-version }}"
-        run: "python -m tox"
+      - name: Run tests for ${{ matrix.python-version }}
+        run: |
+          make bootstrap
+          make test
