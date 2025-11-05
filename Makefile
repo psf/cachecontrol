@@ -18,8 +18,9 @@ format:
 	uv run ruff format
 
 doc: $(VENV)/bin/sphinx-build
-	. $(ACTIVATE);
-	cd docs && make html
+	. $(ACTIVATE) && \
+		cd docs && \
+		make html
 
 clean: clean-build clean-pyc clean-test
 
