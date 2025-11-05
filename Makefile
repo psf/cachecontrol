@@ -3,19 +3,19 @@
 # SPDX-License-Identifier: Apache-2.0
 
 VENV=.venv
-VENV_CMD=python3 -m venv
+VENV_CMD=uv venv
 ACTIVATE = $(VENV)/bin/activate
 
 $(VENV)/bin/pip:
 	$(VENV_CMD) $(VENV)
 
 bootstrap: $(VENV)/bin/pip
-	$(VENV)/bin/pip install -e .[dev]
+	uv pip install -e .[dev]
 
 format:
-	$(VENV)/bin/codespell
-	$(VENV)/bin/ruff check --fix
-	$(VENV)/bin/ruff format
+	uv run codespell
+	uv run ruff check --fix
+	uv run ruff format
 
 doc: $(VENV)/bin/sphinx-build
 	. $(ACTIVATE);
@@ -40,14 +40,14 @@ clean-test:
 	rm -fr htmlcov/
 
 test-all:
-	$(VENV)/bin/tox
+	uv run tox
 
 test:
-	$(VENV)/bin/py.test
+	uv run py.test
 
 coverage:
-	$(VENV)/bin/py.test --cov cachecontrol
+	uv run py.test --cov cachecontrol
 
 dist: clean
-	$(VENV)/bin/python -m build
+	uv run python -m build
 	ls -l dist

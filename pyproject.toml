@@ -24,7 +24,6 @@ classifiers = [
     "Development Status :: 4 - Beta",
     "Environment :: Web Environment",
     "Operating System :: OS Independent",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -34,7 +33,7 @@ classifiers = [
 ]
 keywords = ["requests", "http", "caching", "web"]
 dependencies = ["requests >= 2.16.0", "msgpack >= 0.5.2, < 2.0.0"]
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 
 [project.urls]
 Homepage = "https://pypi.org/project/CacheControl/"
@@ -51,7 +50,7 @@ dev = [
     "CacheControl[filecache,redis]",
     "build",
     "cherrypy",
-    "codespell[tomli]",
+    "codespell",
     "furo",
     "mypy",
     "pytest",
@@ -60,6 +59,7 @@ dev = [
     "sphinx",
     "sphinx-copybutton",
     "tox",
+    "tox-uv",
     "types-redis",
     "types-requests",
 ]
