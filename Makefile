@@ -3,14 +3,11 @@
 # SPDX-License-Identifier: Apache-2.0
 
 VENV=.venv
-VENV_CMD=uv venv
 ACTIVATE = $(VENV)/bin/activate
+PYVERSION?="3.14"
 
-$(VENV)/bin/pip:
-	$(VENV_CMD) $(VENV)
-
-bootstrap: $(VENV)/bin/pip
-	uv pip install -e .[dev]
+bootstrap:
+	uv sync --python $(PYVERSION) --extra dev
 
 lint:
 	uv run ruff check

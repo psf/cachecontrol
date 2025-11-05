@@ -103,6 +103,7 @@ dependencies = [
 [package.optional-dependencies]
 dev = [
     { name = "build" },
+    { name = "cheroot" },
     { name = "cherrypy" },
     { name = "codespell" },
     { name = "filelock" },
@@ -129,6 +130,7 @@ redis = [
 requires-dist = [
     { name = "build", marker = "extra == 'dev'" },
     { name = "cachecontrol", extras = ["filecache", "redis"], marker = "extra == 'dev'" },
+    { name = "cheroot", marker = "extra == 'dev'", specifier = "!=11.0.0" },
     { name = "cherrypy", marker = "extra == 'dev'" },
     { name = "codespell", marker = "extra == 'dev'" },
     { name = "filelock", marker = "extra == 'filecache'", specifier = ">=3.8.0" },
@@ -329,15 +331,15 @@ wheels = [
 
 [[package]]
 name = "cheroot"
-version = "11.1.1"
+version = "10.0.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "jaraco-functools" },
     { name = "more-itertools" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/09/01/30c083f66da622b747891680e3131cd6e207903d002185ac4e72c65a03b1/cheroot-11.1.1.tar.gz", hash = "sha256:b93428476884c802ea817497633259254bb3fcf2450934bbb8f1a7a099738a31", size = 185168, upload-time = "2025-11-03T22:16:03.946Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/63/e2/f85981a51281bd30525bf664309332faa7c81782bb49e331af603421dbd1/cheroot-10.0.1.tar.gz", hash = "sha256:e0b82f797658d26b8613ec8eb563c3b08e6bd6a7921e9d5089bd1175ad1b1740", size = 167586, upload-time = "2024-04-22T15:21:24.785Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/a8/2f/d88695c553bed1ef318a4214ec8ae7518027d3aa5a54d756fc5729e17ad4/cheroot-11.1.1-py3-none-any.whl", hash = "sha256:39c95d162681ed938679f645bca33abfa523b862a2393d630e3376b7426c7a36", size = 108470, upload-time = "2025-11-03T22:16:02.681Z" },
+    { url = "https://files.pythonhosted.org/packages/5b/9e/111f4441bc0e4736251ee0e61094904432ab19292a4cc7bd7127ed94f81e/cheroot-10.0.1-py3-none-any.whl", hash = "sha256:6ea332f20bfcede14e66174d112b30e9807492320d737ca628badc924d997595", size = 104758, upload-time = "2024-04-22T15:21:14.74Z" },
 ]
 
 [[package]]
