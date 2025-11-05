@@ -35,12 +35,8 @@ clean-pyc:
 	find . -name '__pycache__' -exec rm -fr {} +
 
 clean-test:
-	rm -fr .tox/
 	rm -f .coverage
 	rm -fr htmlcov/
-
-test-all:
-	uv run tox
 
 test:
 	uv run py.test
@@ -49,5 +45,5 @@ coverage:
 	uv run py.test --cov cachecontrol
 
 dist: clean
-	uv run python -m build
+	uv build
 	ls -l dist
