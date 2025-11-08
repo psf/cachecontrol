@@ -51,7 +51,11 @@ dev = [
     "cherrypy",
     # See: https://github.com/cherrypy/cherrypy/issues/2070
     # See: https://github.com/cherrypy/cheroot/issues/769
+<<<<<<< HEAD
     "cheroot != 11.0.0, != 11.1.0, != 11.1.1",
+=======
+    "cheroot >= 11.1.2",
+>>>>>>> 49d241c (bump cheroot)
     "codespell",
     "furo",
     "mypy",

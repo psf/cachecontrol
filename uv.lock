@@ -113,7 +113,7 @@ redis = [
 [package.metadata]
 requires-dist = [
     { name = "cachecontrol", extras = ["filecache", "redis"], marker = "extra == 'dev'" },
-    { name = "cheroot", marker = "extra == 'dev'", specifier = "!=11.0.0" },
+    { name = "cheroot", marker = "extra == 'dev'", specifier = ">=11.1.2" },
     { name = "cherrypy", marker = "extra == 'dev'" },
     { name = "codespell", marker = "extra == 'dev'" },
     { name = "filelock", marker = "extra == 'filecache'", specifier = ">=3.8.0" },
@@ -314,15 +314,15 @@ wheels = [
 
 [[package]]
 name = "cheroot"
-version = "10.0.1"
+version = "11.1.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "jaraco-functools" },
     { name = "more-itertools" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/63/e2/f85981a51281bd30525bf664309332faa7c81782bb49e331af603421dbd1/cheroot-10.0.1.tar.gz", hash = "sha256:e0b82f797658d26b8613ec8eb563c3b08e6bd6a7921e9d5089bd1175ad1b1740", size = 167586, upload-time = "2024-04-22T15:21:24.785Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/68/e4/5c2020b60a55aca8d79ed55b62ad1cd7fc47ea44ad6b584e83f5f1bf58b0/cheroot-11.1.2.tar.gz", hash = "sha256:bfb70c49663f63b0440f2b54dbc6b0d1650e56dfe4e2641f59b2c6f727b44aca", size = 185716, upload-time = "2025-11-07T17:26:54.818Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/5b/9e/111f4441bc0e4736251ee0e61094904432ab19292a4cc7bd7127ed94f81e/cheroot-10.0.1-py3-none-any.whl", hash = "sha256:6ea332f20bfcede14e66174d112b30e9807492320d737ca628badc924d997595", size = 104758, upload-time = "2024-04-22T15:21:14.74Z" },
+    { url = "https://files.pythonhosted.org/packages/41/99/af65511a10c4212438ac52bc5e45e486e7a04d292201ad84dfd9208fe9a8/cheroot-11.1.2-py3-none-any.whl", hash = "sha256:0f6c0ba05c00fbc869fb46b1de4ec2384e1d85418ae963d3bc10ae83b688dbfa", size = 109248, upload-time = "2025-11-07T17:26:53.393Z" },
 ]
 
 [[package]]
