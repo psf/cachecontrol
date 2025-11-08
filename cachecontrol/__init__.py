@@ -7,13 +7,15 @@
 Make it easy to import from cachecontrol without long namespaces.
 """
 
-__author__ = "Eric Larson"
-__email__ = "eric@ionrock.org"
-__version__ = "0.14.3"
+import importlib.metadata
 
 from cachecontrol.adapter import CacheControlAdapter
 from cachecontrol.controller import CacheController
 from cachecontrol.wrapper import CacheControl
+
+__author__ = "Eric Larson"
+__email__ = "eric@ionrock.org"
+__version__ = importlib.metadata.version("cachecontrol")
 
 __all__ = [
     "__author__",

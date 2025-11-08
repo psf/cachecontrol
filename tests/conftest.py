@@ -2,14 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from pprint import pformat
-
 import os
 import socket
-
-import pytest
+from pprint import pformat
 
 import cherrypy
+import pytest
 
 
 class SimpleApp:
@@ -126,7 +124,22 @@ class SimpleApp:
 
 @pytest.fixture(scope="session")
 def server():
-    return cherrypy.server
+    cherrypy.tree.graft(SimpleApp(), "/")
+
+    ip, port = get_free_port()
+
+    cherrypy.config.update({"server.socket_host": ip, "server.socket_port": port})
+
+    # turn off logging
+    logger = cherrypy.log.access_log
+    if logger:
+        logger.removeHandler(logger.handlers[0])
+
+    cherrypy.server.start()
+
+    yield cherrypy.server
+
+    cherrypy.server.stop()
 
 
 @pytest.fixture()
@@ -141,24 +154,3 @@ def get_free_port():
     s.close()
     ip = os.environ.get("WEBTEST_SERVER_BIND", "127.0.0.1")
     return ip, port
-
-
-def pytest_configure(config):
-    cherrypy.tree.graft(SimpleApp(), "/")
-
-    ip, port = get_free_port()
-
-    cherrypy.config.update({"server.socket_host": ip, "server.socket_port": port})
-
-    # turn off logging
-    logger = cherrypy.log.access_log
-    logger.removeHandler(logger.handlers[0])
-
-    cherrypy.server.start()
-
-
-def pytest_unconfigure(config):
-    try:
-        cherrypy.server.stop()
-    except:  # noqa: E722
-        pass
