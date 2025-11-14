@@ -10,7 +10,7 @@ module-root = ""
 
 [project]
 name = "CacheControl"
-version = "0.14.3"
+version = "0.14.4"
 description = "httplib2 caching for requests"
 readme = "README.rst"
 license = "Apache-2.0"
