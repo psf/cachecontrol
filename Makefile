@@ -6,11 +6,11 @@ VENV=.venv
 ACTIVATE = $(VENV)/bin/activate
 
 bootstrap:
-	uv sync --extra dev
+	uv sync --dev
 
 lint:
-	uv run ruff check
-	uv run mypy cachecontrol
+	uv run --dev ruff check
+	uv run --dev mypy cachecontrol
 
 format:
 	uv run codespell
@@ -40,10 +40,10 @@ clean-test:
 	rm -fr htmlcov/
 
 test:
-	uv run py.test
+	uv run --dev py.test
 
 coverage:
-	uv run py.test --cov cachecontrol
+	uv run --dev py.test --cov cachecontrol
 
 dist: clean
 	uv build
