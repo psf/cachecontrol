@@ -6,7 +6,7 @@ VENV=.venv
 ACTIVATE = $(VENV)/bin/activate
 
 bootstrap:
-	uv sync --extra dev
+	uv sync --dev
 
 lint:
 	uv run --dev ruff check
