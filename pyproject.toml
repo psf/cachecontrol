@@ -40,11 +40,7 @@ Homepage = "https://pypi.org/project/CacheControl/"
 Issues = "https://github.com/psf/cachecontrol/issues"
 Source = "https://github.com/psf/cachecontrol"
 
-[project.optional-dependencies]
-# End-user extras.
-filecache = ["filelock >= 3.8.0"]
-redis = ["redis>=2.10.5"]
-
+[dependency-groups]
 # Development extras.
 dev = [
     "CacheControl[filecache,redis]",
@@ -63,6 +59,12 @@ dev = [
     "types-redis",
     "types-requests",
 ]
+
+[project.optional-dependencies]
+# End-user extras.
+filecache = ["filelock >= 3.8.0"]
+redis = ["redis>=2.10.5"]
+
 
 [project.scripts]
 doesitcache = "cachecontrol._cmd:main"
