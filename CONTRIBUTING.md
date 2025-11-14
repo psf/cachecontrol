@@ -47,9 +47,6 @@ You can run the unit tests locally with:
 ```bash
 # run the test suite in the current environment
 make test
-
-# OPTIONAL: use `tox` to fan out across multiple interpreters
-make test-all
 ```
 
 ### Documentation
@@ -70,8 +67,8 @@ Releases of `CacheControl` are managed by GitHub Actions.
 
 To perform a release:
 
-1. Update `CacheControl`'s `__version__` attribute. It can be found under
-   `cachecontrol/__init__.py`.
+1. Update `CacheControl`'s `version` attribute. It can be found
+   in the `pyproject.toml` file, under the `[project]` section.
 
 1. Create a new tag corresponding to your new version, with a `v` prefix. For example:
 
