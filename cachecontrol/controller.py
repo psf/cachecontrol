@@ -128,12 +128,12 @@ class CacheController:
                 except IndexError:
                     if required:
                         logger.debug(
-                            "Missing value for cache-control " "directive: %s",
+                            "Missing value for cache-control directive: %s",
                             directive,
                         )
                 except ValueError:
                     logger.debug(
-                        "Invalid value for cache-control directive " "%s, must be %s",
+                        "Invalid value for cache-control directive %s, must be %s",
                         directive,
                         typ.__name__,
                     )

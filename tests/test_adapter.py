@@ -75,7 +75,7 @@ class TestSessionActions:
         resp.raise_for_status()
         r1_weak = weakref.ref(resp.raw)
 
-        # This is a mis-use of requests, becase we should either consume
+        # This is a mis-use of requests, because we should either consume
         # the body, or call .close().
         # But requests without cachecontrol handle this anyway, because
         # urllib3.response.HTTPResponse has a __del__ finalizer on it that closes it
