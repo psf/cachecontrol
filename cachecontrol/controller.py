@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING, Collection, Mapping
 
 from requests.structures import CaseInsensitiveDict
 
+from cachecontrol.heuristics import HEURISTICALLY_CACHEABLE_STATUSES
 from cachecontrol.cache import DictCache, SeparateBodyBaseCache
 from cachecontrol.serialize import Serializer
 
@@ -32,6 +33,17 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 URI = re.compile(r"^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\?([^#]*))?(#(.*))?")
+
+NEVER_CACHE_STATUSES = (
+    # Per https://www.rfc-editor.org/rfc/rfc9111.html#section-3 the status
+    # code must be final
+    100,
+    101,
+    # From httplib2: Don't cache 206's since we aren't going to
+    #                handle byte range requests
+    206,
+)
+
 
 PERMANENT_REDIRECT_STATUSES = (301, 308)
 
@@ -60,7 +72,20 @@ class CacheController:
         self.cache = DictCache() if cache is None else cache
         self.cache_etags = cache_etags
         self.serializer = serializer or Serializer()
-        self.cacheable_status_codes = status_codes or (200, 203, 300, 301, 308)
+        # Per https://www.rfc-editor.org/rfc/rfc9111.html#section-3-2.7.1 all
+        # all final response codes are potentially cacheable, subject to the
+        # other conditions.  CacheController conservatively only caches common
+        # ones codes.  For example, even with a max-age set, a 500 Internal
+        # Server Error will not be cached
+        self.cacheable_status_codes = status_codes or (
+            200,
+            203,
+            300,
+            301,
+            302,
+            307,
+            308,
+        )
 
     @classmethod
     def _urlnorm(cls, uri: str) -> str:
@@ -343,12 +368,11 @@ class CacheController:
         else:
             response = response_or_ref
 
-        # From httplib2: Don't cache 206's since we aren't going to
-        #                handle byte range requests
-        cacheable_status_codes = status_codes or self.cacheable_status_codes
-        if response.status not in cacheable_status_codes:
+        if response.status in NEVER_CACHE_STATUSES:
             logger.debug(
-                "Status code %s not in %s", response.status, cacheable_status_codes
+                "Status code %s in never cache set %s",
+                response.status,
+                NEVER_CACHE_STATUSES,
             )
             return
 
@@ -377,6 +401,30 @@ class CacheController:
 
         cc_req = self.parse_cache_control(request.headers)
         cc = self.parse_cache_control(response_headers)
+
+        # "at least one of the following" from
+        # https://www.rfc-editor.org/rfc/rfc9111.html#section-3-2.7.1
+        has_explicit_freshness = (
+            "public" in cc or "expires" in response_headers or "max-age" in cc
+            # NOTE: s-maxage is also listed in the RFC section, but
+            # cache_response() doesn't currently express the concept of shared
+            # vs private caching
+        )
+        cacheable_status_codes = status_codes or self.cacheable_status_codes
+        if response.status not in cacheable_status_codes:
+            logger.debug(
+                "Status code %s not in %s", response.status, cacheable_status_codes
+            )
+            return
+        if (
+            response.status not in HEURISTICALLY_CACHEABLE_STATUSES
+            and not has_explicit_freshness
+        ):
+            logger.debug(
+                "Status code %s is not heuristically cacheable and no explicit caching headers are set",
+                response.status,
+            )
+            return
 
         assert request.url is not None
         cache_url = self.cache_url(request.url)
