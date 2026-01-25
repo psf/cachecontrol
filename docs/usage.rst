@@ -7,6 +7,10 @@
  Using CacheControl
 ====================
 
+.. important::
+
+    You **must** read the :doc:`security` page before using CacheControl.
+
 CacheControl assumes you are using a `requests.Session` for your
 requests. If you are making ad-hoc requests using `requests.get` then
 you probably are not terribly concerned about caching.
