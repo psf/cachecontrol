@@ -34,6 +34,10 @@ requirements. See :doc:`storage` for more info.
 Quick Start
 ===========
 
+.. important::
+
+    You **must** read the :doc:`security` page before using CacheControl.
+
 For the impatient, here is how to get started using CacheControl:
 
 .. code-block:: python
@@ -52,25 +56,11 @@ For the impatient, here is how to get started using CacheControl:
 This uses a thread-safe in-memory dictionary for storage.
 
 
-Tests
-=====
-
-The tests are all in ``cachecontrol/tests`` and are runnable by ``py.test``.
-
-
 Disclaimers
 ===========
 
-CacheControl is relatively new and might have bugs. I have made an
-effort to faithfully port the tests from httplib2 to CacheControl, but
-there is a decent chance that I've missed something. Please file bugs
-if you find any issues!
-
-With that in mind, CacheControl has been used successfully in
-production environments, replacing httplib2's usage.
-
-If you give it a try, please let me know of any issues.
-
+HTTP caching comes with important security considerations. Please
+read the :doc:`security` page for more information.
 
 .. _httplib2: https://github.com/httplib2/httplib2
 .. _requests: https://requests.readthedocs.io/en/latest/
@@ -89,12 +79,14 @@ Contents
    etags
    custom_heuristics
    tips
+   security
 
 .. toctree::
    :hidden:
    :caption: Development
    :maxdepth: 2
 
+   hacking
    release_notes
    GitHub <https://github.com/psf/cachecontrol>
    PyPI <https://pypi.org/project/cachecontrol>

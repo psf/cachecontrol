@@ -19,8 +19,7 @@ format:
 
 doc: $(VENV)/bin/sphinx-build
 	. $(ACTIVATE) && \
-		cd docs && \
-		make html
+		make -C docs html
 
 clean: clean-build clean-pyc clean-test
 
