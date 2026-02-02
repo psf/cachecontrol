@@ -163,7 +163,7 @@ class CacheController:
 
         result = self.serializer.loads(request, cache_data, body_file)
         if result is None:
-            logger.warning("Cache entry deserialization failed, entry ignored")
+            logger.debug("Cache entry deserialization failed, entry ignored")
         return result
 
     def cached_request(self, request: PreparedRequest) -> HTTPResponse | Literal[False]:
