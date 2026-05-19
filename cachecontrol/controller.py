@@ -61,6 +61,7 @@ class CacheController:
         self.cache_etags = cache_etags
         self.serializer = serializer or Serializer()
         self.cacheable_status_codes = status_codes or (200, 203, 300, 301, 308)
+        self._request_to_cache_response = weakref.WeakKeyDictionary()
 
     @classmethod
     def _urlnorm(cls, uri: str) -> str:
@@ -281,6 +282,10 @@ class CacheController:
         new_headers = {}
 
         if resp:
+            # Save the cached response associated with the request so
+            # if the server returns a 304 we can use exactly this response.
+            # (usefull in case the cache gets altered in the meantime)
+            self._request_to_cache_response[request] = resp
             headers: CaseInsensitiveDict[str] = CaseInsensitiveDict(resp.headers)
 
             if "etag" in headers:
@@ -479,7 +484,7 @@ class CacheController:
         """
         assert request.url is not None
         cache_url = self.cache_url(request.url)
-        cached_response = self._load_from_cache(request)
+        cached_response = self._request_to_cache_response.get(request) or self._load_from_cache(request)
 
         if not cached_response:
             # we didn't have a cached response
