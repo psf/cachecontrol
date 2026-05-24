@@ -158,6 +158,10 @@ class CacheController:
 
         if isinstance(self.cache, SeparateBodyBaseCache):
             body_file = self.cache.get_body(cache_url)
+            if body_file is None:
+                logger.debug("Body file missing, deleting cache entry")
+                self.cache.delete(cache_url)
+                return None
         else:
             body_file = None
 
@@ -303,6 +307,11 @@ class CacheController:
         Store the data in the cache.
         """
         if isinstance(self.cache, SeparateBodyBaseCache):
+            # body is None can happen when, for example, we're only updating
+            # headers, as is the case in update_cached_response().
+            if body is not None:
+                self.cache.set_body(cache_url, body)
+
             # We pass in the body separately; just put a placeholder empty
             # string in the metadata.
             self.cache.set(
@@ -310,10 +319,6 @@ class CacheController:
                 self.serializer.dumps(request, response, b""),
                 expires=expires_time,
             )
-            # body is None can happen when, for example, we're only updating
-            # headers, as is the case in update_cached_response().
-            if body is not None:
-                self.cache.set_body(cache_url, body)
         else:
             self.cache.set(
                 cache_url,
