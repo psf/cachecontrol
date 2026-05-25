@@ -112,6 +112,25 @@ class TestCacheControllerResponse:
 
         assert not cc.cache.set.called
 
+    def test_cache_response_head_request(self, cc):
+        now = time.strftime(TIME_FMT, time.gmtime())
+        req = self.req()
+        req.method = "HEAD"
+
+        resp = self.resp(
+            {
+                "cache-control": "max-age=3600",
+                "date": now,
+                "Content-Length": "1234",
+            }
+        )
+        # HEAD responses have no body
+        resp.read = lambda **k: b""
+
+        cc.cache_response(req, resp, body=b"")
+        cc.serializer.dumps.assert_called_with(req, resp, b"")
+        cc.cache.set.assert_called_with(self.url, ANY, expires=3600)
+
     def test_no_cache_with_vary_star(self, cc):
         # Vary: * indicates that the response can never be served
         # from the cache, so storing it can be avoided.

@@ -372,6 +372,7 @@ class CacheController:
             and "content-length" in response_headers
             and response_headers["content-length"].isdigit()
             and int(response_headers["content-length"]) != len(body)
+            and request.method != "HEAD"
         ):
             return
 
