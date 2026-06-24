@@ -39,6 +39,14 @@ class TestCacheControllerResponse:
         # Cache controller fixture
         return CacheController(Mock(), serializer=Mock())
 
+    @pytest.mark.parametrize("status_code", [100, 101])
+    def test_no_cache_without_final(self, cc, status_code):
+        now = time.strftime(TIME_FMT, time.gmtime())
+        resp = self.resp({"cache-control": "max-age=3600", "date": now})
+        resp.status = status_code
+        cc.cache_response(Mock(), resp)
+        assert not cc.cache.set.called
+
     def test_no_cache_non_20x_response(self, cc):
         # No caching without some extra headers, so we add them
         now = time.strftime(TIME_FMT, time.gmtime())
@@ -47,7 +55,7 @@ class TestCacheControllerResponse:
         no_cache_codes = [201, 400, 500]
         for code in no_cache_codes:
             resp.status = code
-            cc.cache_response(Mock(), resp)
+            cc.cache_response(self.req(), resp)
             assert not cc.cache.set.called
 
         # this should work b/c the resp is 20x
@@ -71,6 +79,17 @@ class TestCacheControllerResponse:
 
         assert not cc.cache.set.called
 
+    @pytest.mark.parametrize("status_code", [302, 307])
+    def test_no_cache_non_heuristic_status_without_explicit_freshness(
+        self, cc, status_code
+    ):
+        now = time.strftime(TIME_FMT, time.gmtime())
+        # NOTE: Only 'date' header, NO "hard" cache-control/expires/public headers
+        resp = self.resp({"date": now})
+        resp.status = status_code
+        cc.cache_response(self.req(), resp)
+        assert not cc.cache.set.called
+
     def test_cache_response_no_cache_control(self, cc):
         resp = self.resp()
         cc.cache_response(self.req(), resp)
@@ -80,6 +99,19 @@ class TestCacheControllerResponse:
     def test_cache_response_cache_max_age(self, cc):
         now = time.strftime(TIME_FMT, time.gmtime())
         resp = self.resp({"cache-control": "max-age=3600", "date": now})
+        req = self.req()
+        cc.cache_response(req, resp)
+        cc.serializer.dumps.assert_called_with(req, resp, None)
+        cc.cache.set.assert_called_with(self.url, ANY, expires=3600)
+
+    def test_cache_response_explicit_non_heuristic(self, cc):
+        # meets the requirements of
+        # https://www.rfc-editor.org/rfc/rfc9111.html#section-3-2.7.1
+        # *without* being heuristically cacheable
+        now = time.strftime(TIME_FMT, time.gmtime())
+        resp = self.resp({"cache-control": "max-age=3600", "date": now})
+        resp.status = 302
+
         req = self.req()
         cc.cache_response(req, resp)
         cc.serializer.dumps.assert_called_with(req, resp, None)
