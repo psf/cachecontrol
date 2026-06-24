@@ -23,11 +23,12 @@ class Test39:
 
 def test_getattr_during_gc():
     s = CallbackFileWrapper(None, None)
-    # normal behavior:
-    with pytest.raises(AttributeError):
-        s.x
+    with s._CallbackFileWrapper__buf:
+        # normal behavior:
+        with pytest.raises(AttributeError):
+            s.x
 
-    # this previously had caused an infinite recursion
-    vars(s).clear()  # gc does this.
-    with pytest.raises(AttributeError):
-        s.x
+        # this previously had caused an infinite recursion
+        vars(s).clear()  # gc does this.
+        with pytest.raises(AttributeError):
+            s.x

@@ -79,4 +79,6 @@ module = "msgpack"
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
+addopts = "--strict-markers --strict-config"
 norecursedirs = ["bin", "lib", "include", "build"]
+filterwarnings = ["error"]
