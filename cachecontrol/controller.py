@@ -278,9 +278,11 @@ class CacheController:
 
     def conditional_headers(self, request: PreparedRequest) -> dict[str, str]:
         resp = self._load_from_cache(request)
-        new_headers = {}
+        if not resp:
+            return {}
+        with resp:
+            new_headers = {}
 
-        if resp:
             headers: CaseInsensitiveDict[str] = CaseInsensitiveDict(resp.headers)
 
             if "etag" in headers:
@@ -289,7 +291,7 @@ class CacheController:
             if "last-modified" in headers:
                 new_headers["If-Modified-Since"] = headers["Last-Modified"]
 
-        return new_headers
+            return new_headers
 
     def _cache_set(
         self,
