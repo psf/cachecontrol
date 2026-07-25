@@ -63,6 +63,13 @@ class TestCacheControllerResponse:
 
         assert not cc.cache.set.called
 
+    def test_no_cache_with_malformed_date(self, cc):
+        # An unparseable date must not crash; treat it like a missing date
+        resp = self.resp({"cache-control": "max-age=3600", "date": "garbage"})
+        cc.cache_response(self.req(), resp)
+
+        assert not cc.cache.set.called
+
     def test_no_cache_with_wrong_sized_body(self, cc):
         # When the body is the wrong size, then we don't want to cache it
         # because it is obviously broken.
@@ -301,6 +308,16 @@ class TestCacheControlRequest:
         now = time.strftime(TIME_FMT, time.gmtime())
         # Not a valid header; this would be from a misconfigured server
         resp = Mock(headers={"cache-control": "max-age=xxx", "date": now}, status=200)
+
+        self.c.cache = DictCache({self.url: resp})
+
+        assert not self.req({})
+
+    def test_cached_request_with_malformed_date_not_returned(self):
+        # A cached entry with an unparseable date must not crash the lookup
+        resp = Mock(
+            headers={"cache-control": "max-age=3600", "date": "garbage"}, status=200
+        )
 
         self.c.cache = DictCache({self.url: resp})
 
