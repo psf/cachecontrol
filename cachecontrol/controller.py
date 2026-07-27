@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 
 URI = re.compile(r"^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\?([^#]*))?(#(.*))?")
 
-NEVER_CACHE_STATUSES = (
+_NEVER_CACHE_STATUSES = (
     # Per https://www.rfc-editor.org/rfc/rfc9111.html#section-3 the status
     # code must be final
     100,
@@ -368,11 +368,11 @@ class CacheController:
         else:
             response = response_or_ref
 
-        if response.status in NEVER_CACHE_STATUSES:
+        if response.status in _NEVER_CACHE_STATUSES:
             logger.debug(
                 "Status code %s in never cache set %s",
                 response.status,
-                NEVER_CACHE_STATUSES,
+                _NEVER_CACHE_STATUSES,
             )
             return
 
