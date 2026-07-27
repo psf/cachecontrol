@@ -72,11 +72,11 @@ class CacheController:
         self.cache = DictCache() if cache is None else cache
         self.cache_etags = cache_etags
         self.serializer = serializer or Serializer()
-        # Per https://www.rfc-editor.org/rfc/rfc9111.html#section-3-2.7.1 all
-        # all final response codes are potentially cacheable, subject to the
-        # other conditions.  CacheController conservatively only caches common
-        # ones codes.  For example, even with a max-age set, a 500 Internal
-        # Server Error will not be cached
+        # Per https://www.rfc-editor.org/rfc/rfc9111.html#section-3 all final
+        # response codes are potentially cacheable, subject to the other
+        # conditions.  CacheController conservatively only considers a subset
+        # that are commonly cached by widely used user agents.  For example, even
+        # with a max-age set, a 500 Internal Server Error will not be cached.
         self.cacheable_status_codes = status_codes or (
             200,
             203,
