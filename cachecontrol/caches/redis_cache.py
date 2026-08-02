@@ -25,14 +25,20 @@ class RedisCache(BaseCache):
     ) -> None:
         if not expires:
             self.conn.set(key, value)
-        elif isinstance(expires, datetime):
+            return
+
+        if isinstance(expires, datetime):
             now_utc = datetime.now(timezone.utc)
             if expires.tzinfo is None:
                 now_utc = now_utc.replace(tzinfo=None)
-            delta = expires - now_utc
-            self.conn.setex(key, int(delta.total_seconds()), value)
+            ttl = int((expires - now_utc).total_seconds())
         else:
-            self.conn.setex(key, expires, value)
+            ttl = expires
+
+        if ttl <= 0:
+            self.conn.delete(key)
+        else:
+            self.conn.setex(key, ttl, value)
 
     def delete(self, key: str) -> None:
         self.conn.delete(key)
