@@ -23,6 +23,8 @@ class RedisCache(BaseCache):
     def set(
         self, key: str, value: bytes, expires: int | datetime | None = None
     ) -> None:
+        """Store ``value``, optionally expiring it after ``expires``.
+        """
         if not expires:
             self.conn.set(key, value)
             return
@@ -35,10 +37,7 @@ class RedisCache(BaseCache):
         else:
             ttl = expires
 
-        if ttl <= 0:
-            self.conn.delete(key)
-        else:
-            self.conn.setex(key, ttl, value)
+        self.conn.setex(key, ttl, value)
 
     def delete(self, key: str) -> None:
         self.conn.delete(key)

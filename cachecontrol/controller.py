@@ -301,9 +301,14 @@ class CacheController:
         body: bytes | None = None,
         expires_time: int | None = None,
     ) -> None:
+        """Store the data in the cache.
         """
-        Store the data in the cache.
-        """
+        if expires_time is not None and expires_time <= 0:
+            # Already stale on arrival
+            logger.debug("Purging cached response: expires in the past")
+            self.cache.delete(cache_url)
+            return
+
         if isinstance(self.cache, SeparateBodyBaseCache):
             # We pass in the body separately; just put a placeholder empty
             # string in the metadata.
@@ -452,11 +457,15 @@ class CacheController:
             elif "expires" in response_headers:
                 if response_headers["expires"]:
                     expires = parsedate_tz(response_headers["expires"])
-                    if expires is not None:
-                        expires_time = calendar.timegm(expires[:6]) - date
+                    if expires is None:
+                        # https://tools.ietf.org/html/rfc9111#section-5.3: an
+                        # invalid Expires must be read as a time in the past.
+                        expires_time = 0
                     else:
-                        expires_time = None
+                        expires_time = calendar.timegm(expires[:6]) - date
 
+                    # A non-positive lifetime here means the response arrived
+                    # stale
                     logger.debug(
                         "Caching b/c of expires header. expires in {} seconds".format(
                             expires_time
