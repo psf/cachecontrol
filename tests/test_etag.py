@@ -23,6 +23,7 @@ class TestETag:
     @pytest.fixture()
     def sess(self, url):
         self.etag_url = urljoin(url, "/etag")
+        self.etag_no_cache_url = urljoin(url, "/etag_no_cache")
         self.update_etag_url = urljoin(url, "/update_etag")
         self.cache = DictCache()
         sess = CacheControl(
@@ -93,6 +94,17 @@ class TestETag:
         # This response does come from the cache, but only after the 304 response from
         # the server told us that was fine.
         assert r.from_cache
+
+    def test_response_no_cache_requires_revalidation(self, sess):
+        """A response's ``no-cache`` directive requires revalidation."""
+        response = sess.get(self.etag_no_cache_url)
+        assert "if-none-match" not in response.request.headers
+
+        response = sess.get(self.etag_no_cache_url)
+
+        assert "if-none-match" in response.request.headers
+        assert response.status_code == 200
+        assert response.from_cache
 
     def test_etags_get_with_range(self, sess, server):
         """A 'Range' header stops us from using the cache altogether."""

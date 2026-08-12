@@ -251,6 +251,15 @@ class TestCacheControlRequest:
         resp = self.req({"cache-control": "no-cache"})
         assert not resp
 
+    def test_cached_permanent_redirect_with_no_cache_is_revalidated(self):
+        resp = Mock(
+            headers={"cache-control": "no-cache", "location": "/elsewhere"},
+            status=301,
+        )
+        self.c.cache = DictCache({self.url: resp})
+
+        assert not self.req({})
+
     def test_cache_request_pragma_no_cache(self):
         resp = self.req({"pragma": "no-cache"})
         assert not resp

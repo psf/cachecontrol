@@ -70,6 +70,18 @@ class SimpleApp:
             start_response("200 OK", headers)
         return [pformat(env).encode("utf8")]
 
+    def etag_no_cache(self, env, start_response):
+        headers = [
+            ("Etag", self.etag_string),
+            ("Cache-Control", "no-cache, max-age=5000"),
+        ]
+        if env.get("HTTP_IF_NONE_MATCH") == self.etag_string:
+            start_response("304 Not Modified", headers)
+            return []
+
+        start_response("200 OK", headers)
+        return [pformat(env).encode("utf8")]
+
     def cache_60(self, env, start_response):
         headers = [("Cache-Control", "public, max-age=60")]
         start_response("200 OK", headers)

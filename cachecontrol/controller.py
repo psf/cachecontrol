@@ -190,6 +190,15 @@ class CacheController:
         if not resp:
             return False
 
+        headers: CaseInsensitiveDict[str] = CaseInsensitiveDict(resp.headers)
+        resp_cc = self.parse_cache_control(headers)
+
+        # A response with ``no-cache`` may be stored, but it must be
+        # successfully validated with the origin server before each reuse.
+        if "no-cache" in resp_cc:
+            logger.debug('Response header has "no-cache", cache revalidation required')
+            return False
+
         # If we have a cached permanent redirect, return it immediately. We
         # don't need to test our response for other headers b/c it is
         # intrinsically "cacheable" as it is Permanent.
@@ -207,7 +216,6 @@ class CacheController:
             logger.debug(msg)
             return resp
 
-        headers: CaseInsensitiveDict[str] = CaseInsensitiveDict(resp.headers)
         if not headers or "date" not in headers:
             if "etag" not in headers:
                 # Without date or etag, the cached response can never be used
@@ -230,8 +238,6 @@ class CacheController:
         #       urllib3 response object. This may not be best since we
         #       could probably avoid instantiating or constructing the
         #       response until we know we need it.
-        resp_cc = self.parse_cache_control(headers)
-
         # determine freshness
         freshness_lifetime = 0
 
