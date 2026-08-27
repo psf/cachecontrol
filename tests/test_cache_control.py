@@ -284,6 +284,14 @@ class TestCacheControlRequest:
         r = self.req({})
         assert not r
 
+    def test_cache_request_unfresh_permanent_redirect(self):
+        earlier = time.time() - 3600
+        date = time.strftime(TIME_FMT, time.gmtime(earlier))
+        resp = Mock(headers={"cache-control": "max-age=1", "date": date}, status=301)
+        self.c.cache = DictCache({self.url: resp})
+        r = self.req({})
+        assert not r
+
     def test_cache_request_fresh_expires(self):
         later = time.time() + 86400  # GMT + 1 day
         expires = time.strftime(TIME_FMT, time.gmtime(later))

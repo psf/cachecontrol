@@ -190,23 +190,11 @@ class CacheController:
         if not resp:
             return False
 
-        # If we have a cached permanent redirect, return it immediately. We
-        # don't need to test our response for other headers b/c it is
-        # intrinsically "cacheable" as it is Permanent.
-        #
-        # See:
-        #   https://tools.ietf.org/html/rfc7231#section-6.4.2
-        #
-        # Client can try to refresh the value by repeating the request
-        # with cache busting headers as usual (ie no-cache).
-        if int(resp.status) in PERMANENT_REDIRECT_STATUSES:
-            msg = (
-                "Returning cached permanent redirect response "
-                "(ignoring date and etag information)"
-            )
-            logger.debug(msg)
-            return resp
-
+        # Apply normal freshness checks to every cached response. In the case
+        # of permanent redirects, RFC 9110 sections 15.4.2 and 15.4.9 permit
+        # heuristic caching, but RFC 9111 section 4.2.2 requires explicit
+        # expiration to take precedence. The redirect fallback below is used
+        # only when neither max-age nor Expires provides an expiration.
         headers: CaseInsensitiveDict[str] = CaseInsensitiveDict(resp.headers)
         if not headers or "date" not in headers:
             if "etag" not in headers:
@@ -248,6 +236,12 @@ class CacheController:
                 expire_time = calendar.timegm(expires[:6]) - date
                 freshness_lifetime = max(0, expire_time)
                 logger.debug("Freshness lifetime from expires: %i", freshness_lifetime)
+
+        # Permanent redirects are heuristically cacheable when the response
+        # does not provide an explicit freshness lifetime.
+        elif int(resp.status) in PERMANENT_REDIRECT_STATUSES:
+            logger.debug("Returning cached permanent redirect response")
+            return resp
 
         # Determine if we are setting freshness limit in the
         # request. Note, this overrides what was in the response.
