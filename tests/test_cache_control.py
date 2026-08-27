@@ -322,3 +322,11 @@ class TestCacheControlRequest:
         self.c.cache = DictCache({self.url: resp})
 
         assert not self.req({})
+
+
+class TestCacheControllerUrlNormalization:
+    def test_cache_url_preserves_userinfo_case(self):
+        url = "HTTP://Alice:Secret@EXAMPLE.COM/resource"
+        expected_url = "http://Alice:Secret@example.com/resource"
+
+        assert CacheController.cache_url(url) == expected_url

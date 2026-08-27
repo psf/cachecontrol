@@ -70,7 +70,8 @@ class CacheController:
             raise Exception("Only absolute URIs are allowed. uri = %s" % uri)
 
         scheme = scheme.lower()
-        authority = authority.lower()
+        userinfo, separator, host = authority.rpartition("@")
+        authority = f"{userinfo}{separator}{host.lower()}"
 
         if not path:
             path = "/"
