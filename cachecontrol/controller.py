@@ -151,15 +151,14 @@ class CacheController:
 
         cache_url = request.url
         assert cache_url is not None
-        cache_data = self.cache.get(cache_url)
+        if isinstance(self.cache, SeparateBodyBaseCache):
+            cache_data, body_file = self.cache.get_with_body(cache_url)
+        else:
+            cache_data = self.cache.get(cache_url)
+            body_file = None
         if cache_data is None:
             logger.debug("No cache entry available")
             return None
-
-        if isinstance(self.cache, SeparateBodyBaseCache):
-            body_file = self.cache.get_body(cache_url)
-        else:
-            body_file = None
 
         result = self.serializer.loads(request, cache_data, body_file)
         if result is None:
@@ -305,17 +304,12 @@ class CacheController:
         Store the data in the cache.
         """
         if isinstance(self.cache, SeparateBodyBaseCache):
-            # We pass in the body separately; just put a placeholder empty
-            # string in the metadata.
-            self.cache.set(
+            self.cache.set_with_body(
                 cache_url,
                 self.serializer.dumps(request, response, b""),
+                body,
                 expires=expires_time,
             )
-            # body is None can happen when, for example, we're only updating
-            # headers, as is the case in update_cached_response().
-            if body is not None:
-                self.cache.set_body(cache_url, body)
         else:
             self.cache.set(
                 cache_url,
