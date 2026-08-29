@@ -127,6 +127,67 @@ class TestCacheControllerResponse:
 
         assert not cc.cache.set.called
 
+    def test_cache_response_expires_in_future(self, cc):
+        now = time.time()
+        resp = self.resp(
+            {
+                "date": time.strftime(TIME_FMT, time.gmtime(now)),
+                "expires": time.strftime(TIME_FMT, time.gmtime(now + 3600)),
+            }
+        )
+        cc.cache_response(self.req(), resp)
+
+        cc.cache.set.assert_called_with(self.url, ANY, expires=3600)
+
+    @pytest.mark.parametrize(
+        "expires",
+        [
+            # RFC 9111 4.2.1: freshness lifetime is Expires - Date, which the
+            # origin is free to make negative to force revalidation.
+            "past",
+            # RFC 9111 5.3: an invalid Expires means "already expired".
+            "0",
+            "garbage",
+        ],
+    )
+    def test_cache_response_expires_in_past_not_cached(self, cc, expires):
+        now = time.time()
+        if expires == "past":
+            expires = time.strftime(TIME_FMT, time.gmtime(now - 3600))
+        resp = self.resp(
+            {"date": time.strftime(TIME_FMT, time.gmtime(now)), "expires": expires}
+        )
+        cc.cache_response(self.req(), resp)
+
+        assert not cc.cache.set.called
+
+    def test_cache_response_expires_in_past_purges_existing_entry(self):
+        now = time.time()
+        cache = DictCache({self.url: b"stale"})
+        cc = CacheController(cache, serializer=Mock())
+
+        resp = self.resp(
+            {
+                "date": time.strftime(TIME_FMT, time.gmtime(now)),
+                "expires": time.strftime(TIME_FMT, time.gmtime(now - 3600)),
+            }
+        )
+        cc.cache_response(self.req(), resp)
+
+        assert cc.cache.get(self.url) is None
+
+    @pytest.mark.parametrize("expires_time", [0, -1, -3600])
+    def test_cache_set_never_passes_non_positive_expires(self, cc, expires_time):
+        """``_cache_set`` is the only chokepoint into ``BaseCache.set``.
+
+        Backends may therefore assume ``expires`` is either None or strictly
+        positive; a non-positive deadline must purge instead of store.
+        """
+        cc._cache_set(self.url, self.req(), self.resp(), b"testing", expires_time)
+
+        assert not cc.cache.set.called
+        cc.cache.delete.assert_called_with(self.url)
+
     def test_no_cache_with_vary_star(self, cc):
         # Vary: * indicates that the response can never be served
         # from the cache, so storing it can be avoided.
