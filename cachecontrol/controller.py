@@ -112,7 +112,7 @@ class CacheController:
                 continue
 
             parts = cc_directive.split("=", 1)
-            directive = parts[0].strip()
+            directive = parts[0].strip().lower()
 
             try:
                 typ, required = known_directives[directive]

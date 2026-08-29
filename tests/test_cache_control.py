@@ -113,6 +113,14 @@ class TestCacheControllerResponse:
         cc.cache_response(self.req(), resp)
         assert not cc.cache.get(cache_url)
 
+    def test_cache_control_directives_case_insensitive(self, cc):
+        now = time.strftime(TIME_FMT, time.gmtime())
+        resp = self.resp({"cache-control": "No-Store, max-age=3600", "date": now})
+
+        cc.cache_response(self.req(), resp)
+
+        assert not cc.cache.set.called
+
     def test_cache_response_no_store_with_etag(self, cc):
         resp = self.resp({"cache-control": "no-store", "ETag": "jfd9094r808"})
         cc.cache_response(self.req(), resp)
