@@ -101,6 +101,14 @@ class SimpleApp:
         for i in range(10):
             yield pformat(i).encode("utf8")
 
+    def stream_with_crlf(self, env, start_response):
+        headers = [("Content-Type", "text/plain"), ("Cache-Control", "max-age=5000")]
+        start_response("200 OK", headers)
+
+        yield b"AA"
+        yield b"\r\n"
+        yield b"BB"
+
     def fixed_length(self, env, start_response):
         body = b"0123456789"
         headers = [
