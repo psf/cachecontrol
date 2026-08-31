@@ -8,8 +8,8 @@ Unit tests that verify FileCache storage works correctly.
 
 import os
 import string
-
 from random import randint, sample
+from unittest.mock import MagicMock, call, patch
 
 import pytest
 import requests
@@ -147,6 +147,48 @@ class TestSeparateBodyFileCache(FileCacheTestsMixin):
     """
 
     FileCacheClass = SeparateBodyFileCache
+
+    def test_entry_write_uses_one_lock(self, sess):
+        operations = MagicMock()
+        cache = self.cache
+        key = self.url
+        name = cache._fn(key)
+
+        with (
+            patch.object(cache, "lock_class", operations.lock),
+            patch.object(cache, "_write_unlocked", operations.write),
+        ):
+            cache.set_with_body(key, b"metadata", b"body")
+
+        assert operations.mock_calls == [
+            call.lock(name + ".lock"),
+            call.lock().__enter__(),
+            call.write(name, b"metadata"),
+            call.write(name + ".body", b"body"),
+            call.lock().__exit__(None, None, None),
+        ]
+
+    def test_entry_read_uses_one_lock(self, sess):
+        operations = MagicMock()
+        cache = self.cache
+        key = self.url
+        name = cache._fn(key)
+        operations.get.return_value = b"metadata"
+        operations.get_body.return_value = None
+        with (
+            patch.object(cache, "lock_class", operations.lock),
+            patch.object(cache, "get", operations.get),
+            patch.object(cache, "get_body", operations.get_body),
+        ):
+            cache.get_with_body(key)
+
+        assert operations.mock_calls == [
+            call.lock(name + ".lock"),
+            call.lock().__enter__(),
+            call.get(key),
+            call.get_body(key),
+            call.lock().__exit__(None, None, None),
+        ]
 
     def test_body_actually_stored_separately(self, sess):
         """

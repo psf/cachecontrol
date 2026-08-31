@@ -86,14 +86,17 @@ class _FileCacheMixin:
         os.makedirs(dirname, self.dirmode, exist_ok=True)
 
         with self.lock_class(path + ".lock"):
-            # Write our actual file
-            (fd, name) = tempfile.mkstemp(dir=dirname)
-            try:
-                os.write(fd, data)
-            finally:
-                os.close(fd)
-            os.chmod(name, self.filemode)
-            os.replace(name, path)
+            self._write_unlocked(path, data)
+
+    def _write_unlocked(self, path: str, data: bytes) -> None:
+        """Atomically replace a file while its lock is held."""
+        (fd, name) = tempfile.mkstemp(dir=os.path.dirname(path))
+        try:
+            os.write(fd, data)
+        finally:
+            os.close(fd)
+        os.chmod(name, self.filemode)
+        os.replace(name, path)
 
     def _delete(self, key: str, suffix: str) -> None:
         name = self._fn(key) + suffix
@@ -120,6 +123,25 @@ class SeparateBodyFileCache(_FileCacheMixin, SeparateBodyBaseCache):
     peak memory usage.
     """
 
+    def get_with_body(self, key: str) -> tuple[bytes | None, IO[bytes] | None]:
+        name = self._fn(key)
+        with self.lock_class(name + ".lock"):
+            return super().get_with_body(key)
+
+    def set_with_body(
+        self,
+        key: str,
+        metadata: bytes,
+        body: bytes | None,
+        expires: int | datetime | None = None,
+    ) -> None:
+        name = self._fn(key)
+        os.makedirs(os.path.dirname(name), self.dirmode, exist_ok=True)
+        with self.lock_class(name + ".lock"):
+            self._write_unlocked(name, metadata)
+            if body is not None:
+                self._write_unlocked(name + ".body", body)
+
     def get_body(self, key: str) -> IO[bytes] | None:
         name = self._fn(key) + ".body"
         try:
@@ -128,12 +150,18 @@ class SeparateBodyFileCache(_FileCacheMixin, SeparateBodyBaseCache):
             return None
 
     def set_body(self, key: str, body: bytes) -> None:
-        name = self._fn(key) + ".body"
-        self._write(name, body)
+        name = self._fn(key)
+        os.makedirs(os.path.dirname(name), self.dirmode, exist_ok=True)
+        with self.lock_class(name + ".lock"):
+            self._write_unlocked(name + ".body", body)
 
     def delete(self, key: str) -> None:
-        self._delete(key, "")
-        self._delete(key, ".body")
+        if self.forever:
+            return
+        name = self._fn(key)
+        with self.lock_class(name + ".lock"):
+            self._delete(key, "")
+            self._delete(key, ".body")
 
 
 def url_to_file_path(url: str, filecache: FileCache) -> str:
