@@ -196,6 +196,21 @@ class TestCacheControllerResponse:
 
         assert not cc.cache.set.called
 
+    def test_cache_response_preserves_userinfo_case(self):
+        cache = DictCache({})
+        cc = CacheController(cache)
+        url = "http://Alice:Secret@localhost/"
+        req = DummyRequest(url=url, headers={})
+        resp = DummyResponse(status=200, headers={"ETag": "xyz"})
+        cc.cache_response(req, resp, b"")
+
+        req = DummyRequest(
+            url="http://alice:secret@localhost/", headers={"if-match": "xyz"}
+        )
+        result = cc.conditional_headers(req)
+
+        assert not result
+
     def test_update_cached_response_no_local_cache(self):
         """
         If the local cache doesn't have the given URL, just reuse the response
