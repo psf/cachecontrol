@@ -113,7 +113,7 @@ class CallbackFileWrapper:
 
     def _safe_read(self, amt: int) -> bytes:
         data: bytes = self.__fp._safe_read(amt)  # type: ignore[attr-defined]
-        if self.__chunk_bytes_remaining == 0 and amt == 2 and data == b"\r\n":
+        if self.__chunk_bytes_remaining == 0 and amt == 2:
             return data
 
         self.__buf.write(data)
