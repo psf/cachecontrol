@@ -8,7 +8,7 @@ Unit tests that verify our caching methods work correctly.
 
 import os
 import time
-from unittest.mock import ANY, Mock
+from unittest.mock import ANY, Mock, patch
 
 import pytest
 
@@ -195,6 +195,28 @@ class TestCacheControllerResponse:
         cc.cache_response(self.req(), resp)
 
         assert not cc.cache.set.called
+
+    def test_separate_body_cache_uses_paired_operations(self, tmp_path):
+        cache = SeparateBodyFileCache(os.fsdecode(tmp_path))
+        serializer = Mock()
+        serializer.dumps.return_value = b"metadata"
+        controller = CacheController(cache, serializer=serializer)
+        request = self.req()
+        response = self.resp()
+
+        with (
+            patch.object(cache, "set_with_body") as set_with_body,
+            patch.object(
+                cache, "get_with_body", return_value=(b"metadata", None)
+            ) as get_with_body,
+        ):
+            controller._cache_set(self.url, request, response, b"body", 60)
+            controller._load_from_cache(request)
+
+        set_with_body.assert_called_once_with(
+            self.url, b"metadata", b"body", expires=60
+        )
+        get_with_body.assert_called_once_with(self.url)
 
     def test_update_cached_response_no_local_cache(self):
         """
