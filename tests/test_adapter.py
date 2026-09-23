@@ -62,6 +62,11 @@ class TestSessionActions:
         sess.get(url)
         assert not r2.from_cache
 
+    def test_post_invalidates_cache(self, url, sess):
+        sess.get(url)
+        sess.post(url, data={"foo": "bar"})
+        assert not sess.get(url).from_cache
+
     def test_close(self):
         cache = mock.Mock(spec=DictCache)
         sess = Session()

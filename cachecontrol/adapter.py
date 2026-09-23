@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 
 
 class CacheControlAdapter(HTTPAdapter):
-    invalidating_methods = {"PUT", "PATCH", "DELETE"}
+    invalidating_methods = {"POST", "PUT", "PATCH", "DELETE"}
 
     def __init__(
         self,
