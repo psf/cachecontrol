@@ -353,6 +353,47 @@ class TestCacheControlRequest:
         r = self.req({})
         assert not r
 
+    @pytest.mark.parametrize("status", [200, 301, 308])
+    @pytest.mark.parametrize("expiration", ["max-age", "expires"])
+    def test_request_max_age_does_not_extend_response_freshness(
+        self, monkeypatch, status, expiration
+    ):
+        now = 1700000000
+        monkeypatch.setattr(time, "time", lambda: now)
+        headers = {"date": time.strftime(TIME_FMT, time.gmtime(now - 120))}
+        if expiration == "max-age":
+            headers["cache-control"] = "max-age=60"
+        else:
+            headers["expires"] = time.strftime(TIME_FMT, time.gmtime(now - 60))
+        resp = Mock(headers=headers, status=status)
+        self.c.cache = DictCache({self.url: resp})
+
+        assert self.req({"cache-control": "max-age=3600"}) is False
+
+    @pytest.mark.parametrize("request_max_age, cached", [(10, False), (3600, True)])
+    def test_request_max_age_limits_fresh_response(
+        self, monkeypatch, request_max_age, cached
+    ):
+        now = 1700000000
+        monkeypatch.setattr(time, "time", lambda: now)
+        date = time.strftime(TIME_FMT, time.gmtime(now - 30))
+        resp = Mock(headers={"cache-control": "max-age=60", "date": date}, status=200)
+        self.c.cache = DictCache({self.url: resp})
+
+        result = self.req({"cache-control": f"max-age={request_max_age}"})
+
+        assert result is (resp if cached else False)
+
+    def test_request_max_age_revalidates_etag_without_freshness(self):
+        date = time.strftime(TIME_FMT, time.gmtime())
+        resp = Mock(headers={"date": date, "etag": '"v1"'}, status=200)
+        self.c.cache = DictCache({self.url: resp})
+        request = Mock(url=self.url, headers={"cache-control": "max-age=3600"})
+
+        assert self.c.cached_request(request) is False
+        assert self.c.cache.get(self.url) is resp
+        assert self.c.conditional_headers(request) == {"If-None-Match": '"v1"'}
+
     def test_cache_request_unfresh_permanent_redirect(self):
         earlier = time.time() - 3600
         date = time.strftime(TIME_FMT, time.gmtime(earlier))

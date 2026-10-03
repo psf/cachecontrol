@@ -243,13 +243,13 @@ class CacheController:
             logger.debug("Returning cached permanent redirect response")
             return resp
 
-        # Determine if we are setting freshness limit in the
-        # request. Note, this overrides what was in the response.
+        # A request max-age can shorten, but must not extend, the response's
+        # freshness lifetime (RFC 9111 section 5.2.1.1).
         max_age = cc.get("max-age")
         if max_age is not None:
-            freshness_lifetime = max_age
+            freshness_lifetime = min(freshness_lifetime, max_age)
             logger.debug(
-                "Freshness lifetime from request max-age: %i", freshness_lifetime
+                "Freshness lifetime limited by request max-age: %i", freshness_lifetime
             )
 
         min_fresh = cc.get("min-fresh")

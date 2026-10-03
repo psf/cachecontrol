@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+import time
+
 import pytest
 
 from requests import Session
@@ -55,3 +57,15 @@ class TestMaxAge:
         resp.headers["date"] = "Tue, 15 Nov 1994 08:12:31 GMT"
         r = sess.get(self.url)
         assert not r.from_cache
+
+    def test_client_max_age_does_not_extend_server_max_age(self, sess):
+        url = self.url + "cache_60"
+        sess.get(url)
+        cached_response = self.cache.get(url)
+        cached_response.headers["date"] = time.strftime(
+            "%a, %d %b %Y %H:%M:%S GMT", time.gmtime(time.time() - 120)
+        )
+
+        response = sess.get(url, headers={"Cache-Control": "max-age=3600"})
+
+        assert not response.from_cache
