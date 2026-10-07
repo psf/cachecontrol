@@ -91,7 +91,7 @@ class SimpleApp:
         return [b"The permanent resource"]
 
     def multiple_choices(self, env, start_response):
-        headers = [("Link", "/permalink")]
+        headers = [("Link", "/permalink"), ("Cache-Control", "max-age=5000")]
         start_response("300 Multiple Choices", headers)
         return [b"See: /permalink"]
 
