@@ -14,6 +14,21 @@ if TYPE_CHECKING:
 
 TIME_FMT = "%a, %d %b %Y %H:%M:%S GMT"
 
+# Concise list from https://www.rfc-editor.org/rfc/rfc9110#section-15.1
+HEURISTICALLY_CACHEABLE_STATUSES = {
+    200,
+    203,
+    204,
+    206,
+    300,
+    301,
+    404,
+    405,
+    410,
+    414,
+    501,
+}
+
 
 def expire_after(delta: timedelta, date: datetime | None = None) -> datetime:
     date = date or datetime.now(timezone.utc)
@@ -107,20 +122,6 @@ class LastModified(BaseHeuristic):
     Unlike mozilla we limit this to 24-hr.
     """
 
-    cacheable_by_default_statuses = {
-        200,
-        203,
-        204,
-        206,
-        300,
-        301,
-        404,
-        405,
-        410,
-        414,
-        501,
-    }
-
     def update_headers(self, resp: HTTPResponse) -> dict[str, str]:
         headers: Mapping[str, str] = resp.headers
 
@@ -130,7 +131,7 @@ class LastModified(BaseHeuristic):
         if "cache-control" in headers and headers["cache-control"] != "public":
             return {}
 
-        if resp.status not in self.cacheable_by_default_statuses:
+        if resp.status not in HEURISTICALLY_CACHEABLE_STATUSES:
             return {}
 
         if "date" not in headers or "last-modified" not in headers:
