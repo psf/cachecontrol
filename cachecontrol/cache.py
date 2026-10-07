@@ -57,13 +57,36 @@ class SeparateBodyBaseCache(BaseCache):
     In this variant, the body is not stored mixed in with the metadata, but is
     passed in (as a bytes-like object) in a separate call to ``set_body()``.
 
-    That is, the expected interaction pattern is::
+    Cache implementations can override ``set_with_body()`` and
+    ``get_with_body()`` when the two operations need to be synchronized. The
+    default implementations retain the separate calls for compatibility.
+
+    The low-level interaction pattern is::
 
         cache.set(key, serialized_metadata)
         cache.set_body(key)
 
     Similarly, the body should be loaded separately via ``get_body()``.
     """
+
+    def get_with_body(self, key: str) -> tuple[bytes | None, IO[bytes] | None]:
+        """Return an entry's metadata and body together."""
+        metadata = self.get(key)
+        if metadata is None:
+            return None, None
+        return metadata, self.get_body(key)
+
+    def set_with_body(
+        self,
+        key: str,
+        metadata: bytes,
+        body: bytes | None,
+        expires: int | datetime | None = None,
+    ) -> None:
+        """Store metadata and replace the body when one is provided."""
+        self.set(key, metadata, expires)
+        if body is not None:
+            self.set_body(key, body)
 
     def set_body(self, key: str, body: bytes) -> None:
         raise NotImplementedError()
