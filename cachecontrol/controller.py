@@ -149,8 +149,8 @@ class CacheController:
         if "Range" in request.headers:
             return None
 
-        cache_url = request.url
-        assert cache_url is not None
+        assert request.url is not None
+        cache_url = self.cache_url(request.url)
         cache_data = self.cache.get(cache_url)
         if cache_data is None:
             logger.debug("No cache entry available")
