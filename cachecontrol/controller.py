@@ -382,7 +382,8 @@ class CacheController:
         cache_url = self.cache_url(request.url)
         logger.debug('Updating cache with response from "%s"', cache_url)
 
-        # Delete it from the cache if we happen to have it stored there
+        # Don't cache a no-store response. Drop a stored entry only when it
+        # is the same variant; a different Vary variant stays.
         no_store = False
         if "no-store" in cc:
             no_store = True
@@ -390,10 +391,19 @@ class CacheController:
         if "no-store" in cc_req:
             no_store = True
             logger.debug('Request header has "no-store"')
-        if no_store and self.cache.get(cache_url):
-            logger.debug('Purging existing cache entry to honor "no-store"')
-            self.cache.delete(cache_url)
         if no_store:
+            # no-store applies to this response. A different Vary variant
+            # stored under the same URL is not this response.
+            cached_data = self.cache.get(cache_url)
+            if cached_data is not None:
+                same_variant = self.serializer.stored_variant_matches(
+                    request, cached_data
+                )
+                if same_variant is False:
+                    logger.debug("Keeping cached response for a different Vary variant")
+                else:
+                    logger.debug('Purging existing cache entry to honor "no-store"')
+                    self.cache.delete(cache_url)
             return
 
         # https://tools.ietf.org/html/rfc7234#section-4.1:

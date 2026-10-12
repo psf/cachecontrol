@@ -132,6 +132,35 @@ class Serializer:
 
         return HTTPResponse(body=body, preload_content=False, **cached["response"])
 
+    def stored_variant_matches(
+        self, request: PreparedRequest, data: object
+    ) -> bool | None:
+        """Return whether ``request`` selects the stored response.
+
+        False means the entry is a different Vary variant. None means the
+        entry is not a current cache record. This uses the same Vary check
+        as ``prepare_response``.
+        """
+        if not isinstance(data, bytes):
+            return None
+        prefix = f"cc={self.serde_version},".encode()
+        if not data.startswith(prefix):
+            return None
+        try:
+            cached = msgpack.loads(data[len(prefix) :], raw=False)
+        except (ValueError, TypeError):
+            return None
+        if not isinstance(cached, dict):
+            return None
+        vary = cached.get("vary", {})
+        if not isinstance(vary, dict) or "*" in vary:
+            return None
+
+        for header, value in vary.items():
+            if request.headers.get(header, None) != value:
+                return False
+        return True
+
     def _loads_v4(
         self,
         request: PreparedRequest,

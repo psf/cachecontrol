@@ -113,6 +113,57 @@ class TestCacheControllerResponse:
         cc.cache_response(self.req(), resp)
         assert not cc.cache.get(cache_url)
 
+    def test_no_store_keeps_different_vary_variant(self):
+        cache = DictCache()
+        cc = CacheController(cache)
+        now = time.strftime(TIME_FMT, time.gmtime())
+        json_req = DummyRequest(self.url, {"Accept": "application/json"})
+        json_resp = DummyResponse(
+            200,
+            {
+                "cache-control": "max-age=3600",
+                "date": now,
+                "vary": "Accept",
+            },
+        )
+        cc.cache_response(json_req, json_resp, b"json")
+        cached = cc.cache.get(self.url)
+        assert cached
+
+        html_req = DummyRequest(self.url, {"Accept": "text/html"})
+        html_resp = DummyResponse(
+            200,
+            {"cache-control": "no-store", "vary": "Accept"},
+        )
+        cc.cache_response(html_req, html_resp, b"html")
+
+        assert cc.cache.get(self.url) == cached
+        assert cc.serializer.loads(json_req, cached) is not None
+        assert cc.serializer.loads(html_req, cached) is None
+
+    def test_no_store_purges_same_vary_variant(self):
+        cache = DictCache()
+        cc = CacheController(cache)
+        now = time.strftime(TIME_FMT, time.gmtime())
+        req = DummyRequest(self.url, {"Accept": "application/json"})
+        resp = DummyResponse(
+            200,
+            {
+                "cache-control": "max-age=3600",
+                "date": now,
+                "vary": "Accept",
+            },
+        )
+        cc.cache_response(req, resp, b"json")
+        assert cc.cache.get(self.url)
+
+        cc.cache_response(
+            req,
+            DummyResponse(200, {"cache-control": "no-store", "vary": "Accept"}),
+            b"html",
+        )
+        assert cc.cache.get(self.url) is None
+
     def test_cache_control_directives_case_insensitive(self, cc):
         now = time.strftime(TIME_FMT, time.gmtime())
         resp = self.resp({"cache-control": "No-Store, max-age=3600", "date": now})
