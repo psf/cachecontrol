@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import functools
+import time
 import weakref
 import zlib
 from typing import TYPE_CHECKING, Any, Collection, Mapping
@@ -73,6 +74,8 @@ class CacheControlAdapter(HTTPAdapter):
             # check for etags and add headers if appropriate
             request.headers.update(self.controller.conditional_headers(request))
 
+        setattr(request, "_cachecontrol_request_time", time.time())
+        setattr(request, "_cachecontrol_request_monotonic", time.monotonic())
         resp = super().send(request, stream, timeout, verify, cert, proxies)
 
         return resp
@@ -92,6 +95,21 @@ class CacheControlAdapter(HTTPAdapter):
         """
         cacheable = cacheable_methods or self.cacheable_methods
         if not from_cache and request.method in cacheable:
+            response_time = time.time()
+            request_time = getattr(request, "_cachecontrol_request_time", None)
+            request_monotonic = getattr(
+                request, "_cachecontrol_request_monotonic", None
+            )
+            if isinstance(request_monotonic, (int, float)):
+                response_delay = max(0.0, time.monotonic() - request_monotonic)
+            elif isinstance(request_time, (int, float)):
+                response_delay = max(0.0, response_time - request_time)
+            else:
+                response_delay = 0.0
+
+            setattr(response, "_cachecontrol_response_time", response_time)
+            setattr(response, "_cachecontrol_response_delay", response_delay)
+
             # Check for any heuristics that might update headers
             # before trying to cache.
             if self.heuristic:

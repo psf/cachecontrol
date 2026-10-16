@@ -6,15 +6,18 @@
 Unit tests that verify our caching methods work correctly.
 """
 
+import logging
 import os
 import time
 from unittest.mock import ANY, Mock
 
 import pytest
+from urllib3 import HTTPResponse
 
 from cachecontrol import CacheController
 from cachecontrol.cache import DictCache
 from cachecontrol.caches import SeparateBodyFileCache
+from cachecontrol.serialize import Serializer
 
 from .utils import DummyRequest, DummyResponse, NullSerializer
 
@@ -344,6 +347,253 @@ class TestCacheControlRequest:
         self.c.cache = cache
         r = self.req({})
         assert r == resp
+
+    def test_cache_request_stale_age_header_not_returned(self, monkeypatch):
+        now = 1_700_000_020
+        monkeypatch.setattr(time, "time", lambda: now)
+        date = time.strftime(TIME_FMT, time.gmtime(now - 5))
+        # RFC 9111 section 4.2.3: corrected age must account for Age as well
+        # as apparent age from Date when the two estimates differ.
+        resp = Mock(
+            headers={"cache-control": "max-age=60", "date": date, "age": "120"},
+            status=200,
+        )
+        self.c.cache = DictCache({self.url: resp})
+
+        assert self.req({}) is False
+
+    def test_legacy_age_with_min_fresh_logs_without_integer_formatting(self, caplog):
+        now = 1_700_000_020
+        date = time.strftime(TIME_FMT, time.gmtime(now - 5))
+        resp = Mock(
+            headers={"cache-control": "max-age=60", "date": date, "age": "120"},
+            status=200,
+        )
+        self.c.cache = DictCache({self.url: resp})
+
+        with caplog.at_level(logging.DEBUG, logger="cachecontrol.controller"):
+            assert not self.req({"cache-control": "min-fresh=1"})
+
+        adjusted_age = next(
+            record
+            for record in caplog.records
+            if record.msg == "Adjusted current age from min-fresh: %s"
+        )
+        assert adjusted_age.getMessage().endswith("inf")
+
+    def test_cached_age_advances_after_storage_and_between_hits(self, monkeypatch):
+        response_time = 1_700_000_000.0
+        monkeypatch.setattr(time, "time", lambda: response_time)
+        future_date = time.strftime(TIME_FMT, time.gmtime(response_time + 60))
+        response = HTTPResponse(
+            body=b"body",
+            status=200,
+            headers={
+                "Cache-Control": "max-age=30",
+                "Date": future_date,
+                "Age": "10",
+            },
+        )
+        response._cachecontrol_response_time = response_time
+        response._cachecontrol_response_delay = 2.5
+        request = DummyRequest(self.url, {})
+        cache = DictCache()
+        controller = CacheController(cache, serializer=Serializer())
+        controller._cache_set(self.url, request, response, b"body")
+
+        monkeypatch.setattr(time, "time", lambda: response_time + 7)
+        first = controller.cached_request(request)
+        assert first is not False
+        assert first.headers["Age"] == "19"
+
+        monkeypatch.setattr(time, "time", lambda: response_time + 12)
+        second = controller.cached_request(request)
+        assert second is not False
+        assert second.headers["Age"] == "24"
+
+    def test_min_fresh_does_not_change_emitted_age(self, monkeypatch):
+        now = 1_700_000_020.0
+        monkeypatch.setattr(time, "time", lambda: now)
+        date = time.strftime(TIME_FMT, time.gmtime(now))
+        request = DummyRequest(self.url, {"Cache-Control": "min-fresh=5"})
+        response = HTTPResponse(
+            body=b"body",
+            status=200,
+            headers={
+                "Cache-Control": "max-age=20",
+                "Date": date,
+                "Age": "10",
+            },
+        )
+        cache = DictCache()
+        controller = CacheController(cache, serializer=Serializer())
+        controller._cache_set(self.url, request, response, b"body")
+
+        cached = controller.cached_request(request)
+
+        assert cached is not False
+        assert cached.headers["Age"] == "10"
+
+    @pytest.mark.parametrize(
+        ("age", "expected_age", "valid", "overflow"),
+        [
+            ("12, 99", 12, True, False),
+            ("-1", 0, False, False),
+            ("invalid", 0, False, False),
+            (str(2**31 - 1), 2**31 - 1, True, False),
+            (str(2**31), 2**31, True, True),
+            (str(2**40), 2**31, True, True),
+            ("0" * 5000, 0, True, False),
+            ("0" * 5000 + "7", 7, True, False),
+        ],
+    )
+    def test_parse_age_header(self, age, expected_age, valid, overflow):
+        assert CacheController._parse_age({"Age": age}) == (
+            expected_age,
+            valid,
+            overflow,
+        )
+
+    def test_oversized_age_cannot_be_fresh_against_larger_max_age(self, monkeypatch):
+        now = 1_700_000_020.0
+        monkeypatch.setattr(time, "time", lambda: now)
+        date = time.strftime(TIME_FMT, time.gmtime(now))
+        request = DummyRequest(self.url, {})
+        response = HTTPResponse(
+            body=b"body",
+            status=200,
+            headers={
+                "Cache-Control": "max-age=4000000000",
+                "Date": date,
+                "Age": "6000000000",
+                "ETag": '"v1"',
+            },
+        )
+        cache = DictCache()
+        controller = CacheController(cache, serializer=Serializer())
+        controller._cache_set(self.url, request, response, b"body")
+
+        assert controller.cached_request(request) is False
+
+    def test_saturated_age_cannot_use_permanent_redirect_fallback(self, monkeypatch):
+        now = 1_700_000_020.0
+        monkeypatch.setattr(time, "time", lambda: now)
+        date = time.strftime(TIME_FMT, time.gmtime(now))
+        request = DummyRequest(self.url, {})
+        response = HTTPResponse(
+            body=b"body",
+            status=301,
+            headers={
+                "Date": date,
+                "Age": str(2**31),
+                "ETag": '"v1"',
+            },
+        )
+        cache = DictCache()
+        controller = CacheController(cache, serializer=Serializer())
+        controller._cache_set(self.url, request, response, b"body")
+
+        assert controller.cached_request(request) is False
+
+    def test_computed_age_saturates_to_infinity_marker(self):
+        now = 1_700_000_020.0
+        initial_age, overflow = CacheController._initial_age(
+            {},
+            now,
+            1.0,
+            age_headers={"Age": str(2**31 - 1)},
+        )
+
+        assert initial_age == 2**31
+        assert overflow is True
+
+    @pytest.mark.parametrize(
+        ("validation_age", "validation_delay", "date_offset", "expected_age"),
+        [(None, 3.0, 0, 3), ("20", 2.0, 3, 22)],
+    )
+    def test_304_refreshes_age_from_validation_response(
+        self,
+        monkeypatch,
+        validation_age,
+        validation_delay,
+        date_offset,
+        expected_age,
+    ):
+        now = 1_700_000_020.0
+        monkeypatch.setattr(time, "time", lambda: now)
+        date = time.strftime(TIME_FMT, time.gmtime(now))
+        validation_date = time.strftime(TIME_FMT, time.gmtime(now - date_offset))
+        request = DummyRequest(self.url, {"If-None-Match": '"v1"'})
+        cache = DictCache()
+        controller = CacheController(cache, serializer=Serializer())
+        original = HTTPResponse(
+            body=b"body",
+            status=200,
+            headers={
+                "Cache-Control": "max-age=60",
+                "Date": date,
+                "ETag": '"v1"',
+                "Age": "800",
+            },
+        )
+        controller._cache_set(self.url, request, original, b"body")
+
+        validation_headers = {
+            "Cache-Control": "max-age=60",
+            "Date": validation_date,
+            "ETag": '"v1"',
+        }
+        if validation_age is not None:
+            validation_headers["Age"] = validation_age
+        not_modified = HTTPResponse(
+            body=b"",
+            status=304,
+            headers=validation_headers,
+        )
+        not_modified._cachecontrol_response_time = now
+        not_modified._cachecontrol_response_delay = validation_delay
+        refreshed = controller.update_cached_response(request, not_modified)
+        assert refreshed.headers["Age"] == str(expected_age)
+
+        monkeypatch.setattr(time, "time", lambda: now + 4)
+        cached = controller.cached_request(request)
+        assert cached is not False
+        assert cached.headers["Age"] == str(expected_age + 4)
+        assert cached.read() == b"body"
+
+    def test_304_saturated_age_is_emitted_and_remains_stale(self, monkeypatch):
+        now = 1_700_000_020.0
+        monkeypatch.setattr(time, "time", lambda: now)
+        date = time.strftime(TIME_FMT, time.gmtime(now))
+        request = DummyRequest(self.url, {"If-None-Match": '"v1"'})
+        cache = DictCache()
+        controller = CacheController(cache, serializer=Serializer())
+        original = HTTPResponse(
+            body=b"body",
+            status=200,
+            headers={
+                "Cache-Control": "max-age=4000000000",
+                "Date": date,
+                "ETag": '"v1"',
+            },
+        )
+        controller._cache_set(self.url, request, original, b"body")
+
+        not_modified = HTTPResponse(
+            body=b"",
+            status=304,
+            headers={
+                "Cache-Control": "max-age=4000000000",
+                "Date": date,
+                "Age": "6000000000",
+            },
+        )
+        not_modified._cachecontrol_response_time = now
+        refreshed = controller.update_cached_response(request, not_modified)
+        assert refreshed.headers["Age"] == str(2**31)
+
+        monkeypatch.setattr(time, "time", lambda: now + 1)
+        assert controller.cached_request(request) is False
 
     def test_cache_request_unfresh_max_age(self):
         earlier = time.time() - 3700  # epoch - 1h01m40s

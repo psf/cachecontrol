@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import io
+import math
 from typing import IO, TYPE_CHECKING, Any, Mapping, cast
 
 import msgpack
@@ -45,6 +46,28 @@ class Serializer:
                 "decode_content": response.decode_content,
             }
         }
+
+        initial_age = getattr(response, "_cachecontrol_initial_age", None)
+        response_time = getattr(response, "_cachecontrol_response_time", None)
+        if (
+            isinstance(initial_age, (int, float))
+            and not isinstance(initial_age, bool)
+            and math.isfinite(initial_age)
+            and initial_age >= 0
+            and isinstance(response_time, (int, float))
+            and not isinstance(response_time, bool)
+            and math.isfinite(response_time)
+            and response_time >= 0
+        ):
+            # This optional top-level field is additive to cc=4: existing
+            # readers ignore unknown keys, and new readers accept old records
+            # where timing metadata is absent.
+            data["cachecontrol_age"] = {
+                "initial_age": float(initial_age),
+                "response_time": float(response_time),
+            }
+            if getattr(response, "_cachecontrol_age_overflow", False) is True:
+                data["cachecontrol_age"]["overflow"] = True
 
         # Construct our vary headers
         data["vary"] = {}
@@ -130,7 +153,29 @@ class Serializer:
         # Discard any `strict` parameter serialized by older version of cachecontrol.
         cached["response"].pop("strict", None)
 
-        return HTTPResponse(body=body, preload_content=False, **cached["response"])
+        response = HTTPResponse(body=body, preload_content=False, **cached["response"])
+        age_metadata = cached.get("cachecontrol_age")
+        if isinstance(age_metadata, Mapping):
+            initial_age = age_metadata.get("initial_age")
+            response_time = age_metadata.get("response_time")
+            age_overflow = age_metadata.get("overflow", False)
+            if (
+                isinstance(initial_age, (int, float))
+                and not isinstance(initial_age, bool)
+                and math.isfinite(initial_age)
+                and initial_age >= 0
+                and isinstance(response_time, (int, float))
+                and not isinstance(response_time, bool)
+                and math.isfinite(response_time)
+                and response_time >= 0
+                and isinstance(age_overflow, bool)
+            ):
+                setattr(response, "_cachecontrol_initial_age", float(initial_age))
+                setattr(response, "_cachecontrol_response_time", float(response_time))
+                if age_overflow:
+                    setattr(response, "_cachecontrol_age_overflow", True)
+
+        return response
 
     def _loads_v4(
         self,

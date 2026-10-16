@@ -26,13 +26,22 @@ class TestVary:
         if "chunked" in resp.raw.headers.get("transfer-encoding", ""):
             resp.raw.headers.pop("transfer-encoding")
 
+        cached_headers = {key.lower(): value for key, value in cached.headers.items()}
+        response_headers = {
+            key.lower(): value for key, value in resp.raw.headers.items()
+        }
+        response_age = response_headers.pop("age", None)
+        cached_headers.pop("age", None)
+
         checks = [
             cached._fp.getvalue() == resp.content,
-            cached.headers == resp.raw.headers,
+            cached_headers == response_headers,
             cached.status == resp.raw.status,
             cached.version == resp.raw.version,
             cached.reason == resp.raw.reason,
             cached.decode_content == resp.raw.decode_content,
+            not resp.from_cache
+            or (response_age is not None and response_age.isdigit()),
         ]
 
         print(checks)

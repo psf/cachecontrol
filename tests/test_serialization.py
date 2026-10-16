@@ -6,6 +6,7 @@ from unittest.mock import Mock
 
 import msgpack
 import requests
+from urllib3 import HTTPResponse
 
 from cachecontrol.serialize import Serializer
 
@@ -60,6 +61,48 @@ class TestSerializer:
         resp = self.serializer._loads_v4(req, msgpack.dumps(self.response_data))
         # We have to decode our urllib3 data back into a unicode string.
         assert resp.data == b"Hello World"
+        assert not hasattr(resp, "_cachecontrol_initial_age")
+
+    def test_age_timing_metadata_round_trips_as_optional_v4_field(self):
+        req = requests.Request("GET", "https://example.test/").prepare()
+        response = HTTPResponse(
+            body=b"Hello World",
+            headers={"Cache-Control": "max-age=60"},
+            status=200,
+        )
+        response._cachecontrol_initial_age = 12.5
+        response._cachecontrol_response_time = 1234.5
+
+        serialized = self.serializer.dumps(req, response, b"Hello World")
+        payload = msgpack.loads(serialized[5:], raw=False)
+        assert payload["cachecontrol_age"] == {
+            "initial_age": 12.5,
+            "response_time": 1234.5,
+        }
+
+        restored = self.serializer.loads(req, serialized)
+        assert restored is not None
+        assert restored._cachecontrol_initial_age == 12.5
+        assert restored._cachecontrol_response_time == 1234.5
+
+    def test_age_overflow_metadata_round_trips_as_optional_v4_field(self):
+        req = requests.Request("GET", "https://example.test/").prepare()
+        response = HTTPResponse(
+            body=b"Hello World",
+            headers={"Cache-Control": "max-age=60"},
+            status=200,
+        )
+        response._cachecontrol_initial_age = 12.5
+        response._cachecontrol_response_time = 1234.5
+        response._cachecontrol_age_overflow = True
+
+        serialized = self.serializer.dumps(req, response, b"Hello World")
+        payload = msgpack.loads(serialized[5:], raw=False)
+        assert payload["cachecontrol_age"]["overflow"] is True
+
+        restored = self.serializer.loads(req, serialized)
+        assert restored is not None
+        assert restored._cachecontrol_age_overflow is True
 
     def test_read_latest_version_streamable(self, url):
         original_resp = requests.get(url, stream=True)

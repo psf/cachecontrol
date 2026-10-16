@@ -10,11 +10,12 @@ from __future__ import annotations
 
 import calendar
 import logging
+import math
 import re
 import time
 import weakref
 from email.utils import parsedate_tz
-from typing import TYPE_CHECKING, Collection, Mapping
+from typing import TYPE_CHECKING, Collection, Mapping, TypeGuard
 
 from requests.structures import CaseInsensitiveDict
 
@@ -34,6 +35,8 @@ logger = logging.getLogger(__name__)
 URI = re.compile(r"^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\?([^#]*))?(#(.*))?")
 
 PERMANENT_REDIRECT_STATUSES = (301, 308)
+MAX_AGE_VALUE = 2**31
+AGE_VALUE = re.compile(r"^[0-9]+$")
 
 
 def parse_uri(uri: str) -> tuple[str, str, str, str, str]:
@@ -140,6 +143,107 @@ class CacheController:
 
         return retval
 
+    @staticmethod
+    def _parse_age(headers: Mapping[str, str]) -> tuple[int, bool, bool]:
+        """Return the first valid Age value, saturating values per RFC 9111."""
+        value = headers.get("age", headers.get("Age"))
+        if value is None:
+            return 0, False, False
+
+        first_value = value.split(",", 1)[0].strip()
+        if not AGE_VALUE.fullmatch(first_value):
+            return 0, False, False
+
+        normalized_age = first_value.lstrip("0") or "0"
+        max_age = str(MAX_AGE_VALUE)
+        if len(normalized_age) > len(max_age) or (
+            len(normalized_age) == len(max_age) and normalized_age >= max_age
+        ):
+            # RFC 9111 section 1.2.2 defines 2**31 as the overflow/infinity
+            # sentinel. Compare bounded digit strings first so very large
+            # values saturate without relying on Python's configurable int limit.
+            return MAX_AGE_VALUE, True, True
+        return int(normalized_age), True, False
+
+    @staticmethod
+    def _number(value: object) -> TypeGuard[int | float]:
+        return (
+            isinstance(value, (int, float))
+            and not isinstance(value, bool)
+            and math.isfinite(value)
+        )
+
+    @classmethod
+    def _age_metadata(cls, response: HTTPResponse) -> tuple[float, float, bool] | None:
+        initial_age = getattr(response, "_cachecontrol_initial_age", None)
+        response_time = getattr(response, "_cachecontrol_response_time", None)
+        if cls._number(initial_age) and cls._number(response_time):
+            age_overflow = getattr(response, "_cachecontrol_age_overflow", False)
+            _, has_valid_age, header_overflow = cls._parse_age(response.headers)
+            return (
+                float(initial_age),
+                float(response_time),
+                (age_overflow is True)
+                or float(initial_age) >= MAX_AGE_VALUE
+                or (has_valid_age and header_overflow),
+            )
+        return None
+
+    @classmethod
+    def _initial_age(
+        cls,
+        date_headers: Mapping[str, str],
+        response_time: float,
+        response_delay: float,
+        age_headers: Mapping[str, str] | None = None,
+    ) -> tuple[float, bool]:
+        date_value = date_headers.get("date", date_headers.get("Date"))
+        parsed_date = parsedate_tz(date_value) if date_value is not None else None
+        apparent_age = 0.0
+        if parsed_date is not None:
+            date = calendar.timegm(parsed_date[:6])
+            apparent_age = max(0.0, response_time - date)
+
+        age_value, _, age_overflow = cls._parse_age(
+            date_headers if age_headers is None else age_headers
+        )
+        corrected_age_value = age_value + max(0.0, response_delay)
+        initial_age = max(apparent_age, corrected_age_value)
+        return initial_age, age_overflow or initial_age >= MAX_AGE_VALUE
+
+    @staticmethod
+    def _format_age(age: float, age_overflow: bool = False) -> str:
+        if age_overflow or not math.isfinite(age) or age >= MAX_AGE_VALUE:
+            return str(MAX_AGE_VALUE)
+        return str(max(0, int(age)))
+
+    def _ensure_age_metadata(self, response: HTTPResponse) -> None:
+        if self._age_metadata(response) is not None:
+            return
+
+        response_time = getattr(response, "_cachecontrol_response_time", None)
+        if not self._number(response_time):
+            response_time = time.time()
+
+        response_delay = getattr(response, "_cachecontrol_response_delay", None)
+        if not self._number(response_delay):
+            response_delay = 0.0
+            request_time = getattr(response, "_cachecontrol_request_time", None)
+            if self._number(request_time):
+                response_delay = max(0.0, response_time - request_time)
+
+        initial_age, age_overflow = self._initial_age(
+            response.headers, float(response_time), float(response_delay)
+        )
+        try:
+            setattr(response, "_cachecontrol_initial_age", initial_age)
+            setattr(response, "_cachecontrol_response_time", float(response_time))
+            setattr(response, "_cachecontrol_age_overflow", age_overflow)
+        except (AttributeError, TypeError):
+            # Some custom response classes cannot carry private attributes.
+            # Their custom serializer retains its existing behavior.
+            pass
+
     def _load_from_cache(self, request: PreparedRequest) -> HTTPResponse | None:
         """
         Load a cached response, or return None if it's not available.
@@ -211,8 +315,28 @@ class CacheController:
             logger.debug("Ignoring cached response: invalid date")
             return False
         date = calendar.timegm(time_tuple[:6])
-        current_age = max(0, now - date)
-        logger.debug("Current age based on date: %i", current_age)
+        age_metadata = self._age_metadata(resp)
+        if age_metadata is not None:
+            initial_age, response_time, age_overflow = age_metadata
+            if age_overflow:
+                current_age = math.inf
+            else:
+                resident_age = initial_age + max(0.0, now - response_time)
+                current_age = max(resident_age, max(0.0, now - date))
+                if current_age >= MAX_AGE_VALUE:
+                    current_age = math.inf
+            logger.debug("Current age from stored timing metadata: %s", current_age)
+        else:
+            age_value, has_valid_age, _ = self._parse_age(headers)
+            if has_valid_age:
+                # A legacy/custom serializer did not preserve the timing
+                # needed to advance a received Age value. Revalidate rather
+                # than allowing that value to remain frozen across lookups.
+                current_age = math.inf
+                logger.debug("Ignoring cached response with Age but no timing metadata")
+            else:
+                current_age = max(0, now - date)
+            logger.debug("Current age based on date: %s", current_age)
 
         # TODO: There is an assumption that the result will be a
         #       urllib3 response object. This may not be best since we
@@ -240,8 +364,11 @@ class CacheController:
         # Permanent redirects are heuristically cacheable when the response
         # does not provide an explicit freshness lifetime.
         elif int(resp.status) in PERMANENT_REDIRECT_STATUSES:
-            logger.debug("Returning cached permanent redirect response")
-            return resp
+            if math.isfinite(current_age):
+                headers["Age"] = self._format_age(current_age)
+                resp.headers["Age"] = headers["Age"]
+                logger.debug("Returning cached permanent redirect response")
+                return resp
 
         # Determine if we are setting freshness limit in the
         # request. Note, this overrides what was in the response.
@@ -252,16 +379,19 @@ class CacheController:
                 "Freshness lifetime from request max-age: %i", freshness_lifetime
             )
 
+        freshness_check_age = current_age
         min_fresh = cc.get("min-fresh")
         if min_fresh is not None:
-            # adjust our current age by our min fresh
-            current_age += min_fresh
-            logger.debug("Adjusted current age from min-fresh: %i", current_age)
+            # min-fresh affects the freshness check, not the response's Age.
+            freshness_check_age += min_fresh
+            logger.debug("Adjusted current age from min-fresh: %s", freshness_check_age)
 
         # Return entry if it is fresh enough
-        if freshness_lifetime > current_age:
+        if freshness_lifetime > freshness_check_age:
             logger.debug('The response is "fresh", returning cached response')
-            logger.debug("%i > %i", freshness_lifetime, current_age)
+            logger.debug("%s > %s", freshness_lifetime, freshness_check_age)
+            headers["Age"] = self._format_age(current_age)
+            resp.headers["Age"] = headers["Age"]
             return resp
 
         # we're not fresh. If we don't have an Etag, clear it out
@@ -295,13 +425,14 @@ class CacheController:
         body: bytes | None = None,
         expires_time: int | None = None,
     ) -> None:
-        """Store the data in the cache.
-        """
+        """Store the data in the cache."""
         if expires_time is not None and expires_time <= 0:
             # Already stale on arrival
             logger.debug("Purging cached response: expires in the past")
             self.cache.delete(cache_url)
             return
+
+        self._ensure_age_metadata(response)
 
         if isinstance(self.cache, SeparateBodyBaseCache):
             # We pass in the body separately; just put a placeholder empty
@@ -509,6 +640,29 @@ class CacheController:
 
         # we want a 200 b/c we have content via the cache
         cached_response.status = 200
+
+        response_time = getattr(response, "_cachecontrol_response_time", None)
+        if not self._number(response_time):
+            response_time = time.time()
+        response_delay = getattr(response, "_cachecontrol_response_delay", None)
+        if not self._number(response_delay):
+            response_delay = 0.0
+
+        initial_age, age_overflow = self._initial_age(
+            cached_response.headers,
+            float(response_time),
+            float(response_delay),
+            age_headers=response.headers,
+        )
+        try:
+            setattr(cached_response, "_cachecontrol_initial_age", initial_age)
+            setattr(
+                cached_response, "_cachecontrol_response_time", float(response_time)
+            )
+            setattr(cached_response, "_cachecontrol_age_overflow", age_overflow)
+        except (AttributeError, TypeError):
+            pass
+        cached_response.headers["Age"] = self._format_age(initial_age, age_overflow)
 
         # update our cache
         self._cache_set(cache_url, request, cached_response)
