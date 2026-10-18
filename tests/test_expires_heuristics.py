@@ -9,6 +9,7 @@ from email.utils import formatdate, parsedate
 from pprint import pprint
 from unittest.mock import Mock
 
+import pytest
 from requests import Session, get
 
 from cachecontrol import CacheControl
@@ -152,6 +153,14 @@ class TestModifiedUnitTests:
     def test_expires_is_not_replaced_when_present(self):
         resp = DummyResponse(200, {"Expires": self.day_ahead})
         assert self.heuristic.update_headers(resp) == {}
+
+    @pytest.mark.parametrize("date", ["", "not-a-date"])
+    def test_invalid_date_does_not_infer_expiry(self, date):
+        headers = {"Date": date, "Last-Modified": self.week_ago}
+        resp = DummyResponse(200, headers)
+        assert self.heuristic.update_headers(resp) == {}
+        assert self.heuristic.apply(resp) is resp
+        assert dict(resp.headers) == headers
 
     def test_last_modified_is_used(self):
         resp = DummyResponse(200, {"Date": self.now, "Last-Modified": self.week_ago})

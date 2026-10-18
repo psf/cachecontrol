@@ -137,7 +137,8 @@ class LastModified(BaseHeuristic):
             return {}
 
         time_tuple = parsedate_tz(headers["date"])
-        assert time_tuple is not None
+        if time_tuple is None:
+            return {}
         date = calendar.timegm(time_tuple[:6])
         last_modified = parsedate(headers["last-modified"])
         if last_modified is None:
