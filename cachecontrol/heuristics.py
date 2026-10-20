@@ -21,7 +21,7 @@ def expire_after(delta: timedelta, date: datetime | None = None) -> datetime:
 
 
 def datetime_to_header(dt: datetime) -> str:
-    return formatdate(calendar.timegm(dt.timetuple()))
+    return formatdate(calendar.timegm(dt.utctimetuple()))
 
 
 class BaseHeuristic:

@@ -4,7 +4,7 @@
 
 import calendar
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from email.utils import formatdate, parsedate
 from pprint import pprint
 from unittest.mock import Mock
@@ -19,8 +19,33 @@ from cachecontrol.heuristics import (
     LastModified,
     OneDayCache,
 )
+from cachecontrol.heuristics import (
+    datetime_to_header as heuristic_datetime_to_header,
+)
 
 from .utils import DummyResponse
+
+
+class TestDatetimeToHeader:
+    def test_positive_timezone_offset(self):
+        value = datetime(
+            2026, 10, 20, 1, tzinfo=timezone(timedelta(hours=5, minutes=30))
+        )
+        assert heuristic_datetime_to_header(value) == "Mon, 19 Oct 2026 19:30:00 -0000"
+
+    def test_negative_timezone_offset(self):
+        value = datetime(
+            2026, 10, 20, 23, tzinfo=timezone(timedelta(hours=-3, minutes=-30))
+        )
+        assert heuristic_datetime_to_header(value) == "Wed, 21 Oct 2026 02:30:00 -0000"
+
+    def test_utc(self):
+        value = datetime(2026, 10, 20, 12, tzinfo=timezone.utc)
+        assert heuristic_datetime_to_header(value) == "Tue, 20 Oct 2026 12:00:00 -0000"
+
+    def test_naive_remains_utc(self):
+        value = datetime(2026, 10, 20, 12)
+        assert heuristic_datetime_to_header(value) == "Tue, 20 Oct 2026 12:00:00 -0000"
 
 
 class TestHeuristicWithoutWarning:
