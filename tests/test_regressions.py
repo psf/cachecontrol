@@ -21,6 +21,21 @@ class Test39:
         s.close()
 
 
+class TestCacheKeyNormalization:
+    def test_fragment_in_url_still_hits_the_cache(self, url):
+        """The cache is keyed on the normalized URL, which drops the fragment.
+
+        Reads have to normalize too, otherwise a request for a URL carrying a
+        fragment stores an entry it can never look up again.
+        """
+        s = CacheControl(Session())
+        the_url = url + "cache_60#section"
+        s.get(the_url)
+        r = s.get(the_url)
+        assert r.from_cache
+        s.close()
+
+
 def test_getattr_during_gc():
     s = CallbackFileWrapper(None, None)
     # normal behavior:
