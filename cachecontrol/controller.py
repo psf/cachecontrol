@@ -125,7 +125,12 @@ class CacheController:
                 retval[directive] = None
             if typ:
                 try:
-                    retval[directive] = typ(parts[1].strip())
+                    value = parts[1].strip()
+                    # Recipients ought to accept both token and quoted-string
+                    # arguments (RFC 9111, section 5.2).
+                    if len(value) >= 2 and value[0] == value[-1] == '"':
+                        value = value[1:-1]
+                    retval[directive] = typ(value)
                 except IndexError:
                     if required:
                         logger.debug(

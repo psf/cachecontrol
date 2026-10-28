@@ -21,6 +21,41 @@ from .utils import DummyRequest, DummyResponse, NullSerializer
 TIME_FMT = "%a, %d %b %Y %H:%M:%S GMT"
 
 
+class TestParseCacheControl:
+    @pytest.mark.parametrize(
+        "directive", ["max-age", "s-maxage", "max-stale", "min-fresh"]
+    )
+    @pytest.mark.parametrize("value", [0, 600, -1])
+    def test_quoted_numeric_value(self, directive, value):
+        controller = CacheController()
+        expected = {directive: value}
+
+        assert (
+            controller.parse_cache_control({"Cache-Control": f"{directive}={value}"})
+            == expected
+        )
+        assert (
+            controller.parse_cache_control(
+                {"Cache-Control": f'{directive}= \t"{value}" \t'}
+            )
+            == expected
+        )
+
+    @pytest.mark.parametrize(
+        "directive", ["max-age", "s-maxage", "max-stale", "min-fresh"]
+    )
+    @pytest.mark.parametrize("value", ['"600', '600"', '"bad"', '""', '"600"extra'])
+    def test_invalid_numeric_value(self, directive, value):
+        expected = {"max-stale": None} if directive == "max-stale" else {}
+
+        assert (
+            CacheController().parse_cache_control(
+                {"Cache-Control": f"{directive}={value}"}
+            )
+            == expected
+        )
+
+
 class TestCacheControllerResponse:
     url = "http://url.com/"
 
@@ -84,9 +119,10 @@ class TestCacheControllerResponse:
 
         assert not cc.cache.set.called
 
-    def test_cache_response_cache_max_age(self, cc):
+    @pytest.mark.parametrize("value", ["3600", '"3600"'])
+    def test_cache_response_cache_max_age(self, cc, value):
         now = time.strftime(TIME_FMT, time.gmtime())
-        resp = self.resp({"cache-control": "max-age=3600", "date": now})
+        resp = self.resp({"cache-control": f"max-age={value}", "date": now})
         req = self.req()
         cc.cache_response(req, resp)
         cc.serializer.dumps.assert_called_with(req, resp, None)
