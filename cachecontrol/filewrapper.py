@@ -71,31 +71,33 @@ class CallbackFileWrapper:
 
     def _close(self) -> None:
         result: Buffer
-        if self.__callback:
-            if self.__buf.tell() == 0:
-                # Empty file:
-                result = b""
-            else:
-                # Return the data without actually loading it into memory,
-                # relying on Python's buffer API and mmap(). mmap() just gives
-                # a view directly into the filesystem's memory cache, so it
-                # doesn't result in duplicate memory use.
-                self.__buf.seek(0, 0)
-                result = memoryview(
-                    mmap.mmap(self.__buf.fileno(), 0, access=mmap.ACCESS_READ)
-                )
-            self.__callback(result)
+        try:
+            if self.__callback:
+                if self.__buf.tell() == 0:
+                    # Empty file:
+                    result = b""
+                else:
+                    # Return the data without actually loading it into memory,
+                    # relying on Python's buffer API and mmap(). mmap() just gives
+                    # a view directly into the filesystem's memory cache, so it
+                    # doesn't result in duplicate memory use.
+                    self.__buf.seek(0, 0)
+                    result = memoryview(
+                        mmap.mmap(self.__buf.fileno(), 0, access=mmap.ACCESS_READ)
+                    )
+                self.__callback(result)
 
-        # We assign this to None here, because otherwise we can get into
-        # really tricky problems where the CPython interpreter dead locks
-        # because the callback is holding a reference to something which
-        # has a __del__ method. Setting this to None breaks the cycle
-        # and allows the garbage collector to do it's thing normally.
-        self.__callback = None
+        finally:
+            # We assign this to None here, because otherwise we can get into
+            # really tricky problems where the CPython interpreter dead locks
+            # because the callback is holding a reference to something which
+            # has a __del__ method. Setting this to None breaks the cycle
+            # and allows the garbage collector to do it's thing normally.
+            self.__callback = None
 
-        # Closing the temporary file releases memory and frees disk space.
-        # Important when caching big files.
-        self.__buf.close()
+            # Close the temporary file even if preparing or invoking the
+            # callback failed.
+            self.__buf.close()
 
     def read(self, amt: int | None = None) -> bytes:
         data: bytes = self.__fp.read(amt)
