@@ -508,9 +508,6 @@ class CacheController:
             }
         )
 
-        # we want a 200 b/c we have content via the cache
-        cached_response.status = 200
-
         # update our cache
         self._cache_set(cache_url, request, cached_response)
 
