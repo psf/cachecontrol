@@ -234,7 +234,10 @@ class TestCacheControllerResponse:
         result = cc.update_cached_response(req, resp)
         assert result is resp
 
-    def test_update_cached_response_with_valid_headers_separate_body(self, tmp_path):
+    @pytest.mark.parametrize("status", [200, 203, 300, 301, 308])
+    def test_update_cached_response_with_valid_headers_separate_body(
+        self, tmp_path, status
+    ):
         """
         If the local cache has the given URL ``update_cached_response()`` will:
 
@@ -244,9 +247,10 @@ class TestCacheControllerResponse:
         This is the version for a cache that stores a separate body.
         """
         cache = SeparateBodyFileCache(os.fsdecode(tmp_path))
-        self.update_cached_response_with_valid_headers_test(cache)
+        self.update_cached_response_with_valid_headers_test(cache, status)
 
-    def test_update_cached_response_with_valid_headers(self):
+    @pytest.mark.parametrize("status", [200, 203, 300, 301, 308])
+    def test_update_cached_response_with_valid_headers(self, status):
         """
         If the local cache has the given URL ``update_cached_response()`` will:
 
@@ -256,9 +260,9 @@ class TestCacheControllerResponse:
         This is the version for non-separate body.
         """
         cache = DictCache({})
-        self.update_cached_response_with_valid_headers_test(cache)
+        self.update_cached_response_with_valid_headers_test(cache, status)
 
-    def update_cached_response_with_valid_headers_test(self, cache):
+    def update_cached_response_with_valid_headers_test(self, cache, status):
         """
         If the local cache has the given URL ``update_cached_response()`` will:
 
@@ -273,7 +277,7 @@ class TestCacheControllerResponse:
         url = "http://localhost:123/x"
         req = DummyRequest(url=url, headers={})
         cached_resp = DummyResponse(
-            status=200,
+            status=status,
             headers={
                 "ETag": etag,
                 "x-value:": "a",
@@ -307,6 +311,7 @@ class TestCacheControllerResponse:
         result2 = cc.cached_request(req)
 
         for r in [result, result2]:
+            assert r.status == status
             assert r.headers["ETag"] == etag
             assert r.headers["x-value"] == "b"
             assert r.headers["Content-Length"] == "100"
