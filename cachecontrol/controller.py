@@ -62,6 +62,11 @@ class CacheController:
         self.serializer = serializer or Serializer()
         self.cacheable_status_codes = status_codes or (200, 203, 300, 301, 308)
 
+    def _close_if_separate_body(self, response: HTTPResponse) -> None:
+        """Close a response when this controller opened its separate body."""
+        if isinstance(self.cache, SeparateBodyBaseCache):
+            response.close()
+
     @classmethod
     def _urlnorm(cls, uri: str) -> str:
         """Normalize the URL to create a safe key for the cache"""
@@ -162,7 +167,12 @@ class CacheController:
         else:
             body_file = None
 
-        result = self.serializer.loads(request, cache_data, body_file)
+        result: HTTPResponse | None = None
+        try:
+            result = self.serializer.loads(request, cache_data, body_file)
+        finally:
+            if result is None and body_file is not None:
+                body_file.close()
         if result is None:
             logger.debug("Cache entry deserialization failed, entry ignored")
         return result
@@ -198,6 +208,7 @@ class CacheController:
         # only when neither max-age nor Expires provides an expiration.
         headers: CaseInsensitiveDict[str] = CaseInsensitiveDict(resp.headers)
         if not headers or "date" not in headers:
+            self._close_if_separate_body(resp)
             if "etag" not in headers:
                 # Without date or etag, the cached response can never be used
                 # and should be deleted.
@@ -209,6 +220,7 @@ class CacheController:
         now = time.time()
         time_tuple = parsedate_tz(headers["date"])
         if time_tuple is None:
+            self._close_if_separate_body(resp)
             logger.debug("Ignoring cached response: invalid date")
             return False
         date = calendar.timegm(time_tuple[:6])
@@ -266,6 +278,7 @@ class CacheController:
             return resp
 
         # we're not fresh. If we don't have an Etag, clear it out
+        self._close_if_separate_body(resp)
         if "etag" not in headers:
             logger.debug('The cached response is "stale" with no etag, purging')
             self.cache.delete(cache_url)
@@ -275,9 +288,10 @@ class CacheController:
 
     def conditional_headers(self, request: PreparedRequest) -> dict[str, str]:
         resp = self._load_from_cache(request)
-        new_headers = {}
-
-        if resp:
+        if not resp:
+            return {}
+        try:
+            new_headers = {}
             headers: CaseInsensitiveDict[str] = CaseInsensitiveDict(resp.headers)
 
             if "etag" in headers:
@@ -286,7 +300,9 @@ class CacheController:
             if "last-modified" in headers:
                 new_headers["If-Modified-Since"] = headers["Last-Modified"]
 
-        return new_headers
+            return new_headers
+        finally:
+            self._close_if_separate_body(resp)
 
     def _cache_set(
         self,
