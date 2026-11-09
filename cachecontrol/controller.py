@@ -162,7 +162,12 @@ class CacheController:
         else:
             body_file = None
 
-        result = self.serializer.loads(request, cache_data, body_file)
+        result = None
+        try:
+            result = self.serializer.loads(request, cache_data, body_file)
+        finally:
+            if result is None and body_file is not None:
+                body_file.close()
         if result is None:
             logger.debug("Cache entry deserialization failed, entry ignored")
         return result
@@ -204,12 +209,14 @@ class CacheController:
                 logger.debug("Purging cached response: no date or etag")
                 self.cache.delete(cache_url)
             logger.debug("Ignoring cached response: no date")
+            resp.close()
             return False
 
         now = time.time()
         time_tuple = parsedate_tz(headers["date"])
         if time_tuple is None:
             logger.debug("Ignoring cached response: invalid date")
+            resp.close()
             return False
         date = calendar.timegm(time_tuple[:6])
         current_age = max(0, now - date)
@@ -271,6 +278,7 @@ class CacheController:
             self.cache.delete(cache_url)
 
         # return the original handler
+        resp.close()
         return False
 
     def conditional_headers(self, request: PreparedRequest) -> dict[str, str]:
@@ -278,13 +286,16 @@ class CacheController:
         new_headers = {}
 
         if resp:
-            headers: CaseInsensitiveDict[str] = CaseInsensitiveDict(resp.headers)
+            try:
+                headers: CaseInsensitiveDict[str] = CaseInsensitiveDict(resp.headers)
 
-            if "etag" in headers:
-                new_headers["If-None-Match"] = headers["ETag"]
+                if "etag" in headers:
+                    new_headers["If-None-Match"] = headers["ETag"]
 
-            if "last-modified" in headers:
-                new_headers["If-Modified-Since"] = headers["Last-Modified"]
+                if "last-modified" in headers:
+                    new_headers["If-Modified-Since"] = headers["Last-Modified"]
+            finally:
+                resp.close()
 
         return new_headers
 

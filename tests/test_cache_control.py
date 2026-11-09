@@ -56,6 +56,18 @@ class TestCacheControllerResponse:
         assert cc.serializer.dumps.called
         assert cc.cache.set.called
 
+    def test_load_from_cache_closes_body_on_deserialization_failure(self, tmp_path):
+        cache = SeparateBodyFileCache(str(tmp_path))
+        body_file = Mock()
+        cache.get = Mock(return_value=b"metadata")
+        cache.get_body = Mock(return_value=body_file)
+        serializer = Mock()
+        serializer.loads.return_value = None
+        controller = CacheController(cache, serializer=serializer)
+
+        assert controller._load_from_cache(self.req()) is None
+        body_file.close.assert_called_once_with()
+
     def test_no_cache_with_no_date(self, cc):
         # No date header which makes our max-age pointless
         resp = self.resp({"cache-control": "max-age=3600"})
@@ -367,6 +379,17 @@ class TestCacheControlRequest:
         self.c.cache = DictCache({self.url: resp})
         r = self.req({})
         assert not r
+        resp.close.assert_called_once_with()
+
+    def test_conditional_headers_closes_cached_response(self):
+        now = time.strftime(TIME_FMT, time.gmtime())
+        resp = Mock(headers={"etag": "value", "date": now}, status=200)
+        self.c.cache = DictCache({self.url: resp})
+
+        assert self.c.conditional_headers(Mock(url=self.url, headers={})) == {
+            "If-None-Match": "value"
+        }
+        resp.close.assert_called_once_with()
 
     def test_cache_request_unfresh_permanent_redirect(self):
         earlier = time.time() - 3600
