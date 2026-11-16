@@ -13,6 +13,7 @@ import logging
 import re
 import time
 import weakref
+from contextlib import closing
 from email.utils import parsedate_tz
 from typing import TYPE_CHECKING, Collection, Mapping
 
@@ -61,11 +62,6 @@ class CacheController:
         self.cache_etags = cache_etags
         self.serializer = serializer or Serializer()
         self.cacheable_status_codes = status_codes or (200, 203, 300, 301, 308)
-
-    def _close_if_separate_body(self, response: HTTPResponse) -> None:
-        """Close a response when this controller opened its separate body."""
-        if isinstance(self.cache, SeparateBodyBaseCache):
-            response.close()
 
     @classmethod
     def _urlnorm(cls, uri: str) -> str:
@@ -201,36 +197,45 @@ class CacheController:
         if not resp:
             return False
 
+        keep_response = False
+        try:
+            headers: CaseInsensitiveDict[str] = CaseInsensitiveDict(resp.headers)
+            if "date" in headers:
+                time_tuple = parsedate_tz(headers["date"])
+                if time_tuple is None:
+                    logger.debug("Ignoring cached response: invalid date")
+                    return False
+                date = calendar.timegm(time_tuple[:6])
+                keep_response = self._is_fresh(resp, headers, cc, date)
+                if keep_response:
+                    return resp
+            else:
+                logger.debug("Ignoring cached response: no date")
+        finally:
+            if not keep_response:
+                resp.close()
+
+        # Purge entries without an ETag after closing their bodies.
+        if "etag" not in headers:
+            logger.debug("Purging cached response: stale or missing date, with no ETag")
+            self.cache.delete(cache_url)
+        return False
+
+    def _is_fresh(
+        self,
+        resp: HTTPResponse,
+        headers: Mapping[str, str],
+        request_cc: Mapping[str, int | None],
+        date: int,
+    ) -> bool:
+        current_age = max(0, time.time() - date)
+        logger.debug("Current age based on date: %i", current_age)
+
         # Apply normal freshness checks to every cached response. In the case
         # of permanent redirects, RFC 9110 sections 15.4.2 and 15.4.9 permit
         # heuristic caching, but RFC 9111 section 4.2.2 requires explicit
         # expiration to take precedence. The redirect fallback below is used
         # only when neither max-age nor Expires provides an expiration.
-        headers: CaseInsensitiveDict[str] = CaseInsensitiveDict(resp.headers)
-        if not headers or "date" not in headers:
-            self._close_if_separate_body(resp)
-            if "etag" not in headers:
-                # Without date or etag, the cached response can never be used
-                # and should be deleted.
-                logger.debug("Purging cached response: no date or etag")
-                self.cache.delete(cache_url)
-            logger.debug("Ignoring cached response: no date")
-            return False
-
-        now = time.time()
-        time_tuple = parsedate_tz(headers["date"])
-        if time_tuple is None:
-            self._close_if_separate_body(resp)
-            logger.debug("Ignoring cached response: invalid date")
-            return False
-        date = calendar.timegm(time_tuple[:6])
-        current_age = max(0, now - date)
-        logger.debug("Current age based on date: %i", current_age)
-
-        # TODO: There is an assumption that the result will be a
-        #       urllib3 response object. This may not be best since we
-        #       could probably avoid instantiating or constructing the
-        #       response until we know we need it.
         resp_cc = self.parse_cache_control(headers)
 
         # determine freshness
@@ -254,18 +259,18 @@ class CacheController:
         # does not provide an explicit freshness lifetime.
         elif int(resp.status) in PERMANENT_REDIRECT_STATUSES:
             logger.debug("Returning cached permanent redirect response")
-            return resp
+            return True
 
         # Determine if we are setting freshness limit in the
         # request. Note, this overrides what was in the response.
-        max_age = cc.get("max-age")
+        max_age = request_cc.get("max-age")
         if max_age is not None:
             freshness_lifetime = max_age
             logger.debug(
                 "Freshness lifetime from request max-age: %i", freshness_lifetime
             )
 
-        min_fresh = cc.get("min-fresh")
+        min_fresh = request_cc.get("min-fresh")
         if min_fresh is not None:
             # adjust our current age by our min fresh
             current_age += min_fresh
@@ -275,22 +280,15 @@ class CacheController:
         if freshness_lifetime > current_age:
             logger.debug('The response is "fresh", returning cached response')
             logger.debug("%i > %i", freshness_lifetime, current_age)
-            return resp
+            return True
 
-        # we're not fresh. If we don't have an Etag, clear it out
-        self._close_if_separate_body(resp)
-        if "etag" not in headers:
-            logger.debug('The cached response is "stale" with no etag, purging')
-            self.cache.delete(cache_url)
-
-        # return the original handler
         return False
 
     def conditional_headers(self, request: PreparedRequest) -> dict[str, str]:
         resp = self._load_from_cache(request)
         if not resp:
             return {}
-        try:
+        with closing(resp):
             new_headers = {}
             headers: CaseInsensitiveDict[str] = CaseInsensitiveDict(resp.headers)
 
@@ -301,8 +299,6 @@ class CacheController:
                 new_headers["If-Modified-Since"] = headers["Last-Modified"]
 
             return new_headers
-        finally:
-            self._close_if_separate_body(resp)
 
     def _cache_set(
         self,
@@ -507,27 +503,19 @@ class CacheController:
             # we didn't have a cached response
             return response
 
-        # Lets update our headers with the headers from the new request:
-        # http://tools.ietf.org/html/draft-ietf-httpbis-p4-conditional-26#section-4.1
-        #
-        # The server isn't supposed to send headers that would make
-        # the cached body invalid. But... just in case, we'll be sure
-        # to strip out ones we know that might be problematic due to
-        # typical assumptions.
-        excluded_headers = ["content-length"]
-
-        cached_response.headers.update(
-            {
-                k: v
-                for k, v in response.headers.items()
-                if k.lower() not in excluded_headers
-            }
-        )
-
-        # we want a 200 b/c we have content via the cache
-        cached_response.status = 200
-
-        # update our cache
-        self._cache_set(cache_url, request, cached_response)
+        try:
+            # A 304 updates the headers while keeping the cached body and its length.
+            cached_response.headers.update(
+                {
+                    k: v
+                    for k, v in response.headers.items()
+                    if k.lower() != "content-length"
+                }
+            )
+            cached_response.status = 200
+            self._cache_set(cache_url, request, cached_response)
+        except BaseException:
+            cached_response.close()
+            raise
 
         return cached_response

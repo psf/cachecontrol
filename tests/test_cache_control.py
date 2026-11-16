@@ -275,6 +275,16 @@ class TestCacheControllerResponse:
 
         assert not result
 
+    def test_conditional_headers_close_in_memory_response(self) -> None:
+        serializer = RetainingSerializer()
+        controller = CacheController(serializer=serializer)
+        request = Request("GET", "https://example.test/").prepare()
+        response = HTTPResponse(status=200, headers={"ETag": '"test"'})
+        controller.cache_response(request, response, b"body")
+
+        assert controller.conditional_headers(request) == {"If-None-Match": '"test"'}
+        assert serializer.loaded_responses[-1].closed
+
     def test_update_cached_response_no_local_cache(self):
         """
         If the local cache doesn't have the given URL, just reuse the response
@@ -403,6 +413,29 @@ class TestSeparateBodyLifetime:
         )
 
         assert controller.conditional_headers(request) == {"If-None-Match": '"old"'}
+        assert cache.opened_bodies[-1].closed
+
+    def test_freshness_check_exception_closes_body(self, tmp_path: Path) -> None:
+        controller, cache, request = make_separate_body_response(
+            tmp_path, response_headers={"date": "Sat, 01 Jan 10000 00:00:00 GMT"}
+        )
+
+        with pytest.raises(ValueError):
+            controller.cached_request(request)
+
+        assert cache.opened_bodies[-1].closed
+
+    def test_metadata_write_exception_closes_body(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        controller, cache, request = make_separate_body_response(tmp_path)
+        monkeypatch.setattr(
+            cache, "set", Mock(side_effect=OSError("cache write failed"))
+        )
+
+        with pytest.raises(OSError, match="cache write failed"):
+            controller.update_cached_response(request, HTTPResponse(status=304))
+
         assert cache.opened_bodies[-1].closed
 
     def test_invalid_serialization_closes_body(self, tmp_path: Path) -> None:
