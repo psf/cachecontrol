@@ -8,67 +8,18 @@ Unit tests that verify our caching methods work correctly.
 
 import os
 import time
-from pathlib import Path
-from typing import IO
-from unittest.mock import ANY, Mock
+from io import BytesIO
+from unittest.mock import ANY, Mock, patch
 
 import pytest
-from requests import PreparedRequest, Request
-from urllib3 import HTTPResponse
 
 from cachecontrol import CacheController
 from cachecontrol.cache import DictCache
 from cachecontrol.caches import SeparateBodyFileCache
-from cachecontrol.serialize import Serializer
 
 from .utils import DummyRequest, DummyResponse, NullSerializer
 
 TIME_FMT = "%a, %d %b %Y %H:%M:%S GMT"
-
-
-class RetainingSerializer(Serializer):
-    """Keep loaded responses and their body files alive for assertions."""
-
-    def __init__(self) -> None:
-        self.loaded_responses: list[HTTPResponse] = []
-        self.opened_bodies: list[IO[bytes]] = []
-
-    def loads(
-        self,
-        request: PreparedRequest,
-        data: bytes,
-        body_file: IO[bytes] | None = None,
-    ) -> HTTPResponse | None:
-        if body_file is not None:
-            self.opened_bodies.append(body_file)
-        response = super().loads(request, data, body_file)
-        if response is not None:
-            self.loaded_responses.append(response)
-        return response
-
-
-def make_separate_body_response(
-    tmp_path: Path,
-    *,
-    response_headers: dict[str, str] | None = None,
-    request_headers: dict[str, str] | None = None,
-) -> tuple[CacheController, RetainingSerializer, PreparedRequest]:
-    serializer = RetainingSerializer()
-    controller = CacheController(SeparateBodyFileCache(tmp_path), serializer=serializer)
-    request = Request(
-        "GET", "https://example.test/simple/project/", headers=request_headers
-    ).prepare()
-    response = HTTPResponse(
-        headers={
-            "cache-control": "max-age=0",
-            "date": time.strftime(TIME_FMT, time.gmtime()),
-            **(response_headers or {}),
-        },
-        status=200,
-    )
-    assert request.url is not None
-    controller._cache_set(request.url, request, response, b"old body")
-    return controller, serializer, request
 
 
 class TestCacheControllerResponse:
@@ -261,15 +212,58 @@ class TestCacheControllerResponse:
 
         assert not result
 
-    def test_conditional_headers_close_in_memory_response(self) -> None:
-        serializer = RetainingSerializer()
-        controller = CacheController(serializer=serializer)
-        request = Request("GET", "https://example.test/").prepare()
-        response = HTTPResponse(status=200, headers={"ETag": '"test"'})
-        controller.cache_response(request, response, b"body")
+    def test_conditional_headers_closes_response(self, cc):
+        resp = self.resp({"ETag": '"cached"'})
+        cc.serializer.loads.return_value = resp
 
-        assert controller.conditional_headers(request) == {"If-None-Match": '"test"'}
-        assert serializer.loaded_responses[-1].closed
+        assert cc.conditional_headers(self.req()) == {"If-None-Match": '"cached"'}
+        resp.close.assert_called_once_with()
+
+    @pytest.mark.parametrize("vary", [False, True], ids=["bad-metadata", "vary-miss"])
+    def test_cache_load_miss_closes_body(self, tmp_path, monkeypatch, vary):
+        cache = SeparateBodyFileCache(tmp_path)
+        cc = CacheController(cache)
+        data = b"invalid metadata"
+        if vary:
+            data = cc.serializer.dumps(
+                self.req({"Accept-Language": "en"}),
+                DummyResponse(200, {"Vary": "Accept-Language"}),
+                b"",
+            )
+        cache.set(self.url, data)
+        with BytesIO(b"body") as body:
+            monkeypatch.setattr(cache, "get_body", Mock(return_value=body))
+            assert cc._load_from_cache(self.req()) is None
+            assert body.closed
+
+    def test_purge_closes_separate_body_first(self, tmp_path, monkeypatch):
+        cache = SeparateBodyFileCache(tmp_path)
+        cc = CacheController(cache)
+        req = self.req()
+        resp = DummyResponse(200, {"Date": "Thu, 01 Jan 1970 00:00:00 GMT"})
+        cc._cache_set(self.url, req, resp, b"body")
+
+        cached = cc._load_from_cache(req)
+        assert cached is not None
+        delete = cache.delete
+
+        def delete_after_close(key):
+            assert cached.closed
+            delete(key)
+
+        monkeypatch.setattr(cache, "delete", delete_after_close)
+        with patch.object(cc, "_load_from_cache", return_value=cached):
+            assert cc.cached_request(req) is False
+        assert cache.get(self.url) is None
+
+    def test_update_cached_response_closes_on_write_error(self, cc):
+        cached = self.resp()
+        cc.serializer.loads.return_value = cached
+        cc.cache.set.side_effect = OSError("cache write failed")
+
+        with pytest.raises(OSError, match="cache write failed"):
+            cc.update_cached_response(self.req(), DummyResponse(304, {}))
+        cached.close.assert_called_once_with()
 
     def test_update_cached_response_no_local_cache(self):
         """
@@ -373,102 +367,6 @@ class TestCacheControllerResponse:
             assert r.read() == b"my body"
 
 
-class TestSeparateBodyLifetime:
-    @pytest.mark.parametrize(
-        ("response_headers", "purged"),
-        [
-            ({}, True),
-            ({"etag": '"old"'}, False),
-            ({"date": "invalid"}, False),
-        ],
-        ids=["stale", "stale-etag", "invalid-date"],
-    )
-    def test_rejected_cached_response_closes_body(
-        self,
-        tmp_path: Path,
-        response_headers: dict[str, str],
-        purged: bool,
-        monkeypatch: pytest.MonkeyPatch,
-    ) -> None:
-        controller, serializer, request = make_separate_body_response(
-            tmp_path, response_headers=response_headers
-        )
-
-        delete = controller.cache.delete
-
-        def delete_after_close(key: str) -> None:
-            assert serializer.opened_bodies[-1].closed
-            delete(key)
-
-        monkeypatch.setattr(controller.cache, "delete", delete_after_close)
-        assert controller.cached_request(request) is False
-        assert serializer.opened_bodies[-1].closed
-        assert request.url is not None
-        assert (controller.cache.get(request.url) is None) is purged
-
-    def test_conditional_headers_close_body(self, tmp_path: Path) -> None:
-        controller, serializer, request = make_separate_body_response(
-            tmp_path, response_headers={"etag": '"old"'}
-        )
-
-        assert controller.conditional_headers(request) == {"If-None-Match": '"old"'}
-        assert serializer.opened_bodies[-1].closed
-
-    def test_freshness_check_exception_closes_body(self, tmp_path: Path) -> None:
-        controller, serializer, request = make_separate_body_response(
-            tmp_path, response_headers={"date": "Sat, 01 Jan 10000 00:00:00 GMT"}
-        )
-
-        with pytest.raises(ValueError):
-            controller.cached_request(request)
-
-        assert serializer.opened_bodies[-1].closed
-
-    def test_metadata_write_exception_closes_body(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        controller, serializer, request = make_separate_body_response(tmp_path)
-        monkeypatch.setattr(
-            controller.cache, "set", Mock(side_effect=OSError("cache write failed"))
-        )
-
-        with pytest.raises(OSError, match="cache write failed"):
-            controller.update_cached_response(request, HTTPResponse(status=304))
-
-        assert serializer.opened_bodies[-1].closed
-
-    def test_invalid_serialization_closes_body(self, tmp_path: Path) -> None:
-        controller, serializer, request = make_separate_body_response(tmp_path)
-        assert request.url is not None
-        controller.cache.set(request.url, b"invalid serialization")
-
-        assert controller._load_from_cache(request) is None
-        assert serializer.opened_bodies[-1].closed
-
-    def test_vary_mismatch_closes_body(self, tmp_path: Path) -> None:
-        controller, serializer, request = make_separate_body_response(
-            tmp_path,
-            request_headers={"Accept-Language": "en"},
-            response_headers={"vary": "Accept-Language"},
-        )
-        request.headers["Accept-Language"] = "fr"
-
-        assert controller._load_from_cache(request) is None
-        assert serializer.opened_bodies[-1].closed
-
-    def test_returned_cached_response_owns_body(self, tmp_path: Path) -> None:
-        controller, serializer, request = make_separate_body_response(
-            tmp_path, response_headers={"cache-control": "max-age=60"}
-        )
-
-        response = controller.cached_request(request)
-
-        assert response is not False
-        assert not serializer.opened_bodies[-1].closed
-        response.close()
-        assert serializer.opened_bodies[-1].closed
-
-
 class TestCacheControlRequest:
     url = "http://foo.com/bar"
 
@@ -486,6 +384,7 @@ class TestCacheControlRequest:
         self.c.cache = DictCache({self.url: cached_resp})
         resp = self.req({})
         assert not resp
+        cached_resp.close.assert_called_once_with()
 
     def test_cache_request_no_cache(self):
         resp = self.req({"cache-control": "no-cache"})
@@ -515,14 +414,20 @@ class TestCacheControlRequest:
         self.c.cache = cache
         r = self.req({})
         assert r == resp
+        resp.close.assert_not_called()
 
     def test_cache_request_unfresh_max_age(self):
         earlier = time.time() - 3700  # epoch - 1h01m40s
         now = time.strftime(TIME_FMT, time.gmtime(earlier))
-        resp = Mock(headers={"cache-control": "max-age=3600", "date": now}, status=200)
+        resp = Mock(
+            headers={"cache-control": "max-age=3600", "date": now, "ETag": '"cached"'},
+            status=200,
+        )
         self.c.cache = DictCache({self.url: resp})
         r = self.req({})
         assert not r
+        resp.close.assert_called_once_with()
+        assert self.c.cache.get(self.url) is resp
 
     def test_cache_request_unfresh_permanent_redirect(self):
         earlier = time.time() - 3600
@@ -570,3 +475,13 @@ class TestCacheControlRequest:
         self.c.cache = DictCache({self.url: resp})
 
         assert not self.req({})
+        resp.close.assert_called_once_with()
+        assert self.c.cache.get(self.url) is resp
+
+    def test_cached_request_closes_response_on_freshness_error(self):
+        resp = Mock(headers={"Date": "Sat, 01 Jan 10000 00:00:00 GMT"})
+        self.c.cache = DictCache({self.url: resp})
+
+        with pytest.raises(ValueError):
+            self.req({})
+        resp.close.assert_called_once_with()
