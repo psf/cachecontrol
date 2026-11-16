@@ -200,22 +200,24 @@ class CacheController:
         keep_response = False
         try:
             headers: CaseInsensitiveDict[str] = CaseInsensitiveDict(resp.headers)
-            if "date" in headers:
-                time_tuple = parsedate_tz(headers["date"])
-                if time_tuple is None:
-                    logger.debug("Ignoring cached response: invalid date")
-                    return False
-                date = calendar.timegm(time_tuple[:6])
-                keep_response = self._is_fresh(resp, headers, cc, date)
-                if keep_response:
-                    return resp
-            else:
-                logger.debug("Ignoring cached response: no date")
+            date_tuple = parsedate_tz(headers.get("date", ""))
+            keep_response = date_tuple is not None and self._is_fresh(
+                resp, headers, cc, calendar.timegm(date_tuple[:6])
+            )
         finally:
             if not keep_response:
                 resp.close()
 
-        # Purge entries without an ETag after closing their bodies.
+        if keep_response:
+            return resp
+
+        if date_tuple is None:
+            if "date" in headers:
+                # Keep entries with unparseable dates available for revalidation.
+                logger.debug("Ignoring cached response: invalid date")
+                return False
+            logger.debug("Ignoring cached response: no date")
+
         if "etag" not in headers:
             logger.debug("Purging cached response: stale or missing date, with no ETag")
             self.cache.delete(cache_url)

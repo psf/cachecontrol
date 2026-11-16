@@ -26,27 +26,12 @@ from .utils import DummyRequest, DummyResponse, NullSerializer
 TIME_FMT = "%a, %d %b %Y %H:%M:%S GMT"
 
 
-class TrackingSeparateBodyFileCache(SeparateBodyFileCache):
-    def __init__(self, directory: str) -> None:
-        super().__init__(directory)
-        self.opened_bodies: list[IO[bytes]] = []
-
-    def get_body(self, key: str) -> IO[bytes] | None:
-        body = super().get_body(key)
-        if body is not None:
-            self.opened_bodies.append(body)
-        return body
-
-    def delete(self, key: str) -> None:
-        assert all(body.closed for body in self.opened_bodies)
-        super().delete(key)
-
-
 class RetainingSerializer(Serializer):
-    """Keep loaded responses alive so tests do not rely on refcounting."""
+    """Keep loaded responses and their body files alive for assertions."""
 
     def __init__(self) -> None:
         self.loaded_responses: list[HTTPResponse] = []
+        self.opened_bodies: list[IO[bytes]] = []
 
     def loads(
         self,
@@ -54,6 +39,8 @@ class RetainingSerializer(Serializer):
         data: bytes,
         body_file: IO[bytes] | None = None,
     ) -> HTTPResponse | None:
+        if body_file is not None:
+            self.opened_bodies.append(body_file)
         response = super().loads(request, data, body_file)
         if response is not None:
             self.loaded_responses.append(response)
@@ -65,14 +52,13 @@ def make_separate_body_response(
     *,
     response_headers: dict[str, str] | None = None,
     request_headers: dict[str, str] | None = None,
-) -> tuple[CacheController, TrackingSeparateBodyFileCache, PreparedRequest]:
-    cache = TrackingSeparateBodyFileCache(os.fsdecode(tmp_path))
-    controller = CacheController(cache, serializer=RetainingSerializer())
+) -> tuple[CacheController, RetainingSerializer, PreparedRequest]:
+    serializer = RetainingSerializer()
+    controller = CacheController(SeparateBodyFileCache(tmp_path), serializer=serializer)
     request = Request(
         "GET", "https://example.test/simple/project/", headers=request_headers
     ).prepare()
     response = HTTPResponse(
-        body=b"old body",
         headers={
             "cache-control": "max-age=0",
             "date": time.strftime(TIME_FMT, time.gmtime()),
@@ -82,7 +68,7 @@ def make_separate_body_response(
     )
     assert request.url is not None
     controller._cache_set(request.url, request, response, b"old body")
-    return controller, cache, request
+    return controller, serializer, request
 
 
 class TestCacheControllerResponse:
@@ -389,65 +375,78 @@ class TestCacheControllerResponse:
 
 class TestSeparateBodyLifetime:
     @pytest.mark.parametrize(
-        "response_headers",
+        ("response_headers", "purged"),
         [
-            {},
-            {"etag": '"old"'},
-            {"cache-control": "max-age=60", "date": "invalid", "etag": '"old"'},
+            ({}, True),
+            ({"etag": '"old"'}, False),
+            ({"date": "invalid"}, False),
         ],
         ids=["stale", "stale-etag", "invalid-date"],
     )
     def test_rejected_cached_response_closes_body(
-        self, tmp_path: Path, response_headers: dict[str, str]
+        self,
+        tmp_path: Path,
+        response_headers: dict[str, str],
+        purged: bool,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        controller, cache, request = make_separate_body_response(
+        controller, serializer, request = make_separate_body_response(
             tmp_path, response_headers=response_headers
         )
 
+        delete = controller.cache.delete
+
+        def delete_after_close(key: str) -> None:
+            assert serializer.opened_bodies[-1].closed
+            delete(key)
+
+        monkeypatch.setattr(controller.cache, "delete", delete_after_close)
         assert controller.cached_request(request) is False
-        assert cache.opened_bodies[-1].closed
+        assert serializer.opened_bodies[-1].closed
+        assert request.url is not None
+        assert (controller.cache.get(request.url) is None) is purged
 
     def test_conditional_headers_close_body(self, tmp_path: Path) -> None:
-        controller, cache, request = make_separate_body_response(
+        controller, serializer, request = make_separate_body_response(
             tmp_path, response_headers={"etag": '"old"'}
         )
 
         assert controller.conditional_headers(request) == {"If-None-Match": '"old"'}
-        assert cache.opened_bodies[-1].closed
+        assert serializer.opened_bodies[-1].closed
 
     def test_freshness_check_exception_closes_body(self, tmp_path: Path) -> None:
-        controller, cache, request = make_separate_body_response(
+        controller, serializer, request = make_separate_body_response(
             tmp_path, response_headers={"date": "Sat, 01 Jan 10000 00:00:00 GMT"}
         )
 
         with pytest.raises(ValueError):
             controller.cached_request(request)
 
-        assert cache.opened_bodies[-1].closed
+        assert serializer.opened_bodies[-1].closed
 
     def test_metadata_write_exception_closes_body(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        controller, cache, request = make_separate_body_response(tmp_path)
+        controller, serializer, request = make_separate_body_response(tmp_path)
         monkeypatch.setattr(
-            cache, "set", Mock(side_effect=OSError("cache write failed"))
+            controller.cache, "set", Mock(side_effect=OSError("cache write failed"))
         )
 
         with pytest.raises(OSError, match="cache write failed"):
             controller.update_cached_response(request, HTTPResponse(status=304))
 
-        assert cache.opened_bodies[-1].closed
+        assert serializer.opened_bodies[-1].closed
 
     def test_invalid_serialization_closes_body(self, tmp_path: Path) -> None:
-        controller, cache, request = make_separate_body_response(tmp_path)
+        controller, serializer, request = make_separate_body_response(tmp_path)
         assert request.url is not None
-        cache.set(request.url, b"invalid serialization")
+        controller.cache.set(request.url, b"invalid serialization")
 
         assert controller._load_from_cache(request) is None
-        assert cache.opened_bodies[-1].closed
+        assert serializer.opened_bodies[-1].closed
 
     def test_vary_mismatch_closes_body(self, tmp_path: Path) -> None:
-        controller, cache, request = make_separate_body_response(
+        controller, serializer, request = make_separate_body_response(
             tmp_path,
             request_headers={"Accept-Language": "en"},
             response_headers={"vary": "Accept-Language"},
@@ -455,19 +454,19 @@ class TestSeparateBodyLifetime:
         request.headers["Accept-Language"] = "fr"
 
         assert controller._load_from_cache(request) is None
-        assert cache.opened_bodies[-1].closed
+        assert serializer.opened_bodies[-1].closed
 
     def test_returned_cached_response_owns_body(self, tmp_path: Path) -> None:
-        controller, cache, request = make_separate_body_response(
+        controller, serializer, request = make_separate_body_response(
             tmp_path, response_headers={"cache-control": "max-age=60"}
         )
 
         response = controller.cached_request(request)
 
         assert response is not False
-        assert not cache.opened_bodies[-1].closed
+        assert not serializer.opened_bodies[-1].closed
         response.close()
-        assert cache.opened_bodies[-1].closed
+        assert serializer.opened_bodies[-1].closed
 
 
 class TestCacheControlRequest:
