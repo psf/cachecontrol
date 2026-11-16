@@ -8,7 +8,8 @@ Unit tests that verify our caching methods work correctly.
 
 import os
 import time
-from unittest.mock import ANY, Mock
+from io import BytesIO
+from unittest.mock import ANY, Mock, patch
 
 import pytest
 
@@ -211,6 +212,59 @@ class TestCacheControllerResponse:
 
         assert not result
 
+    def test_conditional_headers_closes_response(self, cc):
+        resp = self.resp({"ETag": '"cached"'})
+        cc.serializer.loads.return_value = resp
+
+        assert cc.conditional_headers(self.req()) == {"If-None-Match": '"cached"'}
+        resp.close.assert_called_once_with()
+
+    @pytest.mark.parametrize("vary", [False, True], ids=["bad-metadata", "vary-miss"])
+    def test_cache_load_miss_closes_body(self, tmp_path, monkeypatch, vary):
+        cache = SeparateBodyFileCache(tmp_path)
+        cc = CacheController(cache)
+        data = b"invalid metadata"
+        if vary:
+            data = cc.serializer.dumps(
+                self.req({"Accept-Language": "en"}),
+                DummyResponse(200, {"Vary": "Accept-Language"}),
+                b"",
+            )
+        cache.set(self.url, data)
+        with BytesIO(b"body") as body:
+            monkeypatch.setattr(cache, "get_body", Mock(return_value=body))
+            assert cc._load_from_cache(self.req()) is None
+            assert body.closed
+
+    def test_purge_closes_separate_body_first(self, tmp_path, monkeypatch):
+        cache = SeparateBodyFileCache(tmp_path)
+        cc = CacheController(cache)
+        req = self.req()
+        resp = DummyResponse(200, {"Date": "Thu, 01 Jan 1970 00:00:00 GMT"})
+        cc._cache_set(self.url, req, resp, b"body")
+
+        cached = cc._load_from_cache(req)
+        assert cached is not None
+        delete = cache.delete
+
+        def delete_after_close(key):
+            assert cached.closed
+            delete(key)
+
+        monkeypatch.setattr(cache, "delete", delete_after_close)
+        with patch.object(cc, "_load_from_cache", return_value=cached):
+            assert cc.cached_request(req) is False
+        assert cache.get(self.url) is None
+
+    def test_update_cached_response_closes_on_write_error(self, cc):
+        cached = self.resp()
+        cc.serializer.loads.return_value = cached
+        cc.cache.set.side_effect = OSError("cache write failed")
+
+        with pytest.raises(OSError, match="cache write failed"):
+            cc.update_cached_response(self.req(), DummyResponse(304, {}))
+        cached.close.assert_called_once_with()
+
     def test_update_cached_response_no_local_cache(self):
         """
         If the local cache doesn't have the given URL, just reuse the response
@@ -330,6 +384,7 @@ class TestCacheControlRequest:
         self.c.cache = DictCache({self.url: cached_resp})
         resp = self.req({})
         assert not resp
+        cached_resp.close.assert_called_once_with()
 
     def test_cache_request_no_cache(self):
         resp = self.req({"cache-control": "no-cache"})
@@ -359,14 +414,20 @@ class TestCacheControlRequest:
         self.c.cache = cache
         r = self.req({})
         assert r == resp
+        resp.close.assert_not_called()
 
     def test_cache_request_unfresh_max_age(self):
         earlier = time.time() - 3700  # epoch - 1h01m40s
         now = time.strftime(TIME_FMT, time.gmtime(earlier))
-        resp = Mock(headers={"cache-control": "max-age=3600", "date": now}, status=200)
+        resp = Mock(
+            headers={"cache-control": "max-age=3600", "date": now, "ETag": '"cached"'},
+            status=200,
+        )
         self.c.cache = DictCache({self.url: resp})
         r = self.req({})
         assert not r
+        resp.close.assert_called_once_with()
+        assert self.c.cache.get(self.url) is resp
 
     def test_cache_request_unfresh_permanent_redirect(self):
         earlier = time.time() - 3600
@@ -414,3 +475,13 @@ class TestCacheControlRequest:
         self.c.cache = DictCache({self.url: resp})
 
         assert not self.req({})
+        resp.close.assert_called_once_with()
+        assert self.c.cache.get(self.url) is resp
+
+    def test_cached_request_closes_response_on_freshness_error(self):
+        resp = Mock(headers={"Date": "Sat, 01 Jan 10000 00:00:00 GMT"})
+        self.c.cache = DictCache({self.url: resp})
+
+        with pytest.raises(ValueError):
+            self.req({})
+        resp.close.assert_called_once_with()
