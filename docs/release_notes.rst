@@ -7,6 +7,22 @@
  Release Notes
 ===============
 
+0.15.0
+======
+
+* Honor explicit expiration on cached permanent redirects.
+* Parse ``Cache-Control`` directive names case-insensitively.
+* Preserve the case of usernames and passwords in cache keys.
+* Preserve CRLF bytes in cached chunked response bodies.
+* Close discarded cached responses and release body files opened by
+  ``SeparateBodyFileCache``.
+* Handle malformed ``Date`` headers without raising an assertion error.
+* Treat invalid ``Expires`` values as expired and purge stale entries instead
+  of passing non-positive lifetimes to cache backends such as Redis.
+* Log cache entry deserialization failures at debug level.
+* Document security considerations for using CacheControl in :doc:`security`.
+* Include tests in the source distribution.
+
 0.14.4
 ======
 
