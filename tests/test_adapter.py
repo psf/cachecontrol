@@ -12,6 +12,7 @@ from requests import Session
 
 from cachecontrol.adapter import CacheControlAdapter
 from cachecontrol.cache import DictCache
+from cachecontrol.controller import CacheController
 from cachecontrol.wrapper import CacheControl
 
 
@@ -39,6 +40,37 @@ def sess(url, request):
 
 
 class TestSessionActions:
+    def test_cold_miss_reads_cache_once(self, url):
+        cache = DictCache()
+        with mock.patch.object(cache, "get", wraps=cache.get) as get, Session() as sess:
+            sess.mount("http://", CacheControlAdapter(cache=cache))
+            response = sess.get(url)
+
+        assert response.status_code == 200
+        assert not response.from_cache
+        get.assert_called_once_with(url)
+
+    def test_cold_miss_uses_custom_controller_hooks(self, url):
+        calls = []
+
+        class CustomController(CacheController):
+            def cached_request(self, request):
+                calls.append("cached_request")
+                return False
+
+            def conditional_headers(self, request):
+                calls.append("conditional_headers")
+                return {"If-None-Match": '"custom"'}
+
+        with Session() as sess:
+            sess.mount(
+                "http://", CacheControlAdapter(controller_class=CustomController)
+            )
+            response = sess.get(url)
+
+        assert response.request.headers["If-None-Match"] == '"custom"'
+        assert calls == ["cached_request", "conditional_headers"]
+
     def test_get_caches(self, url, sess):
         r2 = sess.get(url)
         assert r2.from_cache is True

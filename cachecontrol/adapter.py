@@ -63,15 +63,22 @@ class CacheControlAdapter(HTTPAdapter):
         """
         cacheable = cacheable_methods or self.cacheable_methods
         if request.method in cacheable:
+            controller = self.controller
+            # Custom controllers can override the public lookup and revalidation hooks.
+            use_builtin_lookup = type(controller) is CacheController
             try:
-                cached_response = self.controller.cached_request(request)
+                cached_response = (
+                    controller._cached_request(request)
+                    if use_builtin_lookup
+                    else controller.cached_request(request)
+                )
             except zlib.error:
-                cached_response = None
+                cached_response = False
             if cached_response:
                 return self.build_response(request, cached_response, from_cache=True)
 
-            # check for etags and add headers if appropriate
-            request.headers.update(self.controller.conditional_headers(request))
+            if not use_builtin_lookup or cached_response is not None:
+                request.headers.update(controller.conditional_headers(request))
 
         resp = super().send(request, stream, timeout, verify, cert, proxies)
 
