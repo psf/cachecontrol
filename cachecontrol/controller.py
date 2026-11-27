@@ -178,6 +178,13 @@ class CacheController:
         Return a cached response if it exists in the cache, otherwise
         return False.
         """
+        response = self._cached_request(request)
+        return response if response is not None else False
+
+    def _cached_request(
+        self, request: PreparedRequest
+    ) -> HTTPResponse | Literal[False] | None:
+        """Return a fresh response, False if revalidation may apply, or None on a miss."""
         assert request.url is not None
         cache_url = self.cache_url(request.url)
         logger.debug('Looking up "%s" in the cache', cache_url)
@@ -195,7 +202,7 @@ class CacheController:
         # Check whether we can load the response from the cache:
         resp = self._load_from_cache(request)
         if not resp:
-            return False
+            return None
 
         keep_response = False
         try:
